@@ -4,6 +4,8 @@
 import os, sys, re;
 import Bio;
 import pysam;
+from collections import defaultdict;
+
 
 '''pattern to get matched, mismatched and del/ins stretches to a reference from MD field in sam/bam file file'''
 MD_pattern = '([0-9]+)([A-Z]+)*(\^[A-Z]+)*';
@@ -84,4 +86,107 @@ def get_conversions(ar):
 	return conversions;	
 	
 	
+class Stat(object):
+	'''Stat class is a container for a various statistics of mapping. Each type of statistics/feature(conversions, alignment score etc.) is represented as collections.defaultdict (Key: certain value of feature e.g. alignment_score=50, Value: number of aligned_reads which have feature value equal to the Key)
+	
+	Attributes:
+		name string: name of Stat object, may correspond to a set of pysam.AlignedRead analyzed
+        query_start collections.defaultdict: Key: start position of the aligned portion of the read sequence (0-based, inclusive) on read sequence, Value: number of aligned reads corresponding the Key value;
+        query_end collections.defaultdict: Key: end position of the aligned portion of the read sequence (0-based, exclusive) on read sequence, Value: number of aligned reads corresponding the Key value;
+        conv collections.defaultdict: Key: type of conversion tuple(nt in reference, nt in read sequence), Value: number of conversions corresponding the Key value;
+        conv_weighted collections.defaultdict: Key: type of conversion tuple(nt in reference, nt in read sequence), Value: number of aligned reads corresponding the Key value;
+        conv_number collections.defaultdict: Key: number of conversions, Value: number of aligned reads corresponding the Key value;       
+        as_score collections.defaultdict: Key: alignment score, Value: number of aligned reads corresponding the Key value;
+        clipped_length_right collections.defaultdict: Key: number of nucleotides soft clipped from the right, Value: number of aligned reads corresponding the Key value;
+        clipped_seq_left collections.defaultdict: Key: sequence soft clipped from the left, Value: number of aligned reads corresponding the Key value;
+        clipped_seq_right collections.defaultdict: Key: sequence soft clipped from the right, Value: number of aligned reads corresponding the Key value;   
+        ref_start collections.defaultdict: Key: start position of the aligned portion of the read sequence (0-based, inclusive) on reference, Value: number of aligned reads corresponding the Key value;
+        ref_end collections.defaultdict: Key: end position of the aligned portion of the read sequence (0-based, exclusive) on reference, Value: number of aligned reads corresponding the Key value;
+        query_ref_start collections.defaultdict: Key: tuple (start position of the aligned portion of the read sequence (0-based, exclusive) on read sequence, start position of the aligned portion of the read sequence (0-based, inclusive) on reference), Value: number of aligned reads corresponding the Key value;
+	'''
+
+
+	def __init__(self, name = None):
+		self.name = name;
+		self.query_start = defaultdict(float)#is equal to clipped_length_left, which is therefore redundant and therefore is not used
+		self.query_end = defaultdict(float)  
+		self.conv = defaultdict(float)
+		self.conv_weighted = defaultdict(float) 
+		self.conv_number = defaultdict(float)
+		self.ascore = defaultdict(float)
+		self.clipped_length_right = defaultdict(float)	
+		
+		#these attributes are used in detailed analysis, could triger memory overload in case of frequent soft-clipping
+		self.clipped_seq_left = defaultdict(int)
+		self.clipped_seq_right = defaultdict(int) 
+		
+		#these attributes are used for only the analysis of mapping to the short reference (miRNA, piRNA etc.)
+		self.ref_start = defaultdict(float)  
+		self.ref_end = defaultdict(float)    
+		self.query_ref_start = defaultdict(float) 
+		self.cut_right = defaultdict(float) 		
+
+
+			
+	def fill_stat_sheet(self, ar_iter, short_reference = False, detailed = False):
+		'''function extract statistics of provided iterable containg aligned reads and stores it in the attributes of the class
+
+		ar_iter iterable: any iterable of pysam.AlignedRead. In the most case an output of pysam.Samfile.fetch()
+		short_reference bool: if True additional statistics is collected. Makes sense for a mapping to the reference composed of short reads(piRNA, miRNA, ncRNA etc.)
+		detailed: if True collects advanced statistics, which can require more memory
+
+		Return None
+		'''	
+		def increment_basic(ar):
+			self.query_start[ar.qstart] += 1;
+			self.query_end[ar.qend] += 1;
+			self.ascore[ar.opt('AS')] += 1;
+			self.clipped_length_right[ar.rlen - ar.qend] += 1;
+			
+			conversions = get_conversions(ar);
+			cn = len(conversions);
+			self.conv_number[cn]+=1;
+			if(cn):
+				for c in conversions:
+					self.conv[c] += 1;
+					self.conv_weighted[c] += 1.0/cn				
+			else:	
+				self.conv[(None, None)] += 1;
+				self.conv_weighted[(None, None)] += 1.0;
+			return None;	
+					
+		def increment_short(ar):			
+			self.ref_start[ar.pos] += 1;
+			self.ref_end[ar.aend] += 1;
+			self.query_ref_start[(ar.qstart, ar.pos)] += 1;
+			return None;
+				
+		def increment_detailed(ar):
+			self.clipped_seq_left[ar.seq[:ar.qstart]] +=1;
+			self.clipped_seq_right[ar.seq[ar.qend:]] += 1;
+			return None;
+		
+		if(short_reference):
+			if(detailed):
+				for i, ar in enumerate(ar_iter):
+					increment_basic(ar)
+					increment_short(ar)
+					increment_detailed(ar)
+					if (i and i%1000000 == 0):
+						return None
+			else:		
+				for ar in ar_iter:
+					increment_basic(ar)
+					increment_short(ar)
+		elif(detailed):
+			for ar in ar_iter:
+				increment_basic(ar)
+				increment_detailed(ar)
+		else:
+			for i, ar in enumerate(ar_iter):
+				increment_basic(ar)
+				if (i and i%1000000 == 0):
+					return None
+		return None
+				
 
