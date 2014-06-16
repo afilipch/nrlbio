@@ -54,13 +54,17 @@ def generator_maf(path, aligned_species=None):
 				if(l[0] == ">"):
 					if(len(l.split(":")) == 3):
 						header = l
-						specie = l.split(".")[0][1:];
+						mflag = True;
 					else:
 						specie = l[1:];
+						mflag = False;
 				elif(aligned_species == None or specie in aligned_species):
-					alignment[specie] = l.upper();
+					if(mflag):
+						refseq = l.upper();
+					else:
+						alignment[specie] = l.upper();
 			else:
-				yield Maf(header, alignment)
+				yield Maf(header, alignment, refseq)
 		try:
 			yield Maf(header, alignment)
 		except:
@@ -86,7 +90,9 @@ if(__name__ == "__main__"):
 	#for fq in mygen:
 		#print fq;
 		#print;
+	from conservation import conservation_perfect;	
 	mygen = generator_maf(sys.argv[1])
 	for fq in mygen:
 		print fq;
+		print conservation_perfect(fq, "AA")
 		print;
