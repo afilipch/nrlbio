@@ -140,12 +140,12 @@ def conservation_perfect(maf, match):
 	maf Maf: Maf object represents region to look for conservation
 	match str: sequence to check for conservation (miRNA seed, promoter region, regulatory site and etc.)
 	
-	Return list: list of integers (number of species conserved for a match found in reference specie sequence)	
+	Return dict: Keys are positions of match found in reference specie sequence, Values are integers (number of species conserved for a match found in reference specie sequence)	
 	'''
-	r = [];
+	r = {};
 	positions = sequencetools.multifind(maf.refseq, match, overlap = False)
 	for p in positions:
-		r.append(conservation_simple_perfect(match, maf.alignment, p))
+		r[p] = conservation_simple_perfect(match, maf.alignment, p)
 	return r;	
 	
 	
