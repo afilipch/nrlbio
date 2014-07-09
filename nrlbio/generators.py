@@ -2,6 +2,7 @@
 '''generators for different kinds of input files. They may be used to allow multiprocessing and save memory footprint.
 usually you should provide path to input file and size of elements(not lines) in buffer'''
 import sys;
+import re;
 import itertools;
 import sequencetools
 from collections import *
@@ -46,6 +47,7 @@ def generator_maf(path, aligned_species=None):
 	
 	Yields conservation.Maf: object corresponding to each entry in maf file
 	'''
+	nonaligned = re.compile('-+$')
 	alignment = OrderedDict()
 	with open(path) as f:
 		for l in f:
@@ -61,7 +63,7 @@ def generator_maf(path, aligned_species=None):
 				elif(aligned_species == None or specie in aligned_species):
 					if(mflag):
 						refseq = l.upper();
-					else:
+					elif(not nonaligned.match(l)):
 						alignment[specie] = l.upper();
 			else:
 				yield Maf(header, alignment, refseq)

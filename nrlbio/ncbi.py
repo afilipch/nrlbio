@@ -43,7 +43,7 @@ def seq_record2fasta(seq_record, feature_types = ['mRNA', 'misc_RNA'], miscRNA_t
 			pass;
 	return None;
 	
-def bed2feature()
-	my_start_pos = SeqFeature.ExactPosition(2)
-	my_end_pos = SeqFeature.ExactPosition(6)
+#def bed2feature()
+	#my_start_pos = SeqFeature.ExactPosition(2)
+	#my_end_pos = SeqFeature.ExactPosition(6)
 	

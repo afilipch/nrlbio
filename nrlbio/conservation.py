@@ -30,7 +30,10 @@ class Maf(object):
 		self.refseq = refseq;
 		
 		fl, se, self.id = header.split(":");
-		self.start, self.end = [int(x) for x in se.split("-")]
+		try:
+			self.start, self.end = [int(x) for x in se.split(",")[:2]]
+		except ValueError:	
+			self.start, self.end = [int(x) for x in se.split("-")]##Mackowiak!!!
 		sr, chrr = fl.split(".")
 		self.ref_specie = sr[1:];
 		self.chr, strandr = chrr.split("(")

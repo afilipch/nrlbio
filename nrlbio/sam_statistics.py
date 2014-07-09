@@ -104,8 +104,6 @@ class Stat(object):
         ref_end collections.defaultdict: Key: end position of the aligned portion of the read sequence (0-based, exclusive) on reference, Value: number of aligned reads corresponding the Key value;
         query_ref_start collections.defaultdict: Key: tuple (start position of the aligned portion of the read sequence (0-based, exclusive) on read sequence, start position of the aligned portion of the read sequence (0-based, inclusive) on reference), Value: number of aligned reads corresponding the Key value;
 	'''
-
-
 	def __init__(self, name = None):
 		self.name = name;
 		self.query_start = defaultdict(float)#is equal to clipped_length_left, which is therefore redundant and therefore is not used
@@ -124,8 +122,46 @@ class Stat(object):
 		self.ref_start = defaultdict(float)  
 		self.ref_end = defaultdict(float)    
 		self.query_ref_start = defaultdict(float) 
-		self.cut_right = defaultdict(float) 		
+		self.cut_right = defaultdict(float) 
+		
 
+	def increment_basic(self, ar):
+		self.query_start[ar.qstart] += 1;
+		self.query_end[ar.qend] += 1;
+		self.ascore[ar.opt('AS')] += 1;
+		self.clipped_length_right[ar.rlen - ar.qend] += 1;
+		
+		conversions = get_conversions(ar);
+		cn = len(conversions);
+		self.conv_number[cn]+=1;
+		if(cn):
+			for c in conversions:
+				self.conv[c] += 1;
+				self.conv_weighted[c] += 1.0/cn;
+		else:	
+			self.conv[(None, None)] += 1;
+			self.conv_weighted[(None, None)] += 1.0;
+		return True;
+				
+				
+	def increment_short(self, ar):
+		self.ref_start[ar.pos] += 1;
+		self.ref_end[ar.aend] += 1;
+		self.query_ref_start[(ar.qstart, ar.pos)] += 1;
+		return True;
+		
+
+	def increment_detailed(self, ar):
+		self.clipped_seq_left[ar.seq[:ar.qstart]] +=1;
+		self.clipped_seq_right[ar.seq[ar.qend:]] += 1;
+		return True;
+
+	def increment_all(self, ar):
+		self.increment_basic(ar)
+		self.increment_short(ar)
+		self.increment_detailed(ar)	
+		return True
+		
 
 			
 	def fill_stat_sheet(self, ar_iter, short_reference = False, detailed = False, sparse_coefficient = 1):
@@ -137,57 +173,26 @@ class Stat(object):
 		sparse_coefficient int: analyses only each {sparse_coefficient}th pysam.AlignedRead;
 
 		Return True if no exception raised
-		'''	
-		def increment_basic(ar):
-			self.query_start[ar.qstart] += 1;
-			self.query_end[ar.qend] += 1;
-			self.ascore[ar.opt('AS')] += 1;
-			self.clipped_length_right[ar.rlen - ar.qend] += 1;
-			
-			conversions = get_conversions(ar);
-			cn = len(conversions);
-			self.conv_number[cn]+=1;
-			if(cn):
-				for c in conversions:
-					self.conv[c] += 1;
-					self.conv_weighted[c] += 1.0/cn				
-			else:	
-				self.conv[(None, None)] += 1;
-				self.conv_weighted[(None, None)] += 1.0;
-			return True;	
-					
-		def increment_short(ar):			
-			self.ref_start[ar.pos] += 1;
-			self.ref_end[ar.aend] += 1;
-			self.query_ref_start[(ar.qstart, ar.pos)] += 1;
-			return True;
-				
-		def increment_detailed(ar):
-			self.clipped_seq_left[ar.seq[:ar.qstart]] +=1;
-			self.clipped_seq_right[ar.seq[ar.qend:]] += 1;
-			return True;
-		
+		'''			
 		if(short_reference):
 			if(detailed):
 				for i, ar in enumerate(ar_iter):
 					if (i%sparse_coefficient == 0):
-						increment_basic(ar)
-						increment_short(ar)
-						increment_detailed(ar)
+						self.increment_all(ar)
 			else:		
 				for i, ar in enumerate(ar_iter):
 					if (i%sparse_coefficient == 0):
-						increment_basic(ar)
-						increment_short(ar)
+						self.increment_basic(ar)
+						self.increment_short(ar)
 		elif(detailed):
 			for i, ar in enumerate(ar_iter):
 				if (i%sparse_coefficient == 0):
-					increment_basic(ar)
-					increment_detailed(ar)
+					self.increment_basic(ar)
+					self.increment_detailed(ar)
 		else:
 			for i, ar in enumerate(ar_iter):
 				if (i%sparse_coefficient == 0):
-					increment_basic(ar)
+					self.increment_basic(ar)
 		return True
 				
 
