@@ -1,11 +1,19 @@
 # /usr/bin/python
 '''collections of classes and functions to produce various statistics of mapping'''
 
-import os, sys, re;
-import Bio;
-import pysam;
+import os
+import sys
+import re
 from collections import defaultdict;
 
+import Bio;
+import pysam;
+import jinja2;
+
+import html;
+
+'''set jinja2 enviroment'''
+env = jinja2.Environment(loader=jinja2.PackageLoader('nrlbio', 'templates'))
 
 '''pattern to get matched, mismatched and del/ins stretches to a reference from MD field in sam/bam file file'''
 MD_pattern = '([0-9]+)([A-Z]+)*(\^[A-Z]+)*';
@@ -122,7 +130,7 @@ class Stat(object):
 		self.ref_start = defaultdict(float)  
 		self.ref_end = defaultdict(float)    
 		self.query_ref_start = defaultdict(float) 
-		self.cut_right = defaultdict(float) 
+		#self.cut_right = defaultdict(float) 
 		
 
 	def increment_basic(self, ar):
@@ -194,5 +202,26 @@ class Stat(object):
 				if (i%sparse_coefficient == 0):
 					self.increment_basic(ar)
 		return True
-				
+		
+	def tohtml(self, output = None, template = "statistic_tables.html", top_entries = 20):
+		r = html.Stat(self.name, [])
+		attributes = ["ascore", "query_ref_start", "query_start", "ref_start", "clipped_length_right", "query_end", "ref_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right"]
+		names = ["Alignment Score", "Start position of the match in query and reference", "Start position of the match in query", "Start position of the match in reference", "number of nucleotides soft clipped downstream", "End position of the match in query", "End position of the match in reference", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence"]
+		for a, name in zip(attributes, names):
+			attribute = getattr(self, a)
+			if(attribute):
+				html_attribute = html.StatAttribute(name, [a, "total number", "fraction"], [])
+				total = float(sum(attribute.values()))
+				for k, v in sorted(attribute.items(), key = lambda x: x[1], reverse = True)[:top_entries]:
+					f = v/total
+					html_attribute.entries.append([k, "%d" % v, "%1.5f" % f]);
+				r.attributes.append(html_attribute);
+			else:
+				pass;
+		t = env.get_template(template);	
+		if(output):
+			with open(output, 'w') as f:
+				f.write(t.render({"statistics": r}))
+		else:		
+			t.render({"statistics": r})		
 

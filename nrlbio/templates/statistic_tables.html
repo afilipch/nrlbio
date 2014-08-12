@@ -1,0 +1,25 @@
+{% extends "base_table.html" %}
+
+{% block title %}{{statistics.title}}{% endblock %}
+
+{% block content %}
+{% for attribute in statistics.attributes %}
+	<h2>{{ attribute.title }}</h2>
+	<table border="1" class="centerTable" width=50%>
+	<tr>
+	{% for header in attribute.headers %}
+		<td><b>{{header}}</b></td>
+	{% endfor %}
+	</tr> 				
+	{% for entry in attribute.entries %}
+		<tr>
+		{% for value in entry %}
+			<td>{{value}}</td>
+		{% endfor %}
+		</tr>
+	{% endfor %}	
+	</table>
+	<br>
+	<br>
+{% endfor %}	
+{% endblock %}
