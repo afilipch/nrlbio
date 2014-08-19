@@ -5,6 +5,7 @@ import copy;
 import numpy as np
 
 
+
 def merge_coordinates(c1,c2):
 	'''Merges two area coordinates into one. For example two squares with coordinates [[1,5], [2,6]] and [[1,5], [4,9]] will be merged into one with coordinates [[1,5], [2,9]]
 	
@@ -27,11 +28,11 @@ def get_slice(a, coordinates):
 		
 		Return numpy.array: slice bounded by coordinates provided.
 	'''
-		expr = "a[" 
-		for c in coordinates:
-			expr += "%d:%d," % tuple(c);
-		expr = expr[:-1] + "]";
-		return eval(expr);
+	expr = "a[" 
+	for c in coordinates:
+		expr += "%d:%d," % tuple(c);
+	expr = expr[:-1] + "]";
+	return eval(expr);
 		
 def one_side(coordinates, dimension, lookforward, start=True):
 	'''extends coordinates in a given dimension
