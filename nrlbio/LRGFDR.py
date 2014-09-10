@@ -27,23 +27,35 @@ class Grid(object):
 	Attributes:
 		array numpy.array: the main attribute of the class. All data are stored here. Each dimension corresponds to the particular attribute(weight, length, temperature). Each cell carries complex number. Real part is equal to a number of cases with attributes corresponding coordinates of the cell, Imaginary to the number of control ones.
 		
-		_encoding_table list: connects attributes values to the array coordinates. It is valuable for space compression. Element is dict (Key: attribute value, Value: coordinate). Inverse to the decoding_table
+		encoding_table list: connects attributes values to the array coordinates. It is valuable for space compression. Element is dict (Key: attribute value, Value: coordinate). Inverse to the decoding_table
 		
-		_decoding_table list: connects attributes values to the array coordinates. It is valuable for space compression. Element is dict (Key: coordinate, Value: attribute value). Inverse to the encoding_table
+		decoding_table list: connects attributes values to the array coordinates. It is valuable for space compression. Element is dict (Key: coordinate, Value: attribute value). Inverse to the encoding_table
 		
-		shape list: shape of the space. Is equal to array.shape;
+		attribute_names list: names of the dimensions of an array
 	'''	
-	def __init__(self, array, encoding_table):
+	def __init__(self, array, encoding_table, attribute_names=None):
 		self.array = array
-		self._encoding_table = encoding_table;
+		self.encoding_table = encoding_table;
 		self.shape = array.shape
-		self._decoding_table = [];
+		self.decoding_table = [];
+
 		for d in encoding_table:
-			self._decoding_table.append(dict([ (x[1], x[0]) for x in d.items()]))
-		
+			self.decoding_table.append(dict([ (x[1], x[0]) for x in d.items()]))
+			
+		if(not attribute_names):
+			self.attribute_names = ["x%d" % (i+1) for i in range(len(self.shape))]
+		elif(len(attribute_names) == len(self.shape)):
+			self.attribute_names = attribute_names;
+		elif(len(attribute_names) > len(self.shape)):
+			self.attribute_names = attribute_names[:len(self.shape)];
+			sys.stderr.write('number of attribute names is more than number of dimensions, taken only first ones\n')
+		else:
+			self.attribute_names = attribute_names + ["x%d" % (i+1) for i in range(len(self.shape)-len(attribute_names))]
+			sys.stderr.write('number of attribute names is less than number of dimensions, dummy names are assigned\n')			
+			
 		
 	@classmethod		
-	def from_dict(cls, signal, control):
+	def from_dict(cls, signal, control, attribute_names=None):
 		'''Constructs class instance from the given dictionaries
 		
 			signal dict: Based on real data, carries information about number of cases with particluar values of attributes. Key: tuple of attribute values, Value: number of cases corresponding to these attributes.
@@ -85,7 +97,11 @@ class Grid(object):
 				key.append(encoding_table[d][kd])
 			array[tuple(key)] += complex(0, v)			
 			
-		return cls(array, encoding_table);
+		return cls(array, encoding_table, attribute_names=attribute_names);
+		
+		
+	@classmethod		
+	def from_iterable(cls, signal, control, fields=None, attribute_names=None):	
 		
 		
 	@classmethod
@@ -123,6 +139,8 @@ class Grid(object):
 			with open(csv,'w') as f:
 				for row in self.array:
 					f.write(delimiter.join(["%d|%d" % (x.real, x.imag) for x in row])+"\n")
+					
+		
 		
 		
 		
@@ -146,10 +164,10 @@ class Area(object):
 		cum = np.sum(self.array)
 		self.signal = cum.real;
 		self.control = cum.imag;
-		if(self.control):
+		if(self.signal):
 			self.fdr = self.control/(self.control+self.signal);
 		else:
-			self.fdr = 0;
+			self.fdr = 1;
 			
 			
 def cell_in_area(coordinates, area):
@@ -163,7 +181,7 @@ def cell_in_area(coordinates, area):
 	for c, (l,u) in zip(coordinates, area.coordinates):
 		if(c<l or c>=u):
 			return False;
-	return True;
+	return True;	
 	
 	
 def intersect_areas(first_area, second_area, grid):
@@ -177,8 +195,10 @@ def intersect_areas(first_area, second_area, grid):
 	'''
 	coordinates = overlap_hyperrectangles(first_area.coordinates, second_area.coordinates)
 	return Area(coordinates, grid);
-		
-		
+
+
+	
+	
 class Cluster(object):
 	'''Cluster object represents one logical conjunction("AND") rule. It contains area of the Grid corresponding to the rule(it means that upper and lowwer boundaries of the area can be translated to the rule s1<=x1<=e1 and s2<=x2<=e2 and etc)
 	
@@ -189,16 +209,56 @@ class Cluster(object):
 		extensions list: potential extensions to cluster area. Element is Area corresponding to the extension in one direction
 		coordinates list: coordinates of slice. Elemenent is a list representing start and end of area at a certain dimension. 1st element of tuple is start(0-based inclusive), 2nd - end(exclusive)
 		history list: history of extensions. Elemenent is extension coordinates(lisr of 2-element lists)
+		nclusters list: list of negative clusters(negation rule). Represents rectangle areas inside the cluster with high false discovery rate
+		support float: fraction of real cases inside the cluster
+		rule string: logical rule representing cluster
 	'''
 	def __init__(self, grid, origin, ID):
 		self.grid = grid;
 		self.origin = origin;
 		self.ID = ID;
-		self.extensions = [];
+		
 		self.coordinates = [];
 		for p in origin:
 			self.coordinates.append([p,p+1])
-		self.history = [copy.deepcopy(self.coordinates)];	
+		self.history = [copy.deepcopy(self.coordinates)];
+		
+		self.extensions = [];
+		self.nclusters = []
+		self.support = 0;
+		self.rule = ''
+		
+		
+	def __str__(self):
+		coordinates = ''.join(["%s: %d<->%d\n" % (x[0], x[1][0], x[1][1]) for x in zip(self.grid.attribute_names, self.coordinates)]);
+		return "cluster ID: %s\ncoordinates of origin: %s\nsignal of origin: %d\ncontrol of origin: %d\nsignal: %d\tcontrol: %d\nfdr: %1.4f\nsupport: %1.4f\ncluster coordinates:\n%s" % (self.ID, self.origin, self.grid.array[self.origin].real, self.grid.array[self.origin].imag, self.area.signal, self.area.control, self.area.fdr, self.support, coordinates)
+		
+		
+	def torule(self):
+		single_rules = [];
+		for d, (name, (start, end)) in enumerate(zip(self.grid.attribute_names, self.coordinates)):
+			if(end >= self.grid.shape[d]):
+				if(start):
+					sr = "%s>=%s" % (name, self.grid.decoding_table[d][start]);
+				else:
+					sr = '';
+			else:
+				if(start):
+					sr = "%s<=%s<%s" % (self.grid.decoding_table[d][start], name, self.grid.decoding_table[d][end]);
+				else:
+					sr = "%s<%s" % (name, self.grid.decoding_table[d][end]);
+			single_rules.append(sr)
+		self.rule = " and ".join(single_rules)
+	
+	def to_complete_rule(self):
+		self.torule();
+		if(self.nclusters):
+			nc_rules = []
+			for nc in self.nclusters:
+				nc.torule();
+				nc_rules.append(nc.rule);
+			self.rule = self.rule.join(["(", ") and (not ("]) + ")) and (not (".join(nc_rules)	 + "))"
+		print self.rule	
 
 			
 	def get_extensions(self, lookforward, fdr_of_extension):
@@ -242,18 +302,6 @@ class Cluster(object):
 			return True;
 		else:
 			return False;
-			
-			
-	#def evaluate(self):
-		#'''Assigns some statistics to cluster attributes: self.fdr, self.signal, self.control'''
-		#self.array = numpy_extension.get_slice(self.grid.array, self.coordinates);
-		#cum = np.sum(self.array)
-		#self.signal = cum.real;
-		#self.control = cum.imag;
-		#if(self.control):
-			#self.fdr = self.control/float(self.control+self.signal);
-		#else:
-			#self.fdr = 0;
 		
 		
 	def expand(self, fit_function, lookforward, fdr_of_extension):
@@ -264,46 +312,138 @@ class Cluster(object):
 			fit_function: fitness function for extensions
 			
 			Expands cluster area until there are no possible extensions availible(with fdr <= fdr_of_extension)
-		'''	
+		'''
 		expandable = True;
 		while(expandable):
 			self.get_extensions(lookforward, fdr_of_extension);
 			expandable = self.select_extensions(fit_function)
-		self.area = Area(self.coordinates, self.grid);	
-
+		self.area = Area(self.coordinates, self.grid);
+		#self.support = self.area.signal/(np.sum(grid.array).real+0.01)
 		
+		
+	def get_nclusters(self, support, ncsupport, maxiter, fdr, lookforward, fit_function):
+		
+		for ncid in range(maxiter):
+			ncorigin = numpy_extension.key_arg_max(self.area.array, key=fit_function);
+			ncorigin = tuple([x[0]+x[1][0] for x in zip(ncorigin, self.coordinates)])
+			#origin also has to meet fdr requirements
+			if(self.grid.array[ncorigin].imag/max(self.grid.array[ncorigin].imag + self.grid.array[ncorigin].real, 1.0) < fdr):
+				return False;
+				
+			nc = Negative_cluster(self.grid, self, ncorigin, "%s:n%d" % (self.ID, ncid+1));
+			nc.expand(fit_function, lookforward, fdr);
+			
+			nc.support = nc.area.control/self.area.control+0.01; 
+			#we check for support of negative cluster both on level of parental cluster and parental grid
+			if(nc.support > ncsupport and nc.support*self.support>support):
+				print nc
+				self.nclusters.append(nc);
+				nc.area.array[:] = 0;
+			else:
+				self.grid.array[origin] = 0;			
+		return True;
+
+
+
+
+class Negative_cluster(Cluster):
+	def __init__(self, grid, cluster, origin, ID):
+		super(Negative_cluster,self).__init__(grid, origin, ID)
+		self.cluster = cluster;
+		
+	def get_extensions(self, lookforward, fdr_of_extension):
+		'''Looks for possible extensions of the clusters area
+		
+			lookforward int: controls how far extension can go along any direction
+			fdr_of_extension fdr: maximum false discovery rate allowed for extensions
+			
+			Adds new extensions to self.extensions
+		'''
+		for d, (s, e) in enumerate(self.coordinates):
+			for lf in range(1, lookforward+1):
+				if(s-lf>=self.cluster.coordinates[d][0]):
+					c = numpy_extension.one_side(self.coordinates, d, lf, start=True)
+					area = Area(c, self.grid);		
+					if(area.fdr>fdr_of_extension):
+						self.extensions.append(area);
+				if(lf+e<=self.cluster.coordinates[d][1]):
+					c = numpy_extension.one_side(self.coordinates, d, lf, start=False)
+					area = Area(c, self.grid);				
+					if(area.fdr>fdr_of_extension):
+						self.extensions.append(area);
+		return True;			
 		
 		
 def ff_fdr(area):
 	'''fitness function for extensions'''
 	return 1-area.fdr;
 	
+	
 def ff_balanced(x):
 	'''fitness function for extensions'''	
 	if(type(x) == Area):
-		return x.signal*((maxfdr-x.fdr));
+		return x.signal*(maxfdr-x.fdr);
 	elif(type(x)==np.ndarray):
-		return x.real*(maxfdr - x.imag/max((x.imag+x.real),1.0)) 
-		
+		if(x.real):
+			return x.real*(maxfdr - x.imag/(x.imag+x.real))
+		else:
+			return maxfdr-1;
 	
-def generate_clusters(grid, support = 0.005, maxiter = 20,  fdr=0.1, lookforward=10, fit_function=ff_balanced):
-	global maxfdr
-	maxfdr = fdr;
-	for _ in range(maxiter):
-		pass;
+	
+def nc_balanced(x):
+	'''fitness function for extensions'''	
+	if(type(x) == Area):
+		return x.control*(x.fdr**2);
+	elif(type(x)==np.ndarray):
+		if(x.imag):
+			return x.imag*((x.imag/(x.imag+x.real))**2)
+		else:
+			return 0;
 
-		
-def run(grid, fdr=0.1, lookforward=10, fit_function=ff_balanced):
+
+def generate_clusters(grid, support = 0.01, maxiter = 100,  fdr=0.1, lookforward=10, fit_function=ff_balanced, ncsupport=0.1, nciter=0, ncfunction=nc_balanced):
+	#maxfdr is used in fit_function, which can take only one argument(used as key function). So maxfdr has to be set as global
 	global maxfdr
 	maxfdr = fdr;
-	origin = numpy_extension.key_arg_max(grid.array, key=fit_function);
-	#print origin, type(origin)
-	print grid.array[origin];
-	cluster = Cluster(grid, origin, 1); 
-	cluster.expand(ff_balanced, lookforward, fdr);
-	print
-	print
-	print cluster.coordinates;
-	print cluster.area.fdr;
+	
+	#all generated clusters will be stored in 'clusters'
+	clusters = [];
+	total_signal = np.sum(grid.array).real+0.01;
+
+	#we want to find an origin for a new cluster in that part of greed which is not occupied by any other cluster already generated
+	free = Grid(np.copy(grid.array), grid.encoding_table, grid.attribute_names);
+
+	for cid in range(maxiter):
+		origin = numpy_extension.key_arg_max(free.array, key=fit_function);
+		#origin also has to meet fdr requirement
+		if(free.array[origin].imag/max(free.array[origin].imag + free.array[origin].real, 1.0) > fdr):
+			return clusters, nclusters;
+			
+		cluster = Cluster(free, origin, "c%d" % (cid+1));
+		cluster.expand(fit_function, lookforward, fdr);
 		
-		
+		#test if cluster meet support requirements
+		cluster.support = cluster.area.signal/total_signal
+		if(cluster.support > support):
+			print cluster;
+			clusters.append(cluster);
+			cluster.get_nclusters(support, ncsupport, nciter, fdr*2, lookforward, ncfunction)
+			cluster.area.array[:] = 0;
+			cluster.to_complete_rule()
+		else:
+			free.array[origin] = 0;		
+
+	return clusters;
+
+
+	
+
+def reassign_grid(clusters, grid):
+	for cluster in clusters:
+		cluster.grid = grid;
+		cluster.area = Area(cluster.coordinates, grid);
+
+
+
+
+
