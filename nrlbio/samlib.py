@@ -8,7 +8,7 @@ from nrlbio import numerictools;
 
 
 def key_alignment_score(arw):
-	return arw.aligned_read.opt("AS");
+	return arw.AS;
 
 
 class ArWrapper(object):
@@ -16,6 +16,7 @@ class ArWrapper(object):
 		self.aligned_read = aligned_read;
 		self.qname = aligned_read.qname;
 		self.rname = rname
+		self.AS = aligned_read.opt("AS")
 		if(rname.split("_")[0] == "random"):
 			self.control = True;
 		else:
