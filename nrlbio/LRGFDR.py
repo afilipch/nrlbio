@@ -11,6 +11,7 @@ import numpy as np
 
 from nrlbio import numpy_extension
 from nrlbio.numerictools import overlap_hyperrectangles;
+from itertools_extension import  iterable_to_dict
 
 
 
@@ -101,7 +102,28 @@ class Grid(object):
 		
 		
 	@classmethod		
-	def from_iterable(cls, signal, control, fields=None, attribute_names=None):	
+	def from_iterable(cls, signal, control, entry='list', attributes=[], attribute_names=None):
+		'''Constructs class instance from the given iterables
+		
+			signal iterable: Based on real data, carries all in a table-interpretable manner (rows: entries, columns: attributes)			
+			control iterable: Based on control data, carries all in a table-interpretable manner (rows: entries, columns: attributes)
+			
+			entry list|object: type of iterable entry
+				if list: entry will be treated as an iterable with __getitem__ method. Attributes has to be list of integers or None
+				if object: entry will be treated as an object with __getattr__ method. Attributes has to be list of string or None
+				
+			attributes list: attributes used for filtering. For example if only attribute "age" is provided all people with the same age(35) will be gathered in one dictionary entry with Key=[(35)];
+			attribute_names list: names of the attributes
+			
+			Return Grid: class instance
+		'''
+		sd = iterable_to_dict(signal, entry, 'count', attributes=attributes);
+		cd = iterable_to_dict(control, entry, 'count', attributes=attributes);
+		
+		if(not attribute_names and entry=='object' and attributes):
+			attribute_names = attributes;
+		
+		return cls.from_dict(sd, cd, attribute_names=attribute_names);
 		
 		
 	@classmethod
@@ -212,6 +234,7 @@ class Cluster(object):
 		nclusters list: list of negative clusters(negation rule). Represents rectangle areas inside the cluster with high false discovery rate
 		support float: fraction of real cases inside the cluster
 		rule string: logical rule representing cluster
+		filter string: logical filter(ready to be passed into exec()) representing cluster
 	'''
 	def __init__(self, grid, origin, ID):
 		self.grid = grid;
@@ -227,6 +250,7 @@ class Cluster(object):
 		self.nclusters = []
 		self.support = 0;
 		self.rule = ''
+		self.filter_ = ''
 		
 		
 	def __str__(self):
@@ -234,14 +258,14 @@ class Cluster(object):
 		return "cluster ID: %s\ncoordinates of origin: %s\nsignal of origin: %d\ncontrol of origin: %d\nsignal: %d\tcontrol: %d\nfdr: %1.4f\nsupport: %1.4f\ncluster coordinates:\n%s" % (self.ID, self.origin, self.grid.array[self.origin].real, self.grid.array[self.origin].imag, self.area.signal, self.area.control, self.area.fdr, self.support, coordinates)
 		
 		
-	def torule(self):
+	def _torule(self):
 		single_rules = [];
 		for d, (name, (start, end)) in enumerate(zip(self.grid.attribute_names, self.coordinates)):
 			if(end >= self.grid.shape[d]):
 				if(start):
 					sr = "%s>=%s" % (name, self.grid.decoding_table[d][start]);
 				else:
-					sr = '';
+					continue;
 			else:
 				if(start):
 					sr = "%s<=%s<%s" % (self.grid.decoding_table[d][start], name, self.grid.decoding_table[d][end]);
@@ -249,16 +273,80 @@ class Cluster(object):
 					sr = "%s<%s" % (name, self.grid.decoding_table[d][end]);
 			single_rules.append(sr)
 		self.rule = " and ".join(single_rules)
+		
+		
+	def _tofilter_index(self, indices):
+		single_rules = [];
+		for d, (index, (start, end)) in enumerate(zip(indices, self.coordinates)):
+			if(end >= self.grid.shape[d]):
+				if(start):
+					sr = "x[%d]>=%s" % (index, self.grid.decoding_table[d][start]);
+				else:
+					continue;
+			else:
+				if(start):
+					sr = "%s<=x[%d]<%s" % (self.grid.decoding_table[d][start], index, self.grid.decoding_table[d][end]);
+				else:
+					sr = "x[%d]<%s" % (index, self.grid.decoding_table[d][end]);
+			single_rules.append(sr)	
+		self.filter_ = " and ".join(single_rules);
+		
+		
+	def _tofilter_attribute(self, attributes):
+		single_rules = [];
+		for d, (attr, (start, end)) in enumerate(zip(attributes, self.coordinates)):
+			if(end >= self.grid.shape[d]):
+				if(start):
+					sr = "x.%s>=%s" % (attr, self.grid.decoding_table[d][start]);
+				else:
+					continue;
+			else:
+				if(start):
+					sr = "%s<=x.%s<%s" % (self.grid.decoding_table[d][start], attr, self.grid.decoding_table[d][end]);
+				else:
+					sr = "x.%s<%s" % (attr, self.grid.decoding_table[d][end]);
+			single_rules.append(sr)
+		self.filter_ = " and ".join(single_rules)		
 	
-	def to_complete_rule(self):
-		self.torule();
+	
+	def to_rule(self):
+		self._torule();
 		if(self.nclusters):
 			nc_rules = []
 			for nc in self.nclusters:
-				nc.torule();
+				nc._torule();
 				nc_rules.append(nc.rule);
 			self.rule = self.rule.join(["(", ") and (not ("]) + ")) and (not (".join(nc_rules)	 + "))"
-		print self.rule	
+		if(not self.rule):
+			self.rule = 'spans the whole grid'
+		return self.rule	
+		
+		
+	def to_filter_index(self, indices):
+		self._tofilter_index(indices);
+		if(self.nclusters):
+			nc_filters = []
+			for nc in self.nclusters:
+				nc._tofilter_index(indices);
+				nc_filters.append(nc.filter_);
+			self.filter_ = self.filter_.join(["(", ") and (not ("]) + ")) and (not (".join(nc_filters)	 + "))"
+		if(not self.filter_):
+			self.filter_ = 'True'			
+		return self.filter_
+		
+		
+	def to_filter_attribute(self, attributes):
+		self._tofilter_attribute(attributes);
+		if(self.nclusters):
+			nc_filters = []
+			for nc in self.nclusters:
+				nc._tofilter_attribute(attributes);
+				nc_filters.append(nc.filter_);
+			self.filter_ = self.filter_.join(["(", ") and (not ("]) + ")) and (not (".join(nc_filters)	 + "))"
+		if(not self.filter_):
+			self.filter_ = 'True'			
+		return self.filter_
+		
 
 			
 	def get_extensions(self, lookforward, fdr_of_extension):
@@ -373,6 +461,31 @@ class Negative_cluster(Cluster):
 						self.extensions.append(area);
 		return True;			
 		
+
+def get_rule(clusters):
+	if(len(clusters)>1):
+		return '(' + ') or ('.join(cl.to_rule() for cl in clusters) + ')'
+	else:
+		return clusters[0].to_rule()
+
+		
+def get_filter_index(clusters, indices):
+	if(len(clusters)>1):
+		return '(' + ') or ('.join(cl.to_filter_index(indices) for cl in clusters) + ')'
+	else:
+		return clusters[0].to_filter_index(indices)
+
+
+def get_filter_attribute(clusters, attributes):
+	if(len(clusters)>1):
+		return '(' + ') or ('.join(cl.to_filter_index(attributes) for cl in clusters) + ')'
+	else:
+		return clusters[0].to_filter_index(attributes)
+		
+		
+def apply_filter(signal, filter_):
+	return eval('filter(lambda x: %s, %s)' % (filter_, signal))
+		
 		
 def ff_fdr(area):
 	'''fitness function for extensions'''
@@ -429,21 +542,52 @@ def generate_clusters(grid, support = 0.01, maxiter = 100,  fdr=0.1, lookforward
 			clusters.append(cluster);
 			cluster.get_nclusters(support, ncsupport, nciter, fdr*2, lookforward, ncfunction)
 			cluster.area.array[:] = 0;
-			cluster.to_complete_rule()
+			#cluster.to_filter_index([1,2])
 		else:
 			free.array[origin] = 0;		
 
 	return clusters;
 
 
+def lrg(signal, control, entry='list', attributes=[], attribute_names=None, support = 0.01, maxiter = 100,  fdr=0.1, lookforward=10, fit_function=ff_balanced, ncsupport=0.1, nciter=0, ncfunction=nc_balanced):
+	
+	grid = Grid.from_iterable(signal, control, entry=entry, attributes=attributes, attribute_names=attribute_names);
+	clusters = generate_clusters(grid, support = support, maxiter = maxiter,  fdr=fdr, lookforward=lookforward, fit_function=fit_function, ncsupport=ncsupport, nciter=nciter, ncfunction=ncfunction);
+	
+	rule = get_rule(clusters)
+	if(entry == 'list'):
+		lrg_filter = get_filter_index(clusters, attributes)
+	else:
+		lrg_filter = get_filter_attribute(clusters, attributes)
+	return 	lrg_filter, rule
+		
 	
 
-def reassign_grid(clusters, grid):
-	for cluster in clusters:
-		cluster.grid = grid;
-		cluster.area = Area(cluster.coordinates, grid);
+#def reassign_grid(clusters, grid):
+	#for cluster in clusters:
+		#cluster.grid = grid;
+		#cluster.area = Area(cluster.coordinates, grid);
 
 
 
-
+#testing section
+if(__name__ == "__main__"):
+	from random import randint;
+	signal = [(randint(1,6), randint(1,6), randint(1,6), randint(2,8)) for _ in range(10000)]
+	signal += [(randint(12,16), randint(12,16), randint(14,20), randint(10,14)) for _ in range(10000)]
+	control = [(randint(1,20), randint(1,20), randint(1,20), randint(1,20)) for _ in range(2000)]
+	
+	
+	filter_, rule = lrg(signal, control, entry='list', attributes=[], attribute_names=None, support = 0.01, maxiter = 10,  fdr=0.1, lookforward=10, fit_function=ff_balanced, ncsupport=0.1, nciter=0, ncfunction=nc_balanced)
+	filtered = apply_filter(signal, filter_)
+	
+	print filter_
+	print
+	print len(filtered)
+	
+	
+	
+	
+	
+	
 
