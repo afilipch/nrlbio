@@ -7,16 +7,7 @@ import pysam;
 
 from nrlbio import sam_statistics
 from nrlbio import samlib
-#import sys;
-#import os;
-#import argparse;
-#import copy;
-#from Bio import SeqIO
-#from collections import *;
-#from Bio.Seq import reverse_complement;
- 
-#import chimera_lib;
-#import functions;
+
 
 
 
