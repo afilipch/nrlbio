@@ -9,7 +9,7 @@ from collections import *
 
 fastq = namedtuple('fastq', 'id, seq, sign, qual')
 
-def generator_fastq(path, take = ["id", "seq"], reverse = False, shuffle = False):
+def generator_fastq(path, take = ['id', 'seq', 'sign', 'qual'], reverse = False, shuffle = False):
 	'''yields fastq object(collections.namedtuple based) from fastq file provided
 	
 	path str: path to fastq file

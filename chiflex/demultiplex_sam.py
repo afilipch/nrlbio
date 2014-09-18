@@ -37,7 +37,7 @@ current_name = '';
 for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = samlib.ArWrapper(aligned_read, rname) 
+		arw = samlib.ArWrapper(aligned_read, rname, add_nr_tag=True) 
 		
 		if(current_name != arw.qname):			
 			if(arwlist):

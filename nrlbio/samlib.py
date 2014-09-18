@@ -2,9 +2,10 @@
 '''collections of classes and functions to deal with sam/bam files'''
 
 import sys;
-from collections import namedtuple;
+from collections import namedtuple, Counter;
 
 from nrlbio import numerictools;
+from sam_statistics import get_conversions
 
 
 def key_alignment_score(arw):
@@ -23,15 +24,34 @@ class ArWrapper(object):
 		control bool: if True, read comes from decoy
 	'''	
 		
-	def __init__(self, aligned_read, rname):
+	def __init__(self, aligned_read, rname, add_nr_tag = False):
 		self.aligned_read = aligned_read;
 		self.qname = aligned_read.qname;
 		self.rname = rname
+		
 		self.AS = aligned_read.opt("AS")
 		if(rname.split("_")[0] == "random"):
 			self.control = True;
 		else:
 			self.control = False;
+			
+		if(add_nr_tag):
+			number_of_reads = int(self.qname.split("_")[-1][1:])
+			self.aligned_read.tags = self.aligned_read.tags + [("NR", number_of_reads)];
+			
+			
+	def set_tc(self):
+		'''adds number of T->C conversions as a tag 'TC' to the self.aligned_read'''
+		conversions = get_conversions(self.aligned_read)
+		tc = Counter(conversions)[('T', 'C')]
+		self.aligned_read.tags = self.aligned_read.tags + [("TC", tc)];
+		
+		
+		
+		
+class BackwardWrapper(ArWrapper):		
+	def __init__(self, aligned_read, rname):
+		super(BackwardWrapper, self).__init__(aligned_read, rname, add_nr_tag = False);
 
 
 def demultiplex_read_hits(arwlist, key_function):
