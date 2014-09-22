@@ -11,7 +11,7 @@ class MarkovException(Exception):
 	pass;	
 
 
-class MM(object):
+class Markov_Model(object):
 	def __init__(self, transitions, emissions, order):
 		self.transitions = transitions;
 		self.emissions = emissions;
@@ -53,14 +53,44 @@ class MM(object):
 		seq = weighted_choice_fast(*self.emissions);
 		last = seq;
 		for _ in range(length/self.order):
-			print last
-			print self.transitions[last]
+			#print last
+			#print self.transitions[last]
 			last = weighted_choice_fast(*self.transitions[last])
-			print last
-			print 
+			#print last
+			#print 
 			seq = "".join((seq, last));
-		return seq[:length];	
-			
+		return seq[:length];
+		
+		
+		
+		
+class Meta_Markov_Model(object):
+	def __init__(self, models, order, window):
+		self.models = models;
+		self.order = order;
+		self.window = window;
+		
+		
+	@classmethod
+	def from_sequence(cls, seq, order, window):
+		models = []
+		niter = max(len(seq)/window-1, 0);
+		
+		for i in range(niter):
+			models.append(Markov_Model.from_sequence(seq[i*window:(i+1)*window], order));
+		models.append(Markov_Model.from_sequence(seq[niter*window:], order))
+		
+		return cls(models, order, window);
+		
+		
+	def generate_string(self, length):
+		niter = max(length/self.window-1, 0);
+		last_length = length - niter*self.window;
+		for _ in range(niter):
+			mm = random.choice(self.models);
+			yield mm.generate_string(self.window);
+		mm = random.choice(self.models);
+		yield mm.generate_string(last_length);			
 			
 			
 			
@@ -68,7 +98,7 @@ class MM(object):
 if(__name__ == "__main__"):
 	seq = "ATATATTATATATTATATTATATATATATATATTTATTATTATFF"
 	order = 2;
-	mm = MM.from_sequence(seq, order)
+	mm = Markov_Model.from_sequence(seq, order)
 	print mm.generate_string(15)
 	
 	#for k, d in tr.iteritems():

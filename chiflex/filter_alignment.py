@@ -24,6 +24,8 @@ signal = filter_generator(pysam.Samfile(args.signal), args.features);
 control = filter_generator(pysam.Samfile(args.control), args.features);
 lrg_filter, rule = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=0.1, lookforward=10, ncsupport=0.1, nciter=1)
 
+print lrg_filter, rule
+
 samfile = pysam.Samfile(args.signal)
 filtered = pysam.Samfile(os.path.join(args.output, "%s.filtered.bam" % args.name), "wb", template=samfile)
 for ar in apply_filter(samfile, args.features, lrg_filter):

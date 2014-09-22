@@ -5,7 +5,7 @@ import sys;
 from collections import namedtuple, Counter;
 
 from nrlbio import numerictools;
-from sam_statistics import get_conversions
+from sam_statistics import get_conversions, get_alignment
 
 
 def key_alignment_score(arw):
@@ -22,6 +22,7 @@ class ArWrapper(object):
 		rname str: reference id
 		AS float: alignment score
 		control bool: if True, read comes from decoy
+		conversions list of tuples: 1st element in each tuple is nucleotide/gap (string/None) in reference. 2st element in each tuple is nucleotide/gap (string/None) in query.
 	'''	
 		
 	def __init__(self, aligned_read, rname, add_nr_tag = False):
@@ -29,7 +30,9 @@ class ArWrapper(object):
 		self.qname = aligned_read.qname;
 		self.rname = rname
 		
+		self.conversions = get_conversions(self.aligned_read)
 		self.AS = aligned_read.opt("AS")
+		
 		if(rname.split("_")[0] == "random"):
 			self.control = True;
 		else:
@@ -42,16 +45,58 @@ class ArWrapper(object):
 			
 	def set_tc(self):
 		'''adds number of T->C conversions as a tag 'TC' to the self.aligned_read'''
-		conversions = get_conversions(self.aligned_read)
-		tc = Counter(conversions)[('T', 'C')]
+		tc = Counter(self.conversions)[('T', 'C')]
 		self.aligned_read.tags = self.aligned_read.tags + [("TC", tc)];
 		
 		
 		
 		
 class BackwardWrapper(ArWrapper):		
-	def __init__(self, aligned_read, rname):
+	def __init__(self, aligned_read, rname, add_nr_tag = False):
 		super(BackwardWrapper, self).__init__(aligned_read, rname, add_nr_tag = False);
+		l = aligned_read.qname.split("_")
+		self.qname = "_".join(l[:-1]);
+
+		if(add_nr_tag):
+			number_of_reads = int(self.qname.split("_")[-1][1:])
+			self.aligned_read.tags = self.aligned_read.tags + [("NR", number_of_reads)];	
+			
+		self.tc_pos = int(l[-1].split(":")[-1]);
+		if(self.tc_pos >= 0):
+			
+			if(self.aligned_read.qstart<=self.tc_pos<self.aligned_read.qend):
+				pos = self.tc_pos - self.aligned_read.qstart
+				self.conversions = [];
+				alignment = get_alignment(self.aligned_read);
+				p = 0;
+				
+				for rn, qn in alignment:
+					if(p==pos and rn!='C'):
+						self.conversions.append((rn, "C"))
+					elif(rn!=qn):
+						self.conversions.append((rn, qn))
+					if(qn):
+						p+=1
+						
+				self.aligned_read.tags = self.aligned_read.tags + [("NT", 1)];		
+										
+			else:
+				pass
+			
+			self.aligned_read.seq = "".join((self.aligned_read.seq[:self.tc_pos], "C", self.aligned_read.seq[self.tc_pos+1:]))
+		else:
+			pass;
+			
+		#print self.conversions;	
+		#print self.aligned_read.seq
+		#print
+			
+		
+	
+		#for kv in vars(self.aligned_read).items:
+			#print "%s\t%s" % kv
+		#print 
+		#print
 
 
 def demultiplex_read_hits(arwlist, key_function):

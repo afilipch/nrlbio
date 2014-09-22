@@ -62,7 +62,7 @@ def iterable_of_lists_to_counts_dict(iterable, indices=[]):
 		Returns dictionary: Key: tuple of certain values of attributes(corresponding to indices), Value: number of objects in iterable with values of attributes equal to the ones in Key.
 	'''
 	d = defaultdict(int);
-	
+	#print list(iterable)
 	if(hasattr(iterable, 'next')):	
 		first = iterable.next();
 		length = len(first);		

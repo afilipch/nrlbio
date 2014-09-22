@@ -16,4 +16,4 @@ args = parser.parse_args();
 # open output and input sam/bam files
 samfile = pysam.Samfile(args.path)
 for ar in samfile.fetch(until_eof=True):
-	print "\n".join([ar.qname, ar.seq, "+", ar.qual])
+	print "\n".join(['@'+ar.qname, ar.seq, "+", ar.qual])

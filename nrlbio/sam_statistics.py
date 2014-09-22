@@ -133,13 +133,14 @@ class Stat(object):
 		#self.cut_right = defaultdict(float) 
 		
 
-	def increment_basic(self, ar):
+	def increment_basic(self, ar, conversions=None):
 		self.query_start[ar.qstart] += 1;
 		self.query_end[ar.qend] += 1;
 		self.ascore[ar.opt('AS')] += 1;
 		self.clipped_length_right[ar.rlen - ar.qend] += 1;
 		
-		conversions = get_conversions(ar);
+		if(not conversions):
+			conversions = get_conversions(ar)
 		cn = len(conversions);
 		self.conv_number[cn]+=1;
 		if(cn):

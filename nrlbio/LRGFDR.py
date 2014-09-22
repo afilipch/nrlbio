@@ -428,7 +428,7 @@ class Cluster(object):
 				self.nclusters.append(nc);
 				nc.area.array[:] = 0;
 			else:
-				self.grid.array[origin] = 0;			
+				self.grid.array[ncorigin] = 0;			
 		return True;
 
 
@@ -530,7 +530,7 @@ def generate_clusters(grid, support = 0.01, maxiter = 100,  fdr=0.1, lookforward
 		origin = numpy_extension.key_arg_max(free.array, key=fit_function);
 		#origin also has to meet fdr requirement
 		if(free.array[origin].imag/max(free.array[origin].imag + free.array[origin].real, 1.0) > fdr):
-			return clusters, nclusters;
+			return clusters
 			
 		cluster = Cluster(free, origin, "c%d" % (cid+1));
 		cluster.expand(fit_function, lookforward, fdr);

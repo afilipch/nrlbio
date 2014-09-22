@@ -16,7 +16,14 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path
 parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, help = "path to the output folder");
 parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
+parser.add_argument('-tc', nargs = '?', default = False, const = True, type = str, help = "special mode for backward conversion");
 args = parser.parse_args();
+
+if(args.tc):
+	from nrlbio.samlib import BackwardWrapper  as Wrapper
+else:
+	from nrlbio.samlib import ArWrapper as Wrapper
+
 
 # open output and input sam/bam files
 samfile = pysam.Samfile(args.path)
@@ -26,7 +33,7 @@ sam_nonunique = pysam.Samfile(os.path.join(args.output, "%s.nonunique.bam" % arg
 
 # create statistics for real, control and nonunique mappings
 stat_unique = sam_statistics.Stat(name="Uniquely mapped")
-stat_control = sam_statistics.Stat(name="Mapped to contol reference")
+stat_control = sam_statistics.Stat(name="Mapped to control reference")
 stat_nonunique = sam_statistics.Stat(name="Nonuniquely mapped")
 
 
@@ -37,22 +44,22 @@ current_name = '';
 for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = samlib.ArWrapper(aligned_read, rname, add_nr_tag=True) 
+		arw = Wrapper(aligned_read, rname, add_nr_tag=True) 
 		
 		if(current_name != arw.qname):			
 			if(arwlist):
 				unique, nonunique, control = samlib.demultiplex_read_hits(arwlist, samlib.key_alignment_score)
 				if(unique):
 					sam_unique.write(unique.aligned_read);
-					stat_unique.increment_basic(unique.aligned_read)
+					stat_unique.increment_basic(unique.aligned_read, conversions = unique.conversions)
 					stat_unique.increment_short(unique.aligned_read)
 				elif(control):
 					sam_control.write(control.aligned_read)
-					stat_control.increment_basic(control.aligned_read)
+					stat_control.increment_basic(control.aligned_read, conversions = control.conversions)
 					stat_control.increment_short(control.aligned_read)
 				for nu in nonunique:
 					sam_nonunique.write(nu.aligned_read);
-					stat_nonunique.increment_basic(nu.aligned_read)
+					stat_nonunique.increment_basic(nu.aligned_read, conversions = nu.conversions)
 					stat_nonunique.increment_short(nu.aligned_read)
 			arwlist = [arw];
 			current_name = arw.qname;

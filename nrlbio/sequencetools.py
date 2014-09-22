@@ -1,6 +1,7 @@
 '''basic function to deal with nucleotide sequence'''
 import random;
 import re;
+import sys
 
 def diverge_with_1mm(seq, include = False):
 	'''produces all sequences which are 1nt different from the initial one
@@ -20,11 +21,13 @@ def diverge_with_1mm(seq, include = False):
 			variants.append(match[:mposition] + n + match[mposition+1:]);
 	return variants;	
 	
+	
 def shuffle_string(s):
 	'''shuffles given string'''
 	l = list(s)
 	random.shuffle(l)
 	return ''.join(l)
+	
 	
 def multifind(string, substring, overlap = False):
 	'''finds all occurences of substring in the string
@@ -40,3 +43,22 @@ def multifind(string, substring, overlap = False):
 	else:
 		p = substring
 	return 	[m.start() for m in re.finditer(p, string)]
+	
+	
+def split2chunks(seq, length):
+	""" Yield successive length-sized chunks from seq"""
+	for i in xrange(0, len(seq), length):
+		yield seq[i:i+length]
+		
+		
+def entropy(seq):
+	sys.stderr.write('Is not implemented yet!\n')
+		
+		
+		
+if(__name__ == "__main__"):
+	seq = "ANDREI"
+	length = 5;
+	for chunk in split2chunks(seq, length):
+		print chunk;
+			
