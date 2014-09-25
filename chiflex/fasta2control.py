@@ -42,7 +42,7 @@ if(args.multimodel):
 				
 else:
 	for seq_record in SeqIO.parse(args.path, "fasta"):
-		print "_".join([">" + seq_record.id, "random"]);
+		print ">" + "_".join(["random", seq_record.id]);
 		
 		mm = hmm.Markov_Model.from_sequence(str(seq_record.seq.upper()), args.order)
 		seq = mm.generate_string(len(seq_record.seq));

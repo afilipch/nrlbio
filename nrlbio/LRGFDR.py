@@ -547,6 +547,26 @@ def generate_clusters(grid, support = 0.01, maxiter = 100,  fdr=0.1, lookforward
 			free.array[origin] = 0;		
 
 	return clusters;
+	
+	
+	
+	
+def total_statistics(grid, clusters):
+	signal = 0;
+	for cl in clusters:
+		signal += cl.area.signal - sum([x.area.signal for x in cl.nclusters]);
+	control = 0;
+	for cl in clusters:
+		control += cl.area.control - sum([x.area.control for x in cl.nclusters]);
+		
+	support = signal/(np.sum(grid.array).real+0.01);
+	
+	if(signal):
+		fdr = control/(control+signal);
+	else:
+		fdr = 1;
+		
+	return signal, control, support, fdr	
 
 
 def lrg(signal, control, entry='list', attributes=[], attribute_names=None, support = 0.01, maxiter = 100,  fdr=0.1, lookforward=10, fit_function=ff_balanced, ncsupport=0.1, nciter=0, ncfunction=nc_balanced):
@@ -559,7 +579,11 @@ def lrg(signal, control, entry='list', attributes=[], attribute_names=None, supp
 		lrg_filter = get_filter_index(clusters, attributes)
 	else:
 		lrg_filter = get_filter_attribute(clusters, attributes)
-	return 	lrg_filter, rule
+		
+	signal_total, control_total, support_total, fdr_total = total_statistics(grid, clusters);
+	print "total passed signal: %d\ntotal passed control: %d\nfraction of passed signal: %1.5f\nestimated false discovery rate: %1.5f\n" % (signal_total, control_total, support_total, fdr_total);
+		
+	return 	lrg_filter, rule, signal_total, control_total, support_total, fdr_total  
 		
 	
 

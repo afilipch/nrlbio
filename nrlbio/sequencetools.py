@@ -1,7 +1,9 @@
 '''basic function to deal with nucleotide sequence'''
 import random;
 import re;
-import sys
+import sys;
+from collections import defaultdict;
+from numerictools import dict2entropy
 
 def diverge_with_1mm(seq, include = False):
 	'''produces all sequences which are 1nt different from the initial one
@@ -29,6 +31,15 @@ def shuffle_string(s):
 	return ''.join(l)
 	
 	
+def random_string(length, number):
+	'''Yields randomly generated nucleotide sequences)'''
+	for _ in range(number):
+		l = []
+		for _ in range(length):
+			l.append(random.choice('ACTG'));
+		yield ''.join(l);	
+	
+	
 def multifind(string, substring, overlap = False):
 	'''finds all occurences of substring in the string
 	
@@ -50,15 +61,68 @@ def split2chunks(seq, length):
 	for i in xrange(0, len(seq), length):
 		yield seq[i:i+length]
 		
+
 		
-def entropy(seq):
-	sys.stderr.write('Is not implemented yet!\n')
+def _get_transitions(seq, order):
+	transitions = defaultdict(int)
+	for i in range(len(seq)-2*order+1):
+		transitions[ seq[i:i+order], seq[i+order:i+2*order] ] += 1;
+	return transitions
 		
+def entropy(seq, order=1):
+	'''Calculates Shannon entropy of provided sequence on basis of Markov Model transition probabilities
+	
+		seq str: sequence to calculate entropy of
+		order int: order of underlying Markov Model
+		
+	Returns float: entropy 	of provided sequence
+	'''
+	return dict2entropy(_get_transitions(seq, order))
+	
+	
+def chunk_entropy(seq, length, step = 2, order = 1):	
+	'''Returns minimum Shannon entropy of chunks from provided sequence on basis of Markov Model transition probabilities
+	
+		seq str: sequence to calculate entropy of
+		length int: length of chunk to calculate entropy
+		step int: step for the sliding window to generate pieces
+		order int: order of underlying Markov Model
+		
+	Returns float: entropy 	of provided sequence
+	'''
+	if(len(seq) < length):
+		return 0;
+		
+	min_entropy = dict2entropy(_get_transitions(seq[:length], order=order));	
+	for i in range(step, len(seq)-length+1, step):
+		min_entropy = min(min_entropy, dict2entropy(_get_transitions(seq[i:length+i], order=order)));
+	return	min_entropy
 		
 		
 if(__name__ == "__main__"):
-	seq = "ANDREI"
-	length = 5;
-	for chunk in split2chunks(seq, length):
-		print chunk;
+	rep1 = 'AAAAAAAATAAA'
+	rep2 = 'ATATATATATAT'
+	seq1 = 'CGTCATCAAGCA'
+	sel1 = 'TCACATGACTAGCGTCATCAAGCAGCATGCGTACACAGTCAGTCAACAGAGCAGATATTCAAATCAGCTAGGCACCATGACGCTATATATGGGGGG'
+	print entropy(rep1)
+	print entropy(rep2)
+	print entropy(rep1+rep2)
+	print entropy(seq1)
+	print entropy(sel1)	
+	print chunk_entropy(sel1, 12, step=1)
+	
+	n = 0;
+	for seq in random_string(50, 4000):
+		#print seq
+		me = chunk_entropy(seq, 12, step=1);
+		if(me>1.25):
+			n+=1;
+	print n		
+	
+	
+			
+			
+			
+			
+			
 			

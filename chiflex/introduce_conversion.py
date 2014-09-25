@@ -6,8 +6,8 @@ from nrlbio.generators import generator_fastq;
 
 parser = argparse.ArgumentParser(description='introduces conversion into fastq reads. Generates variants of the same read with conversions introduced at every possible spot');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to fasta file");
-parser.add_argument('--From', nargs = '?', type = str, help = "conversion from");
-parser.add_argument('--To',   nargs = '?', type = str, help = "conversion to");
+parser.add_argument('--From', nargs = '?', required = True, type = str, help = "conversion from");
+parser.add_argument('--To',   nargs = '?', required = True, type = str, help = "conversion to");
 args = parser.parse_args();
 
 def get_variants(seq, From, To):

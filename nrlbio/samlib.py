@@ -129,6 +129,7 @@ def demultiplex_read_hits(arwlist, key_function):
 		
 		
 def get_attributes(ar, attributes):
+	'''Converts aligned_read into list corresponding to the attributes provided. We need to do so, since some of attribute of the aligned_read are not accessible via getattr'''
 	l = []
 	for attr in attributes:
 		if(hasattr(ar, attr)):
@@ -139,12 +140,25 @@ def get_attributes(ar, attributes):
 
 	
 def filter_generator(samfile, attributes):
+	'''Yields list of attributes corresponding to the aligned_reads in samfile provided. Each list will be used as entry in further filtering
+		
+		samfile pysam.Samfile: samfile to generate lists for further filtering
+		attributes list: list of attributes important for filtering
+	'''
 	for aligned_read in samfile.fetch(until_eof=True):
 		if(not aligned_read.is_unmapped):
 			yield get_attributes(aligned_read, attributes);
 	samfile.close()		
 			
 def apply_filter(samfile, attributes, filter_):
+	'''Applies given filter to each entry(aligned) in the samfile
+		
+		samfile pysam.Samfile: samfile to generate lists for further filtering
+		attributes list: list of attributes important for filtering. Important: it must be the same as attributes argument in filter_generator
+		filter_ str: rule to filter list corresponding to each aligned_read
+		
+	Yields pysam.AlignedRead: sam entry passed filter	
+	'''	
 	for aligned_read in samfile.fetch(until_eof=True):
 		if(not aligned_read.is_unmapped):
 			x = get_attributes(aligned_read, attributes)

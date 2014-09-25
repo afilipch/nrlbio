@@ -44,9 +44,10 @@ current_name = '';
 for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = Wrapper(aligned_read, rname, add_nr_tag=True) 
+		arw = Wrapper(aligned_read, rname, add_nr_tag=True)
+		#print arw.qname
 		
-		if(current_name != arw.qname):			
+		if(current_name != arw.qname):
 			if(arwlist):
 				unique, nonunique, control = samlib.demultiplex_read_hits(arwlist, samlib.key_alignment_score)
 				if(unique):
