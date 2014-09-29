@@ -5,7 +5,7 @@ import os;
 
 import pysam;
 
-from nrlbio.samlib import filter_generator, apply_filter
+from nrlbio.samlib import filter_generator, apply_filter, get_attributes_masked
 from nrlbio.LRGFDR import lrg
 
 parser = argparse.ArgumentParser(description='filters mapping results on read features basis');
@@ -20,8 +20,8 @@ args = parser.parse_args();
 
 
 
-signal = filter_generator(pysam.Samfile(args.signal), args.features);
-control = filter_generator(pysam.Samfile(args.control), args.features);
+signal = filter_generator(pysam.Samfile(args.signal), args.features, ga=get_attributes_masked);
+control = filter_generator(pysam.Samfile(args.control), args.features, ga=get_attributes_masked);
 lrg_filter, rule, signal_total, control_total, support_total, fdr_total = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
 
 print lrg_filter
@@ -29,32 +29,16 @@ print rule
 print 
 print signal_total, control_total, support_total, fdr_total
 
-#signal_real, control_real, total_real = 0,0,0
 
 samfile = pysam.Samfile(args.signal);
 filtered = pysam.Samfile(os.path.join(args.output, "%s.filtered.bam" % args.name), "wb", template=samfile)
-for ar in apply_filter(samfile, args.features, lrg_filter):
+for ar in apply_filter(samfile, args.features, lrg_filter, ga=get_attributes_masked):
 	#signal_real += 1;
 	filtered.write(ar)
 samfile.close()	
 
 
 
-#control_samfile = pysam.Samfile(args.control);
-#for ar in apply_filter(control_samfile, args.features, lrg_filter):
-	#control_real += 1;
-	
-	
-#samfile = pysam.Samfile(args.signal);
-#for aligned_read in samfile.fetch(until_eof=True):
-	#if(not aligned_read.is_unmapped):
-		#total_real+=1
-		
-		
-#support_real = signal_real/(total_real+0.1)
-#fdr_real = control_real/(signal_real+control_real+0.1)
-#print 
-#print signal_real, control_real, support_real, fdr_real
 		
 
 	

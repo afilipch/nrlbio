@@ -81,11 +81,13 @@ class BackwardWrapper(ArWrapper):
 				self.aligned_read.tags = self.aligned_read.tags + [("NT", 1)];		
 										
 			else:
-				pass
+				self.qname = ''
 			
 			self.aligned_read.seq = "".join((self.aligned_read.seq[:self.tc_pos], "C", self.aligned_read.seq[self.tc_pos+1:]))
 		else:
 			pass;
+			
+		self.aligned_read.qname = self.qname	
 			
 		#print self.conversions;	
 		#print self.aligned_read.seq
@@ -136,10 +138,25 @@ def get_attributes(ar, attributes):
 			l.append(getattr(ar, attr));
 		else:
 			l.append(ar.opt(attr));
-	return l;		
+	return l;
+	
+	
+def get_attributes_masked(ar, attributes):
+	'''Converts aligned_read into list corresponding to the attributes provided. We need to do so, since some of attribute of the aligned_read are not accessible via getattr'''
+	l = []
+	for attr in attributes:
+		if(hasattr(ar, attr)):
+			if(attr == 'qstart'):
+				l.append(ar.qstart -  ar.seq.rfind('N'))
+			else:	
+				l.append(getattr(ar, attr));
+		else:
+			l.append(ar.opt(attr));
+	return l;
+	
 
 	
-def filter_generator(samfile, attributes):
+def filter_generator(samfile, attributes, ga = get_attributes):
 	'''Yields list of attributes corresponding to the aligned_reads in samfile provided. Each list will be used as entry in further filtering
 		
 		samfile pysam.Samfile: samfile to generate lists for further filtering
@@ -147,21 +164,22 @@ def filter_generator(samfile, attributes):
 	'''
 	for aligned_read in samfile.fetch(until_eof=True):
 		if(not aligned_read.is_unmapped):
-			yield get_attributes(aligned_read, attributes);
+			yield ga(aligned_read, attributes);
 	samfile.close()		
 			
-def apply_filter(samfile, attributes, filter_):
+			
+def apply_filter(samfile, attributes, filter_, ga = get_attributes):
 	'''Applies given filter to each entry(aligned) in the samfile
 		
 		samfile pysam.Samfile: samfile to generate lists for further filtering
 		attributes list: list of attributes important for filtering. Important: it must be the same as attributes argument in filter_generator
 		filter_ str: rule to filter list corresponding to each aligned_read
 		
-	Yields pysam.AlignedRead: sam entry passed filter	
+	Yields pysam.AlignedRead: sam entry passed the filtering	
 	'''	
 	for aligned_read in samfile.fetch(until_eof=True):
 		if(not aligned_read.is_unmapped):
-			x = get_attributes(aligned_read, attributes)
+			x = ga(aligned_read, attributes)
 			if(eval(filter_)):
 				yield aligned_read
 			else:

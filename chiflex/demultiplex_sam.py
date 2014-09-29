@@ -37,35 +37,43 @@ stat_control = sam_statistics.Stat(name="Mapped to control reference")
 stat_nonunique = sam_statistics.Stat(name="Nonuniquely mapped")
 
 
+def _iteration(arwlist):
+	if(arwlist):
+		unique, nonunique, control = samlib.demultiplex_read_hits(arwlist, samlib.key_alignment_score)
+		if(unique):
+			sam_unique.write(unique.aligned_read);
+			stat_unique.increment_basic(unique.aligned_read, conversions = unique.conversions)
+			stat_unique.increment_short(unique.aligned_read)
+		elif(control):
+			sam_control.write(control.aligned_read)
+			stat_control.increment_basic(control.aligned_read, conversions = control.conversions)
+			stat_control.increment_short(control.aligned_read)
+		for nu in nonunique:
+			sam_nonunique.write(nu.aligned_read);
+			stat_nonunique.increment_basic(nu.aligned_read, conversions = nu.conversions)
+			stat_nonunique.increment_short(nu.aligned_read)		
+
+
 #mappings derived from the same read are pulled together. Collapsed into one (or more, in case of non-unique mappings) wrapping read object. 
 #then they are written to a new destination, according to their source: real, or control
 arwlist = [];
 current_name = '';
 for aligned_read in samfile.fetch(until_eof=True):
-	if(not aligned_read.is_unmapped):		
+	if(not aligned_read.is_unmapped):
+		
 		rname = samfile.getrname(aligned_read.tid)
 		arw = Wrapper(aligned_read, rname, add_nr_tag=True)
-		#print arw.qname
 		
-		if(current_name != arw.qname):
-			if(arwlist):
-				unique, nonunique, control = samlib.demultiplex_read_hits(arwlist, samlib.key_alignment_score)
-				if(unique):
-					sam_unique.write(unique.aligned_read);
-					stat_unique.increment_basic(unique.aligned_read, conversions = unique.conversions)
-					stat_unique.increment_short(unique.aligned_read)
-				elif(control):
-					sam_control.write(control.aligned_read)
-					stat_control.increment_basic(control.aligned_read, conversions = control.conversions)
-					stat_control.increment_short(control.aligned_read)
-				for nu in nonunique:
-					sam_nonunique.write(nu.aligned_read);
-					stat_nonunique.increment_basic(nu.aligned_read, conversions = nu.conversions)
-					stat_nonunique.increment_short(nu.aligned_read)
+		if(arw.qname and current_name != arw.qname):
+			_iteration(arwlist)
 			arwlist = [arw];
 			current_name = arw.qname;
-		else:
+			
+		elif(arw.qname):
 			arwlist.append(arw);
+else:
+	_iteration(arwlist);
+			
 			
 # create html reports from statistics			
 stat_unique.tohtml(os.path.join(args.report, "%s.unique.html" % args.name))
