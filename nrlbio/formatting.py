@@ -4,7 +4,7 @@
 import collections;
 
 def feature_dict_fraction(d, top = 0, key_names = None):
-	'''ouputs formatted representation of feature_dict(any dictionary which keys are values of some feature)
+	'''outputs formatted representation of feature_dict(any dictionary which keys are values of some feature)
 	
 	d dict: feature dictionary. Keys: values of certain feature, Values: support of corresponding key. For example {178: 25, 181: 13} may represent that case study where 25 people have height of 178cm and 13 of 181cm
 	
@@ -42,7 +42,7 @@ def feature_dict_fraction(d, top = 0, key_names = None):
 	return s
 
 def feature_dict_total(d, top = 0, key_names = None):
-	'''ouputs formatted representation of feature_dict(any dictionary which keys are values of some feature)
+	'''outputs formatted representation of feature_dict(any dictionary which keys are values of some feature)
 	
 	d dict: feature dictionary. Keys: values of certain feature, Values: support of corresponding key. For example {178: 25, 181: 13} may represent that case study where 25 people have height of 178cm and 13 of 181cm
 	
