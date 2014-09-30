@@ -177,30 +177,65 @@ def iterable_to_dict(iterable, entry, mode, attributes=[]):
 		raise ArgumentException('Wrong arguments were passed to \'iterable_to_dict\'\nentry has to set to \'list\' or \'object\'\nmode has to set to \'list\' or \'count\'\n')
 		
 	
+
 	
+	
+	
+	
+def	cmp_indices(l1, l2, indices):
+	for i in indices:
+		r = cmp(l1[i], l2[i]);
+		if(r):
+			return r;
+	else:
+		return 0;
+		
+		
+def	cmp_attributes(obj1, obj2, attributes):
+	for attr in attributes:
+		r = cmp(getattr(obj1, attr), getattr(obj2, attr));
+		if(r):
+			return r;
+	else:
+		return 0;		
+		
+
+
+
+
+
+
+
+
 #testing section
 if(__name__ == "__main__"):
-	from random import randint
+	#from random import randint
 	
-	class A(object):
-		def __init__(self):
-			self.a = randint(1,10);
-			self.b = randint(1, 5);
-			self.c = bool(randint(0,1));
+	#class A(object):
+		#def __init__(self):
+			#self.a = randint(1,10);
+			#self.b = randint(1, 5);
+			#self.c = bool(randint(0,1));
 		
-	it_objects = (A() for _ in range(1000))
-	it_lists = [(randint(1,4), randint(1,4), randint(1,4)) for _ in range(1000)]
+	#it_objects = (A() for _ in range(1000))
+	#it_lists = [(randint(1,4), randint(1,4), randint(1,4)) for _ in range(1000)]
 	
-	for kv in iterable_of_objects_to_list_dict(it_objects, ['a', 'c']).iteritems():
-		print "%s|\t\t%s\n" % (kv[0], "\t".join([str(vars(x)) for x in kv[1]]));
+	#for kv in iterable_of_objects_to_list_dict(it_objects, ['a', 'c']).iteritems():
+		#print "%s|\t\t%s\n" % (kv[0], "\t".join([str(vars(x)) for x in kv[1]]));
 	
-	for kv in iterable_of_lists_to_list_dict(it_lists, [0, 2]).iteritems():
-		print "%s|\t\t%s\n" % (kv[0], "\t".join([str((x)) for x in kv[1]]));
+	#for kv in iterable_of_lists_to_list_dict(it_lists, [0, 2]).iteritems():
+		#print "%s|\t\t%s\n" % (kv[0], "\t".join([str((x)) for x in kv[1]]));
 		
 	#it_lists.append((1,7));
 	
 	#for kv in iterable_of_lists_to_list_dict(it_lists, [0, 2]).iteritems():
 		#print "%s|\t\t%s\n" % (kv[0], "\t".join([str((x)) for x in kv[1]]));	
+		
+		
+		
+	a = [[1,12,0], [10,3,4], [1,16,0], [10,5,4], [1,5,3]]
+	for e in sorted(a, cmp=lambda x,y: cmp_indices(x,y,[2,0, 1])):
+		print e
 	
 	
 	

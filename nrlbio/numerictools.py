@@ -27,19 +27,64 @@ def maxes(list_, key_function=lambda x: x):
 
 
 def overlap(i1, i2):
-	'''Returns overlap of two intervals
+	'''Returns overlap of two intervals, maybe negative
 	
 		i1 iterable: 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
 		i2 iterable: another 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
 		
-		Returns iterable: Overlap of two intervals. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive). Returns None if there is no interval
+		Returns iterable: Overlap of two intervals. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive).
 	'''
-	l = max(i1[0], i2[0])
-	u = min(i1[1], i2[1])
-	if(u>l):
-		return l, u
+	start = max(i1[0], i2[0])
+	end = min(i1[1], i2[1])
+	return start, end;
+	
+	
+def merge_intervals(intervals, distance=0, assume_sorted=False):
+	'''Yields lists of overlapping intervals
+	
+		intervals iterable: element is 2-element tuple(First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive))
+		distance int: minimum overlap(max gap if negative) required
+		assume_sorted bool: if True, "intervals" argument is treated as sorted(according to start position) iterable
+		
+		Yields list: list of overlapping intervals (2-element tuple. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive))
+	'''
+	if(hasattr(intervals, 'next')):
+		first = intervals.next();
+		l = intervals
+		
+	else:	
+		l = list(intervals)
+		if(not assume_sorted):
+			l.sort(key = lambda x: x[0]);	
+		first = l.pop(0);
+	
+	merged = [first];
+	start, end = first;
+	for i in l:
+		s, e = overlap(i, (start, end))
+		if(e - s >= distance):
+			merged.append(i);
+			end = max(i[1], end)
+		else:
+			yield merged;
+			start, end = i;
+			merged = [i];
+	yield merged		
+		
+		
+def interval_intersection(i1, i2):
+	'''Returns overlap of two intervals, only positive, or None
+		
+		i1 list|tuple: 1st element is the start of the interval(0-based), 2nd element is the end of the interval(exclusive)
+		i2 list|tuple: 1st element is the start of the interval(0-based), 2nd element is the end of the interval(exclusive)
+		
+		Returns tuple|None: overlap of two intervals. 1st element start of the overlap(0-based), 2nd element end of the overlap(exclusive). None if there is no overlap
+	'''	
+	start, end = overlap(i1, i2);
+	if(end>start):
+		return start, end;
 	else:
-		return None;
+		return None;		
 		
 		
 def overlap_hyperrectangles(hr1, hr2):
@@ -52,7 +97,7 @@ def overlap_hyperrectangles(hr1, hr2):
 	'''
 	c = [];
 	for i1, i2 in zip(hr1, hr2):
-		o = overlap(i1, i2);
+		o = interval_intersection(i1, i2);
 		if(o):
 			c.append(list(o));
 		else:
@@ -60,20 +105,7 @@ def overlap_hyperrectangles(hr1, hr2):
 	return c;
 	
 	
-def interval_intersection(i1, i2):
-	'''Returns overlalp of two intervals
-		
-		i1 list|tuple: 1st element is the start of the interval(0-based), 2nd element is the end of the interval(exclusive)
-		i2 list|tuple: 1st element is the start of the interval(0-based), 2nd element is the end of the interval(exclusive)
-		
-		Returns tuple|None: overlap of two intervals. 1st element start of the overlap(0-based), 2nd element end of the overlap(exclusive). None if there is no overlap
-	'''	
-	start = max(i1[0], i2[0]);
-	end = min(i1[1], i2[1]);
-	if(end>start):
-		return start, end;
-	else:
-		return None;
+
 		
 		
 def dict2entropy(d):
@@ -91,5 +123,13 @@ def dict2entropy(d):
 		
 #testing section
 if(__name__ == "__main__"):
-	print overlap([5,8], [4,10])
-	print overlap_hyperrectangles([[5,8], [4,10]],   [[3,513], [6,9]])
+	#print overlap([5,8], [4,10])
+	#print overlap_hyperrectangles([[5,8], [4,10]],   [[3,513], [6,9]])
+	
+	a = [(1,9), (10,12), (11,16), (17,48),  (16,40), (100,125), (30, 35), (90,140), (9, 16), (22, 29), (130, 150)]
+	for m in merge_intervals(a, distance = 1, assume_sorted=False):
+		for i in m:
+			print i;
+		print	
+	
+	
