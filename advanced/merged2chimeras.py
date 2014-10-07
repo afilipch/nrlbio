@@ -8,7 +8,7 @@ from nrlbio.filters_for_sam import *
 from nrlbio.chimera import arlist2chimera
 from nrlbio import chimera
 
-parser = argparse.ArgumentParser(description='applies filter(s) to the given sam records');
+parser = argparse.ArgumentParser(description='produce chimeras from merged and already filtered sam file');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
 #parser.add_argument('-n', '--norc', nargs = '?', required = True, type = str, help = "mapping was done not against genome");
 #parser.add_argument('-f', '--filters', nargs = '+', required = True, type = str, help = "list of filters to apply");

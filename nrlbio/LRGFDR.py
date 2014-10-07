@@ -423,7 +423,7 @@ class Cluster(object):
 			
 			nc.support = nc.area.control/self.area.control+0.01; 
 			#we check for support of negative cluster both on level of parental cluster and parental grid
-			if(nc.support > ncsupport and nc.support*self.support>support):
+			if(nc.support > ncsupport and (nc.area.signal/self.area.signal+0.01)*self.support>support):
 				print nc
 				self.nclusters.append(nc);
 				nc.area.array[:] = 0;

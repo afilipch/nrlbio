@@ -6,8 +6,8 @@ import os;
 import pysam;
 
 from nrlbio import sam_statistics
-from nrlbio.samlib import ArWrapper, demultiplex_read_hits
-
+from nrlbio import samlib
+from nrlbio.samlib import BackwardWrapper, demultiplex_read_hits
 
 
 
@@ -17,6 +17,8 @@ parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, 
 parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
 parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_pos', 'as_pos_entropy'], type = str, help = "score function for hits");
+parser.add_argument('--From', nargs = '?', default = 'C', type = str, help = "backward conversion from");
+parser.add_argument('--To',   nargs = '?', default = 'T', type = str, help = "backward conversion to");
 args = parser.parse_args();
 
 
@@ -25,25 +27,23 @@ def _iteration(arwlist):
 		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score)
 		if(unique):
 			sam_unique.write(unique.aligned_read);
-			stat_unique.increment_basic(unique.aligned_read)
+			stat_unique.increment_basic(unique.aligned_read, conversions = unique.conversions)
 			stat_unique.increment_short(unique.aligned_read)
 		elif(control):
 			sam_control.write(control.aligned_read)
-			stat_control.increment_basic(control.aligned_read)
+			stat_control.increment_basic(control.aligned_read, conversions = control.conversions)
 			stat_control.increment_short(control.aligned_read)
 		for nu in nonunique:
 			sam_nonunique.write(nu.aligned_read);
-			stat_nonunique.increment_basic(nu.aligned_read)
+			stat_nonunique.increment_basic(nu.aligned_read, conversions = nu.conversions)
 			stat_nonunique.increment_short(nu.aligned_read)
 
 
-
+			
 			
 # parse input parameters
 score2function = {'as': 'as_score', 'as_pos': 'as_pos_score', 'as_pos_entropy': 'as_pos_entropy_score'}
 exec("from nrlbio.samlib import %s as key_score" % score2function[args.score]);
-
-
 
 
 # open output and input sam/bam files
@@ -67,14 +67,14 @@ for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):
 		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, add_nr_tag=True)
+		arw = BackwardWrapper(aligned_read, rname, args.From, args.To, add_nr_tag=True)
 		
-		if(current_name != arw.qname):
+		if(arw.qname and current_name != arw.qname):
 			_iteration(arwlist)
 			arwlist = [arw];
 			current_name = arw.qname;
 			
-		else:
+		elif(arw.qname):
 			arwlist.append(arw);
 else:
 	_iteration(arwlist);

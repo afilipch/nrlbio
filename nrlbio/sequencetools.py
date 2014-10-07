@@ -2,8 +2,9 @@
 import random;
 import re;
 import sys;
-from collections import defaultdict;
+from collections import defaultdict, Counter;
 from numerictools import dict2entropy
+from itertools import combinations, product
 
 def diverge_with_1mm(seq, include = False):
 	'''produces all sequences which are 1nt different from the initial one
@@ -21,7 +22,37 @@ def diverge_with_1mm(seq, include = False):
 	for p in range(len(match)):
 		for n in nset - set(match[p]):
 			variants.append(match[:mposition] + n + match[mposition+1:]);
-	return variants;	
+	return variants;
+	
+	
+def generate_mismatched_sequence(seq, number_of_mismatches = 1):
+	'''generates sequences with the exact number of mismatches to the initial one
+	
+		seq str: initial sequence to generate mismatched from
+		number_of_mismatches int: number of mismatches in generated sequence compare to the initial seq
+
+		Yields str: mismatched sequence
+	'''	
+	nucleotides = set("ACTG")
+	
+	for positions in combinations(range(len(seq)), number_of_mismatches):
+		
+		variants = [];
+		for p in positions:
+			locker = set(seq[p]);
+			variants.append(nucleotides-locker)
+			
+		mm_at_positions = product(*variants) 
+		
+		for mm in mm_at_positions:
+			l = list(seq)
+			
+			for i, m in enumerate(mm):
+				l[positions[i]] = m;
+				
+			yield "".join(l)
+
+
 	
 	
 def shuffle_string(s):
@@ -64,9 +95,12 @@ def split2chunks(seq, length):
 
 		
 def _get_transitions(seq, order):
-	transitions = defaultdict(int)
-	for i in range(len(seq)-2*order+1):
-		transitions[ seq[i:i+order], seq[i+order:i+2*order] ] += 1;
+	if(order):
+		transitions = defaultdict(int)
+		for i in range(len(seq)-2*order+1):
+			transitions[ seq[i:i+order], seq[i+order:i+2*order] ] += 1;
+	else: 
+		transitions = Counter(seq);
 	return transitions
 		
 def entropy(seq, order=1):
@@ -100,24 +134,26 @@ def chunk_entropy(seq, length, step = 2, order = 1):
 		
 		
 if(__name__ == "__main__"):
-	rep1 = 'AAAAAAAATAAA'
-	rep2 = 'ATATATATATAT'
-	seq1 = 'CGTCATCAAGCA'
-	sel1 = 'TCACATGACTAGCGTCATCAAGCAGCATGCGTACACAGTCAGTCAACAGAGCAGATATTCAAATCAGCTAGGCACCATGACGCTATATATGGGGGG'
-	print entropy(rep1)
-	print entropy(rep2)
-	print entropy(rep1+rep2)
-	print entropy(seq1)
-	print entropy(sel1)	
-	print chunk_entropy(sel1, 12, step=1)
+	#rep1 = 'AAAAAAAATAAA'
+	#rep2 = 'ATATATATATAT'
+	#seq1 = 'CGTCATCAAGCA'
+	#sel1 = 'TCACATGACTAGCGTCATCAAGCAGCATGCGTACACAGTCAGTCAACAGAGCAGATATTCAAATCAGCTAGGCACCATGACGCTATATATGGGGGG'
+	#print entropy(rep1)
+	#print entropy(rep2)
+	#print entropy(rep1+rep2)
+	#print entropy(seq1)
+	#print entropy(sel1)	
+	#print chunk_entropy(sel1, 12, step=1)
 	
-	n = 0;
-	for seq in random_string(50, 4000):
-		#print seq
-		me = chunk_entropy(seq, 12, step=1);
-		if(me>1.25):
-			n+=1;
-	print n		
+	#n = 0;
+	#for seq in random_string(50, 4000):
+		##print seq
+		#me = chunk_entropy(seq, 12, step=1);
+		#if(me>1.25):
+			#n+=1;
+	#print n
+	for s in generate_mismatched_sequence("AGT", number_of_mismatches = 2):
+		print s;
 	
 	
 			

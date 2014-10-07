@@ -16,12 +16,13 @@ passed, removed = 0, 0;
 
 
 for fastq in generator_fastq(args.path):
-	me = chunk_entropy(fastq.seq, args.length, step = 1, order = 1);
+	s = fastq.seq.replace('N','') 
+	me = chunk_entropy(s, args.length, step = 1, order = 1);
 	if(me>args.min_entropy):
-		print "\n".join([fastq.id, fastq.seq, fastq.sign, fastq.qual])
+		print "\n".join([fastq.id, fastq.seq, fastq.sign, fastq.qual])	
 		passed+=1;
 	else:
 		removed+=1;
-			
-			
+
+
 sys.stderr.write("total reads: %d\npassed reads: %d\nremoved reads: %d\n" % (passed + removed, passed, removed))

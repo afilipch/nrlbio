@@ -13,9 +13,8 @@ parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, 
 parser.add_argument('-c', '--control', nargs = '?', required = True, type = str, help = "path to the sam file originated from decoy");
 parser.add_argument('-f', '--features', nargs = '+', default = ['AS'], type = str, help = "read features to be used for filtering");
 parser.add_argument('--fdr', nargs = '?', default = 0.05, type = float, help = "False Discovery Rate allowed");
-parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, help = "path to the output folder");
 parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
-parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
+parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for filtered sam");
 args = parser.parse_args();
 
 
@@ -32,7 +31,7 @@ print signal_total, control_total, support_total, fdr_total
 #signal_real, control_real, total_real = 0,0,0
 
 samfile = pysam.Samfile(args.signal);
-filtered = pysam.Samfile(os.path.join(args.output, "%s.filtered.bam" % args.name), "wb", template=samfile)
+filtered = pysam.Samfile(args.name, "wb", template=samfile)
 for ar in apply_filter(samfile, args.features, lrg_filter):
 	#signal_real += 1;
 	filtered.write(ar)
