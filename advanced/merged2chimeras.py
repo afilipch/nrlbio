@@ -17,7 +17,7 @@ args = parser.parse_args();
 samfile = pysam.Samfile(args.path)
 
 def _iteration(arlist):
-	chimeras =  arlist2chimera(arlist, samfile, gap = 1, overlap = 4, score_function = chimera._alignment_score)
+	chimeras =  arlist2chimera(arlist, samfile, gap = 1, overlap = 4, score_function = chimera.as_gap_score)
 	if(len(chimeras) == 1):
 		print chimeras[0];	
 

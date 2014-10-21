@@ -13,12 +13,23 @@ from nrlbio.sequencetools import entropy;
 def as_score(arw):
 	return arw.AS;
 	
-def as_pos_score(arw):
+def as_qstart_score(arw):
+	qs = 2-log(arw.aligned_read.qstart+1);
+	return arw.AS*(1+qs)
+	
+def as_qstart_entropy_score(arw):
+	qs = 2-log(arw.aligned_read.qstart+1);
+	e = (entropy(arw.aligned_read.query) - 1.5)
+	if(e<0):
+		e = e*5
+	return arw.AS*(1+qs+e)		
+	
+def as_qstart_pos_score(arw):
 	qs = 2-log(arw.aligned_read.qstart+1);
 	rs = 1-log(arw.aligned_read.pos+1);
 	return arw.AS*(1+qs+rs)
 	
-def as_pos_entropy_score(arw):
+def as_qstart_pos_entropy_score(arw):
 	qs = 2-log(arw.aligned_read.qstart+1);
 	rs = 1-log(arw.aligned_read.pos+1);
 	e = (entropy(arw.aligned_read.query) - 1.5)

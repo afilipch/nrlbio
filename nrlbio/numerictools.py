@@ -16,6 +16,7 @@ def maxes(list_, key_function=lambda x: x):
 	'''
 	if(not list_):
 		return [], None;
+		
 	m, max_list = key_function(list_[0]), []
 	for s in list_:
 		k = key_function(s)
