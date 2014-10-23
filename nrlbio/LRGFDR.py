@@ -424,7 +424,7 @@ class Cluster(object):
 			nc.support = nc.area.control/self.area.control+0.01; 
 			#we check for support of negative cluster both on level of parental cluster and parental grid
 			if(nc.support > ncsupport and (nc.area.signal/self.area.signal+0.01)*self.support>support):
-				print nc
+				sys.stderr.write("%s\n" % nc)
 				self.nclusters.append(nc);
 				nc.area.array[:] = 0;
 			else:
@@ -538,7 +538,7 @@ def generate_clusters(grid, support = 0.01, maxiter = 100,  fdr=0.1, lookforward
 		#test if cluster meet support requirements
 		cluster.support = cluster.area.signal/total_signal
 		if(cluster.support > support):
-			print cluster;
+			sys.stderr.write("%s\n" % cluster);
 			clusters.append(cluster);
 			cluster.get_nclusters(support, ncsupport, nciter, fdr*2, lookforward, ncfunction)
 			cluster.area.array[:] = 0;
@@ -581,9 +581,10 @@ def lrg(signal, control, entry='list', attributes=[], attribute_names=None, supp
 		lrg_filter = get_filter_attribute(clusters, attributes)
 		
 	signal_total, control_total, support_total, fdr_total = total_statistics(grid, clusters);
-	print "total passed signal: %d\ntotal passed control: %d\nfraction of passed signal: %1.5f\nestimated false discovery rate: %1.5f\n" % (signal_total, control_total, support_total, fdr_total);
+	
+	sys.stderr.write("\nfilter applied: %s\n\nrule generated: %s\n\nnumber of instances passed filter: %d\nnumber of control instances passed filter: %d\nfraction of instances passed filter: %1.5f\nestimated FDR: %1.5f\n" % (lrg_filter, rule, signal_total, control_total, support_total, fdr_total))
 		
-	return 	lrg_filter, rule, signal_total, control_total, support_total, fdr_total  
+	return 	lrg_filter, rule
 		
 	
 

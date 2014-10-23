@@ -10,6 +10,10 @@ from nrlbio.sam_statistics import get_conversions, get_alignment
 from nrlbio.sequencetools import entropy;
 
 
+#__________________________________________________________________________________
+#demultiplexing API
+
+#__________________________________________________________________________________
 def as_score(arw):
 	return arw.AS;
 	
@@ -71,7 +75,7 @@ class ArWrapper(object):
 			
 	def set_conv(self, from_, to):
 		'''adds number of given type of conversions as a tag to the self.aligned_read
-		
+		#filtering API		
 			from_ char: conversion from (from 'T' in PAR-CLIP)
 			to char: conversion to (to 'C' in PAR-CLIP)
 		'''
@@ -140,7 +144,7 @@ class BackwardWrapper(ArWrapper):
 				self.aligned_read.seq = "".join((self.aligned_read.seq[:self.conv_pos], self.from_, self.aligned_read.seq[self.conv_pos+1:]))										
 			else:
 				self.qname = ''
-				return None	
+				return None	#filtering API		
 				
 		else:
 			self.conversions = get_conversions(self.aligned_read);
@@ -176,7 +180,9 @@ def demultiplex_read_hits(arwlist, key_function):
 
 		
 		
-		
+#__________________________________________________________________________________
+#filtering API
+#__________________________________________________________________________________
 def get_attributes(ar, attributes):
 	'''Converts aligned_read into list corresponding to the attributes provided. We need to do so, since some of attribute of the aligned_read are not accessible via getattr'''
 	l = []

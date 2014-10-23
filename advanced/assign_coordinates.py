@@ -3,6 +3,9 @@
 import argparse;
 import sys;
 
+parser = argparse.ArgumentParser(description='assigns genomic to the chimeric reads which were mapped to non-genomic reference(transcriptome, 3\'utr, etc.). Takes chimeras from STDIN');
+args = parser.parse_args();
+
 def reassign(a):
 	chrom, strand, start, stop = a[0].split("|")
 	start = int(start)
@@ -23,6 +26,3 @@ for l in sys.stdin:
 	a[6:12] = reassign(a[6:12])
 	print "\t".join(a);
 
-#parser = argparse.ArgumentParser(description='produce chimeras from merged and already filtered sam file');
-#parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to file with chimeras");
-#args = parser.parse_args();

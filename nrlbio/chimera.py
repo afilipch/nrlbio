@@ -11,6 +11,11 @@ class ChimeraException(Exception):
     pass
 
     
+#__________________________________________________________________________________
+#demultiplexing API
+
+#__________________________________________________________________________________    
+    
 def as_score(chimera):
 	'''score function for Chimera based only on alignment score'''
 	return sum(chimera.AS)
@@ -121,3 +126,50 @@ def demultiplex(chimeras):
 		return None, best_real, best_control[0];
 	else:
 		return None, best_real, None
+		
+		
+		
+		
+#__________________________________________________________________________________
+#filtering API
+#__________________________________________________________________________________
+
+def get_attributes(l, indices):
+	'''Converts line in chimera file in a list ready to be passed to filtering'''
+	a = l.strip().split("\t");
+	for i in indices:
+		a[i] = float(a[i]);
+	return a;
+	
+
+	
+def filter_generator(path, indices):
+	'''Yields list of attributes corresponding to the chimera. Each list will be used as entry in further filtering
+		
+		path str:path to the file with chimeras
+		indices list of integers: list of indices important for filtering
+	'''
+	with open(path) as f:
+		for l in f:
+			yield get_attributes(l, indices);	
+			
+			
+def apply_filter(path, indices, filter_):
+	'''Applies given filter to each entry(aligned) in chimeras
+		
+		path str:path to the file with chimeras
+		indices list of integers: list of indices important for filtering
+		filter_ str: rule to filter list corresponding to each chimera
+		
+	Yields str: ready to print representation of chimera
+	'''	
+	with open(path) as f:
+		for l in f:
+			x = get_attributes(l, indices)
+			if(eval(filter_)):
+				yield l
+			else:
+				pass;
+
+
+		

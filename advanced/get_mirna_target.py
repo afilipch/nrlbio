@@ -22,17 +22,24 @@ parser.add_argument('-m', '--mirna', nargs = '?', required = True, type = str, h
 parser.add_argument('-s', '--system', nargs = '?', required = True, choices = ['ce6', 'mm9', 'hg19'], type = str, help = "genome ce6|mm9|hg19");
 args = parser.parse_args();
 
-exec("from sequence_data.systems import %s as gsys" % args.system);
-pat = re.compile('[:)(]')
+def reassign_coordinates(a):
+	chrom, strand, start, stop = a[0].split("|")
+	start = int(start)
+	stop = int(stop)
+	
+	if(strand == '+'):
+		stop = start + int(a[2])
+		start = start + int(a[1])		
+	else:
+		start = stop - int(a[2])
+		stop = stop - int(a[1])
+	
+	return chrom, start, stop, a[3], a[4], strand
+
 
 interactions = BedTool(args.path)
 mirna = SeqIO.to_dict(SeqIO.parse(args.mirna, "fasta"))
-#for k, v in mirna.iteritems():
-	#print k
-	#print v.seq
-	#print
 
-	
 s = 0;	
 n = 0;
 for i in interactions:
@@ -40,18 +47,7 @@ for i in interactions:
 	mirseq = str(mirna[mirid].seq.upper())
 	
 	
-	a = re.split(pat, i[6])
-	start, end = [int(x) for x in a[1].split("-")]
-	chrom = a[0];
-	strand = a[2];
-
-	
-	if(strand == '+'):
-		end = start + int(i[8])
-		start = start + int(i[7])		
-	else:
-		start = end - int(i[8])
-		end  = end - int(i[7])	
+	chrom, start, stop, name, score, strand = reassign_coordinates(i[6:12])
 	
 	tseq = gsys.genome.get_oriented(chrom, start, end, strand).upper()
 	
