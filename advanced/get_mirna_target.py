@@ -22,8 +22,10 @@ parser.add_argument('-m', '--mirna', nargs = '?', required = True, type = str, h
 parser.add_argument('-s', '--system', nargs = '?', required = True, choices = ['ce6', 'mm9', 'hg19'], type = str, help = "genome ce6|mm9|hg19");
 args = parser.parse_args();
 
+exec("from sequence_data.systems import %s as gsys" % args.system);
+
 def reassign_coordinates(a):
-	chrom, strand, start, stop = a[0].split("|")
+	chrom, strand, start, stop = a[0].split("|")[:4]
 	start = int(start)
 	stop = int(stop)
 	
@@ -49,9 +51,9 @@ for i in interactions:
 	
 	chrom, start, stop, name, score, strand = reassign_coordinates(i[6:12])
 	
-	tseq = gsys.genome.get_oriented(chrom, start, end, strand).upper()
+	tseq = gsys.genome.get_oriented(chrom, start, stop, strand).upper()
 	
-	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, end, i[3], i[10], strand, mirid, mirseq, tseq)
+	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i[3], i[10], strand, mirid, mirseq, tseq)
 	
 	if(reverse_complement(mirseq[1:7]) in tseq):
 		s+=1;

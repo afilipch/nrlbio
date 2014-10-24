@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser(description='assigns genomic to the chimeric re
 args = parser.parse_args();
 
 def reassign(a):
-	chrom, strand, start, stop = a[0].split("|")
+	chrom, strand, start, stop = a[0].split("|")[:4]
 	start = int(start)
 	stop = int(stop)
 	
