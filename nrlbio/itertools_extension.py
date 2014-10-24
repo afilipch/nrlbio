@@ -35,16 +35,19 @@ def iterable_of_objects_to_counts_dict(iterable, attributes=[]):
 	'''
 	d = defaultdict(int);	
 	
-	if(hasattr(iterable, 'next')):	
-		first = iterable.next();
-		if(not attributes):
-			attributes += vars(first).keys()			
-		k = tuple([getattr(first, attr) for attr in attributes])
-		d[k]+=1;	
-	else:
-		first = iterable[0];
-		if(not attributes):
-			attributes += vars(first).keys()	
+	try:
+		if(hasattr(iterable, 'next')):	
+			first = iterable.next();
+			if(not attributes):
+				attributes += vars(first).keys()			
+			k = tuple([getattr(first, attr) for attr in attributes])
+			d[k]+=1;	
+		else:
+			first = iterable[0];
+			if(not attributes):
+				attributes += vars(first).keys()
+	except(StopIteration):
+		return d
 	
 	for el in iterable:
 		k = tuple([getattr(el, attr) for attr in attributes])
@@ -62,19 +65,22 @@ def iterable_of_lists_to_counts_dict(iterable, indices=[]):
 		Returns dictionary: Key: tuple of certain values of attributes(corresponding to indices), Value: number of objects in iterable with values of attributes equal to the ones in Key.
 	'''
 	d = defaultdict(int);
-	#print list(iterable)
-	if(hasattr(iterable, 'next')):	
-		first = iterable.next();
-		length = len(first);		
-		if(not indices):
-			indices += range(length)			
-		k = tuple([first[i] for i in indices])
-		d[k]+=1;
-	else:
-		first = iterable[0];
-		length = len(first);		
-		if(not indices):
-			indices += range(length)					
+	
+	try:
+		if(hasattr(iterable, 'next')):	
+			first = iterable.next();
+			length = len(first);		
+			if(not indices):
+				indices += range(length)			
+			k = tuple([first[i] for i in indices])
+			d[k]+=1;
+		else:
+			first = iterable[0];
+			length = len(first);		
+			if(not indices):
+				indices += range(length)
+	except(StopIteration):
+		return d				
 		
 	for el in iterable:
 		if(len(el)!=length):
