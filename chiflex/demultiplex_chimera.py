@@ -15,7 +15,7 @@ from nrlbio.chimera import demultiplex as demultiplex_ch
 parser = argparse.ArgumentParser(description='Assignes to each read if it comes from mapping to real or control reference. Convolutes backward converted reads. Filters out non-unique and not the best hits');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
 parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, help = "path to the output folder");
-parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
+#parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
 parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_qstart', 'as_qstart_entropy', 'as_qstart_pos', 'as_qstart_pos_entropy'], type = str, help = "score function for hits");
 parser.add_argument('-sh', '--score_chimera', nargs = '?', default = 'as', choices = ['as', 'as_gap', 'as_gap_entropy'], type = str, help = "score function for chimeras");
@@ -23,6 +23,14 @@ parser.add_argument('-mg', '--maxgap', nargs = '?', default = 8, type = int, hel
 args = parser.parse_args();
 
 def compare_single_chimera(arw, chimera, maxgap):
+	'''Decides if the source of the read is continuous or not(chimeric)
+	
+		arw samlib.ArWrapper: wrapper for continuous hit
+		chimera samlib.Chimera: wrapper for chimeric hits
+		maxgap int: controls the stringency of gap/overlap requirement for chimeric reads. The bigger maxgap, the weaker requirement.
+		
+	Returns tuple (None, chimera)|(arw|None): returns input arw or chimera depending on their comparison
+	'''
 	chs = as_gap_score(chimera, maxgap=maxgap)
 	sis = arw.AS*(1 + 0.5**min(5, (arw.aligned_read.qstart+1)))
 	if(sis>=chs):
@@ -47,9 +55,9 @@ def _iteration(arwlist):
 		if(unique and unique_chimera):
 			unique, unique_chimera = compare_single_chimera(unique, unique_chimera, args.maxgap)
 		elif(unique and control_chimera):
-			unique, control_chimera = compare_single_chimera(unique, control_chimera, args.maxgap)			
+			unique, control_chimera = compare_single_chimera(unique, control_chimera, args.maxgap)
 		elif(control and unique_chimera):
-			control, unique_chimera = compare_single_chimera(control, unique_chimera, args.maxgap)			
+			control, unique_chimera = compare_single_chimera(control, unique_chimera, args.maxgap)
 		elif(control and control_chimera):
 			control, control_chimera = compare_single_chimera(control, control_chimera, args.maxgap)
 			

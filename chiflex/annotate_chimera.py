@@ -1,7 +1,7 @@
 #! /usr/lib/python
 '''assignes the type(linera/circular splice junctions, intra/inter-molecular interaction) to each chimera/interaction.''' 
 import argparse
-import os;
+import sys;
 
 import pysam;
 
@@ -15,6 +15,7 @@ parser.add_argument('-e', '--exons', nargs = '?', default = "sam", type = str, h
 args = parser.parse_args();
 
 def list2interval(l):
+	#sys.stderr.write("%s\n" % str(l))
 	return Interval(l[0], int(l[1]), int(l[2]), name=l[3], score=l[4], strand=l[5])
 
 def chimera2intervals(path, n):
@@ -100,6 +101,7 @@ def generate_annotated_chimeras(intersection1, intersection2):
 				curright = list2interval(i2[:6])
 				i2 = iter_temp.next()
 			else:
+				#sys.stderr.write("%s\n" % str(curleft))
 				yield annotated_chimera(curleft, curright, left_intersection, right_intersection);
 				curleft = list2interval(i1[:6])
 				curright = list2interval(i2[:6])

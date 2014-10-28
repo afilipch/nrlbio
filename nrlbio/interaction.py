@@ -25,7 +25,7 @@ class Interaction(object):
 		chrom1 = chimeras[0][6]
 		start1 = min([int(x[7]) for x in chimeras])
 		stop1 = min([int(x[8]) for x in chimeras])
-		name1 = "_".join((name, '1'))
+		name1 = name #"_".join((name, '1'))
 		score1 = str(max([float(x[10]) for x in chimeras]))
 		strand1 = chimeras[0][11]
 		interval1 = pybedtools.Interval(chrom1, start1, stop1, name1, score1, strand1) 
@@ -34,7 +34,7 @@ class Interaction(object):
 		chrom2 = chimeras[0][0]
 		start2 = min([int(x[1]) for x in chimeras])
 		stop2 = min([int(x[2]) for x in chimeras])
-		name2 = "_".join((name, '2'))
+		name2 = name #"_".join((name, '2'))
 		score2 = str(max([float(x[4]) for x in chimeras]))
 		strand2 = chimeras[0][5]	
 		interval2 = pybedtools.Interval(chrom2, start2, stop2, name2, score2, strand2) 
@@ -47,7 +47,7 @@ class Interaction(object):
 	def __str__(self):
 		l = [];
 		for i in self.intervals:
-			l.append("%s\t%s\t%s\t%s\t%s\t%s\t" % tuple(i));
+			l.append("%s\t%s\t%s\t%s\t%s\t%s" % tuple(i));
 		return "\t".join(l);	
 	
 	

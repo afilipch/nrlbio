@@ -102,16 +102,19 @@ def iterable_of_objects_to_list_dict(iterable, attributes=[]):
 	'''
 	d = defaultdict(list);
 
-	if(hasattr(iterable, 'next')):	
-		first = iterable.next();
-		if(not attributes):
-			attributes += vars(first).keys()			
-		k = tuple([getattr(first, attr) for attr in attributes])
-		d[k].append(first);	
-	else:
-		first = iterable[0];
-		if(not attributes):
-			attributes += vars(first).keys()	
+	try:
+		if(hasattr(iterable, 'next')):	
+			first = iterable.next();
+			if(not attributes):
+				attributes += vars(first).keys()			
+			k = tuple([getattr(first, attr) for attr in attributes])
+			d[k].append(first);	
+		else:
+			first = iterable[0];
+			if(not attributes):
+				attributes += vars(first).keys()
+	except(StopIteration):
+		return d				
 			
 	for el in iterable:
 		k = tuple([getattr(el, attr) for attr in attributes])
@@ -130,18 +133,21 @@ def iterable_of_lists_to_list_dict(iterable, indices=[]):
 	'''	
 	d = defaultdict(list);
 	
-	if(hasattr(iterable, 'next')):	
-		first = iterable.next();
-		length = len(first);		
-		if(not indices):
-			indices += range(length)			
-		k = tuple([first[i] for i in indices])
-		d[k].append(first);
-	else:
-		first = iterable[0];
-		length = len(first);		
-		if(not indices):
-			indices += range(length)	
+	try:
+		if(hasattr(iterable, 'next')):	
+			first = iterable.next();
+			length = len(first);		
+			if(not indices):
+				indices += range(length)			
+			k = tuple([first[i] for i in indices])
+			d[k].append(first);
+		else:
+			first = iterable[0];
+			length = len(first);		
+			if(not indices):
+				indices += range(length)
+	except(StopIteration):
+		return d				
 		
 	for el in iterable:
 		if(len(el)!=length):
