@@ -2,6 +2,7 @@
 '''Assignes to each read, if it comes from mapping to real or control reference. Convolutes backward converted reads. Filters out non-unique and not the best hits'''
 import argparse
 import os;
+import sys;
 
 import pysam;
 
@@ -22,6 +23,7 @@ parser.add_argument('-sh', '--score_chimera', nargs = '?', default = 'as', choic
 parser.add_argument('-mg', '--maxgap', nargs = '?', default = 8, type = int, help = "maxgap is used to calculate chimera score, the more the maxgap, the less important is gap between hits for chimera evaluation");
 args = parser.parse_args();
 
+
 def compare_single_chimera(arw, chimera, maxgap):
 	'''Decides if the source of the read is continuous or not(chimeric)
 	
@@ -40,6 +42,7 @@ def compare_single_chimera(arw, chimera, maxgap):
 		
 		
 
+counts = [0]*6
 
 def _iteration(arwlist):
 	if(arwlist):
@@ -63,22 +66,30 @@ def _iteration(arwlist):
 			
 		#output single reads	
 		if(unique):
+			counts[0] += 1
 			sam_unique.write(unique.aligned_read);
 		elif(control):
+			counts[1] += 1
 			sam_control.write(control.aligned_read)
-		for nu in nonunique:
-			sam_nonunique.write(nu.aligned_read);
+		if(nonunique):
+			counts[2] += 1
+			for nu in nonunique:
+				sam_nonunique.write(nu.aligned_read);
 			
 		#output chimeras
 		if(unique_chimera):
+			counts[3] += 1
 			for ar in unique_chimera.aligned_reads:
 				sam_unique_chimera.write(ar);
 		elif(control_chimera):
+			counts[4] += 1
 			for ar in control_chimera.aligned_reads:
 				sam_control_chimera.write(ar);
-		for nu in nonunique_chimera:
-			for ar in nu.aligned_reads:
-				sam_nonunique_chimera.write(ar);
+		if(nonunique):
+			counts[5] += 1
+			for nu in nonunique_chimera:
+				for ar in nu.aligned_reads:
+					sam_nonunique_chimera.write(ar);
 
 
 
@@ -125,6 +136,9 @@ for aligned_read in samfile.fetch(until_eof=True):
 			arwlist.append(arw);
 else:
 	_iteration(arwlist);
+	
+	
+sys.stderr.write("number of unique hits: %d\nnumber of control hits: %d\nnumber of nonunique hits: %d\n\nnumber of unique chimeras: %d\nnumber of control chimeras: %d\nnumber of nonunique chimeras: %d\n\n" % tuple(counts));
 			
 
 			
