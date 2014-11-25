@@ -32,7 +32,9 @@ def generate_overlaping_intervals(bed, distance):
 			rname = (i.chrom, i.strand);
 	yield merged
 	
-	
+def construct_gff_interval(chrom, start, stop, feature, score='0', strand='.', source='.', frame='.', attrs={}):
+	attrs_str = "; ".join( [ "%s=%s" % (str(x[0]), str(x[1])) for x in attrs.items() ] )
+	return pybedtools.create_interval_from_list( [chrom, source, feature, str(start), str(stop), score, strand, frame, attrs_str] );
 	
 	
 #testing section
@@ -49,4 +51,12 @@ if(__name__ == "__main__"):
 			print ai[6:]
 			print
 		print
-		print
+		#print
+		
+	#i = construct_gff_interval('chr1', 10, 100, 'gene', strand='+', attrs = {'type': 'exon', 'Gene': 'Sox2'})
+	#b = pybedtools.BedTool([i]);
+	#b.saveas("todel.gff")
+	#a = pybedtools.BedTool("todel.gff");
+	#for i in a:
+		#print i.attrs
+	#print i.file_type

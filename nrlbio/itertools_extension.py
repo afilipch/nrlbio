@@ -209,7 +209,14 @@ def	cmp_attributes(obj1, obj2, attributes):
 		if(r):
 			return r;
 	else:
-		return 0;		
+		return 0;
+		
+		
+	
+	
+def flatten(iterable):
+	return list(itertools.chain.from_iterable(iterable))
+	
 		
 
 
