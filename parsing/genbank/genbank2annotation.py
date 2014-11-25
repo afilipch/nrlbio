@@ -21,7 +21,7 @@ default_miscrna_types = ['TEC', 'snRNA', 'lincRNA', 'unprocessed_pseudogene', 'a
 
 parser = argparse.ArgumentParser(description='converts genbank records into bed file usable for annotation');
 parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "path to genbank records");
-parser.add_argument('-s', '--source', nargs = '?', default = "custom", help = "the name of the annotation source");
+parser.add_argument('-s', '--source', nargs = '?', default = "custom", type = str, help = "the name of the annotation source");
 parser.add_argument('-t', '--rna_types', nargs = '+', default = default_types, choices = choice_types, type = str, help = "output only provided types of RNA. Please change default in case you really need it");
 parser.add_argument('-mt', '--misc_rna_types', nargs = '+', default = default_miscrna_types, choices = choice_miscrna_types, type = str, help = "output only provided types of miscellaneous RNA");
 args = parser.parse_args();

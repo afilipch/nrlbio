@@ -465,8 +465,10 @@ class Negative_cluster(Cluster):
 def get_rule(clusters):
 	if(len(clusters)>1):
 		return '(' + ') or ('.join(cl.to_rule() for cl in clusters) + ')'
-	else:
+	elif(clusters):
 		return clusters[0].to_rule()
+	else:
+		return ""
 
 		
 def get_filter_index(clusters, indices):
@@ -573,6 +575,9 @@ def lrg(signal, control, entry='list', attributes=[], attribute_names=None, supp
 	
 	grid = Grid.from_iterable(signal, control, entry=entry, attributes=attributes, attribute_names=attribute_names);
 	clusters = generate_clusters(grid, support = support, maxiter = maxiter,  fdr=fdr, lookforward=lookforward, fit_function=fit_function, ncsupport=ncsupport, nciter=nciter, ncfunction=ncfunction);
+	
+	if(not clusters):
+		return None, None
 	
 	rule = get_rule(clusters)
 	if(entry == 'list'):
