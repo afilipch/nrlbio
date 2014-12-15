@@ -63,7 +63,7 @@ def shuffle_string(s):
 	
 	
 def random_string(length, number):
-	'''Yields randomly generated nucleotide sequences)'''
+	'''Yields randomly generated nucleotide sequences'''
 	for _ in range(number):
 		l = []
 		for _ in range(length):

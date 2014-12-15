@@ -9,10 +9,12 @@ from pybedtools import BedTool, Interval;
 
 from nrlbio.itertools_extension import flatten
 from nrlbio.pybedtools_extension import construct_gff_interval
+from nrlbio.ncbi import flanking_exons, adjust_name
+
 
 
 choice_types = ['misc_feature', 'STS', 'exon', 'mRNA', 'CDS', 'misc_RNA', 'gene']
-default_types = ['mRNA', 'CDS', 'misc_RNA']
+default_types = ['mRNA', 'CDS', 'misc_RNA', 'regulation']
 
 
 choice_miscrna_types = ['TEC', 'snRNA', 'lincRNA', 'unprocessed_pseudogene', 'antisense', 'retained_intron', 'transcribed_unprocessed_pseudogene', 'sense_intronic', 'processed_transcript', 'rRNA', 'transcribed_processed_pseudogene', 'miRNA', 'misc_RNA', 'snoRNA', 'sense_overlapping', 'processed_pseudogene'];
@@ -28,23 +30,6 @@ args = parser.parse_args();
 
 
 
-def get_exons(exons, start, end, strand):
-		
-	left_exons = [];
-	right_exons = [];
-	
-	for e in exons:
-		if(e.end <= start):
-			left_exons.append(e);
-		elif(e.start < start):
-			left_exons.append(FeatureLocation(e.start, start, strand=strand))
-		
-		if(e.start >= end):
-			right_exons.append(e);
-		elif(e.end > end):
-			right_exons.append(FeatureLocation(end, e.end, strand=strand));
-	
-	return left_exons, right_exons;
 	
 
 def get_introns(exons, start = None, end = None):
@@ -77,7 +62,7 @@ def split_mrna(mrna, cds):
 	else:
 		cds_exons = [cds.location];		
 		
-	left_exons, right_exons = get_exons(exons, cds.location.start, cds.location.end, strand)
+	left_exons, right_exons = flanking_exons(exons, cds.location.start, cds.location.end, strand)
 
 	left_introns = get_introns(left_exons, start = cds.location.start)
 	right_introns = get_introns(right_exons, end = cds.location.end)
@@ -97,6 +82,7 @@ def location2gff(location, chrom, transcript_type, source, gene_id, regulation, 
 		strand = '-'
 	else:
 		strand = '.'
+		
 	return construct_gff_interval(chrom, location.start+1, location.end, transcript_type, strand=strand, source=source, frame='.', attrs={"gene_id": gene_id, 'regulation': regulation, 'transcription': transcription})
 		
 		
@@ -104,22 +90,22 @@ def annotate_mrna(mrna, cds, chrom, source):
 	utr5_exons, utr5_introns, cds_exons, cds_introns, utr3_exons, utr3_introns = split_mrna(mrna, cds);
 
 	for location in cds_exons:
-		print location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'cds', 'exon');
+		sys.stdout.write(str( location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'cds', 'exon')));
 	
 	for location in cds_introns:
-		print location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'cds', 'intron');
+		sys.stdout.write(str( location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'cds', 'intron')));
 		
 	for location in utr5_exons:
-		print location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr5', 'exon');
+		sys.stdout.write(str( location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr5', 'exon')));
 	
 	for location in utr5_introns:
-		print location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr5', 'intron');
+		sys.stdout.write(str( location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr5', 'intron')));
 		
 	for location in utr3_exons:
-		print location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr3', 'exon');
+		sys.stdout.write(str( location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr3', 'exon')));
 	
 	for location in utr3_introns:
-		print location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr3', 'intron');
+		sys.stdout.write(str( location2gff(location, chrom, 'mRNA', source, mrna.qualifiers['gene'][0], 'utr3', 'intron')));
 		
 		
 def annotate_noncoding(feature, chrom, source):
@@ -132,29 +118,44 @@ def annotate_noncoding(feature, chrom, source):
 	introns = get_introns(exons);
 	
 	for location in exons:
-		print location2gff(location, chrom, feature.type, source, feature.qualifiers['gene'][0], feature.qualifiers['note'][0], 'exon');
+		sys.stdout.write(str( location2gff(location, chrom, feature.type, source, feature.qualifiers['gene'][0], feature.qualifiers['note'][0], 'exon')));
 	
 	for location in introns:
-		print location2gff(location, chrom, feature.type, source, feature.qualifiers['gene'][0], feature.qualifiers['note'][0], 'intron');
+		sys.stdout.write(str( location2gff(location, chrom, feature.type, source, feature.qualifiers['gene'][0], feature.qualifiers['note'][0], 'intron')));
+		
+		
+def annotate_regulation(feature, chrom, source):
+	
+	sys.stdout.write(str( location2gff(feature.location, chrom, feature.type, source, feature.qualifiers['regulation_id'][0], feature.qualifiers['note'][0], 'None')));
+	
+
+				
 		
 	
 	
 def fetch_annotation(seq_record):
+	chrom = adjust_name(seq_record.name);	
+	
 	for feature in seq_record.features:
 		
 		if(feature.type == "mRNA"):
 			mrna = feature;
 		elif(feature.type == "CDS"):
-			annotate_mrna(mrna, feature, seq_record.name, args.source)
+			annotate_mrna(mrna, feature, chrom, args.source)
+				
 			
 		elif(feature.type in args.rna_types):
 			if(feature.type == "misc_RNA"):
 				if(feature.qualifiers["note"][0] in args.misc_rna_types):
-					annotate_noncoding(feature, seq_record.name, args.source)
+					annotate_noncoding(feature, chrom, args.source)
 				else:	
 					pass;
+			
+			if(feature.type == 'regulation'):
+				annotate_regulation(feature, chrom, args.source)
+			
 			else:
-				annotate_noncoding(feature, seq_record.name, args.source)
+				annotate_noncoding(feature, chrom, args.source)
 
 
 

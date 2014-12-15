@@ -29,10 +29,12 @@ lrg_filter, rule = lrg(signal, control, entry='list', attribute_names=args.featu
 
 samfile = pysam.Samfile(args.signal);
 filtered = pysam.Samfile(args.name, "wb", template=samfile)
+
 if(not rule):
 	samfile.close()
 	filtered.close()
 	sys.exit("Nothing passed the filtering\n")
+	
 for ar in apply_filter(samfile, args.features, lrg_filter):
 	filtered.write(ar)
 samfile.close()	

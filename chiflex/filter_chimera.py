@@ -28,6 +28,10 @@ signal = filter_generator(args.signal, indices);
 control = filter_generator(args.control, indices);
 lrg_filter, rule = lrg(signal, control, entry='list', attributes = indices, attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
 
+if(not rule):
+	samfile.close()
+	filtered.close()
+	sys.exit("Nothing passed the filtering\n")
 
 for l in apply_filter(args.signal, indices, lrg_filter):
 	sys.stdout.write(l);
