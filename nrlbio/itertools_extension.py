@@ -6,6 +6,8 @@ import os
 import itertools
 from collections import defaultdict
 
+import numpy
+
 class LengthException(Exception):
 	pass;
 	
@@ -216,6 +218,12 @@ def	cmp_attributes(obj1, obj2, attributes):
 	
 def flatten(iterable):
 	return list(itertools.chain.from_iterable(iterable))
+	
+	
+	
+	
+def median(lst):
+	return numpy.median(numpy.array(lst))
 	
 		
 

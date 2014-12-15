@@ -21,20 +21,30 @@ args = parser.parse_args();
 
 signal = filter_generator(pysam.Samfile(args.signal), args.features, ga=get_attributes_masked);
 control = filter_generator(pysam.Samfile(args.control), args.features, ga=get_attributes_masked);
-lrg_filter, rule, signal_total, control_total, support_total, fdr_total = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
+lrg_filter, rule = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
 
-print lrg_filter
-print rule
-print 
-print signal_total, control_total, support_total, fdr_total
 
 
 samfile = pysam.Samfile(args.signal);
 filtered = pysam.Samfile(args.name, "wb", template=samfile)
+
+if(not rule):
+	samfile.close()
+	filtered.close()
+	sys.exit("Nothing passed the filtering\n")
+
 for ar in apply_filter(samfile, args.features, lrg_filter, ga=get_attributes_masked):
-	#signal_real += 1;
 	filtered.write(ar)
 samfile.close()	
+
+
+
+
+
+
+
+
+
 
 
 
