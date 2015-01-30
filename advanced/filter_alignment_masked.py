@@ -2,6 +2,7 @@
 '''filters mapping results on read features basis'''
 import argparse
 import os;
+import sys;
 
 import pysam;
 
