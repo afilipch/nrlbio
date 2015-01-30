@@ -10,11 +10,11 @@ from Bio.Alphabet import IUPAC
 
 
 parser = argparse.ArgumentParser(description='script converts qseq files and sorts them according to TrueSeq barcode present in accompanying files');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the folder with qseq files");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, default = os.getcwd(), help = "path to the folder with qseq files");
 parser.add_argument('-l', '--lane', nargs = '?', required = True, type = int, help = "number of lane");
 parser.add_argument('-p', '--pair', nargs = '?', default = 1, type = int, help = "number of pair. Provide in case of paired-end sequencing");
 parser.add_argument('-b', '--barcodes', nargs = '?', default = False, type = str, help = "path to the barcodes fasta file. Id of each entry should represent the name of experiment, sequence - barcode sequnce");
-parser.add_argument('-o', '--output', nargs = '?', default = False, type = str, help = "path to the barcodes fasta file. Id of each entry should represent the name of experiment, sequence - barcode sequnce");
+parser.add_argument('-o', '--output', nargs = '?', default = "", type = str, help = "path to the folder with results");
 parser.add_argument('-u', '--remove_uncalled', nargs = '?', default = False, const = True, type = bool, help = "if set, all reads with uncalled bases will be removed");
 parser.add_argument('-gz', '--gzip', nargs = '?', default = False, const = True, type = bool, help = "if set, ouputs gz files");
 ###optional arguments to be compatible with previous version. One is not encouraged to use them
@@ -115,8 +115,9 @@ barcode_length = len(barcodes.keys()[0])
 #create statistic object	
 stat = Stat(barcodes);	
 #compilling all qseq sequence files(trueseq_seq_files) with 	corresponding qseq barcode files (trueseq_barcode_files)
-trueseq_seq_files = sorted(glob.glob(('%ss_%d_%d_*qseq.txt' % (args.path, args.lane, args.pair))))
-trueseq_barcode_files = sorted(glob.glob(('%ss_%d_%d_*qseq.txt' % (args.path, args.lane, 2))))
+path = os.path.join(os.path.abspath(args.path), '')
+trueseq_seq_files = sorted(glob.glob(('%ss_%d_%d_*qseq.txt' % (path, args.lane, args.pair))))
+trueseq_barcode_files = sorted(glob.glob(('%ss_%d_%d_*qseq.txt' % (path, args.lane, 2))))
 #open all output files:
 of = {};
 if(args.gzip):

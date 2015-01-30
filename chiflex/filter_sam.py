@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='applies filter(s) to the given sam
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
 parser.add_argument('-o', '--output', nargs = '?', required = True, type = str, help = "path to output filtered sam file");
 parser.add_argument('-f', '--filters', nargs = '+', required = True, choices=['repetitive', 'chimera_left', 'contain_repetitive'], type = str, help = "list of filters to apply");
-parser.add_argument('-a', '--arguments', nargs = '+', required = False, type = str, help = "key arguments for filters in format \'min_entropy=1.5,length=18 minright=15\'| None if no arguments provided for the filter. arguments have to be provided corrsponding to the order of filters");
+parser.add_argument('-a', '--arguments', nargs = '+', required = False, type = str, help = "key arguments for filters in format \'min_entropy=1.5,length=18 minright=15\'| None if no arguments provided for the filter. arguments have to be provided corresponding to the order of filters");
 args = parser.parse_args();
 
 #some parsing of agrs.arguments to make them ready to paste into eval statement
@@ -27,7 +27,12 @@ if(args.arguments):
 else:
 	arguments = ['']*len(args.filters);
 	
-#print arguments	
+	
+
+
+
+
+#main part
 
 samfile = pysam.Samfile(args.path)
 filtered = pysam.Samfile(args.output, "wb", template=samfile)
@@ -45,6 +50,6 @@ for aligned_read in samfile.fetch(until_eof=True):
 			passed +=1
 			
 			
-sys.stderr.write("total reads: %d\npassed reads: %d\nremoved reads: %d\n" % (passed + removed, passed, removed));			
+sys.stderr.write("total hits: %d\npassed hits: %d\nremoved hits: %d\n" % (passed + removed, passed, removed));			
 			
 	

@@ -5,7 +5,7 @@ import sys;
 
 import pysam;
 
-from nrlbio.chimera import filter_generator, apply_filter
+from nrlbio.chimera import filter_generator, filter_generator_doublebed, apply_filter, apply_filter_doublebed
 from nrlbio.LRGFDR import lrg
 
 parser = argparse.ArgumentParser(description='filters mapping results on read features basis');
@@ -24,22 +24,20 @@ for f in args.features:
 
 
 
-signal = filter_generator(args.signal, indices);
-control = filter_generator(args.control, indices);
-lrg_filter, rule = lrg(signal, control, entry='list', attributes = indices, attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
+signal = filter_generator_doublebed(args.signal, indices);
+control = filter_generator_doublebed(args.control, indices);
+lrg_filter, rule = lrg(signal, control, entry='list', attributes = indices, attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=2)
 
 if(not rule):
 	samfile.close()
 	filtered.close()
 	sys.exit("Nothing passed the filtering\n")
 
-for l in apply_filter(args.signal, indices, lrg_filter):
-	sys.stdout.write(l);
+for l in apply_filter_doublebed(args.signal, indices, lrg_filter):
+	#sys.stdout.write(l);
+	print l
 
 
 
 
 
-		
-
-	

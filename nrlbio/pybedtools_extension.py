@@ -1,6 +1,7 @@
 # /usr/bin/python
 '''extends functionality of pybedtools'''
 import sys
+from collections import defaultdict
 
 import pybedtools
 
@@ -18,7 +19,7 @@ def generate_overlaping_intervals(bed, distance):
 	for i in bed[1:]:
 		if(rname == (i.chrom, i.strand)):
 			s, e = overlap((i.start, i.stop), (start, end))
-			if(e - s >= distance):
+			if(e - s >= -1*distance):
 				merged.append(i);
 				end = max(i.stop, end)
 			else:
@@ -31,6 +32,20 @@ def generate_overlaping_intervals(bed, distance):
 			merged = [i];
 			rname = (i.chrom, i.strand);
 	yield merged
+	
+	
+def doublebed2dict(bed):
+	'''Creates dictionary from doublebed file. keys - ids, values: list of interacting regions
+	
+		bed pybedtools.BedTool: genomic intervals.
+		
+		Returns dict: keys - interation ids, values: list of interacting regions
+	'''
+	d = defaultdict(list)
+	for i in bed:
+		d[i.name].append(i);
+	return d;	
+	
 	
 def construct_gff_interval(chrom, start, stop, feature, score='0', strand='.', source='.', frame='.', attrs={}):
 	attrs_str = "; ".join( [ "%s=%s" % (str(x[0]), str(x[1])) for x in attrs.items() ] )

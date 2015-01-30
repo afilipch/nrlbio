@@ -177,6 +177,20 @@ def demultiplex_read_hits(arwlist, key_function):
 		return None, best_real, best_control[0];
 	else:
 		return None, best_real, None
+		
+		
+def remove_duplicates(arwlist, key_function, minscore=0):
+    
+    real = filter(lambda x: not x.control, arwlist);
+    control = filter(lambda x: x.control, arwlist);
+    best_real, max_real = numerictools.maxes(real, key_function)
+    best_control, max_control = numerictools.maxes(control, key_function)
+    
+    if(max_real>max_control and len(best_real)>1 and best_real[0].AS >= minscore):
+        if(len(set([x.aligned_read.query for x in best_real]))==1):
+            return best_real[0], [(x.rname, x.aligned_read.pos, x.aligned_read.aend, x.aligned_read.is_reverse) for x in best_real]
+    else:
+        return None		
 
 		
 		

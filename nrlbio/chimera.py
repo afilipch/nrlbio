@@ -4,6 +4,7 @@ import sys
 from copy import copy
 from itertools import combinations;
 
+
 from nrlbio import numerictools
 
 
@@ -68,13 +69,23 @@ class Chimera(object):
 		for a in self.aligned_reads:
 			l.append("\t%d\t%d\t%s" % (a.qstart, a.qend, a.query[-1]))
 		
-		return "".join(l);
+		return "".join(l);	
 		
 		
 	def __cmp__(self, other):
 		return  cmp(self.score, other.score)
 		
 		
+	def doublebed(self):
+		'''Converts chimera in two bed entries with the same identifiers'''
+		l = [];
+		gen_info = "%1.5f\t%d" % (self.score, self.gap);
+
+			
+		for a, rname in zip(self.aligned_reads, self.rnames):
+			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (rname, a.pos, a.aend, a.qname, a.opt('AS'), '+', a.qstart, a.qend, a.query[-1], gen_info));
+			
+		return "\n".join(l)
 		
 		
 def arlist2chimera(arlist, samfile, gap = 1, overlap = 4, score_function = as_score):
@@ -96,7 +107,8 @@ def arlist2chimera(arlist, samfile, gap = 1, overlap = 4, score_function = as_sc
 		elif(-overlap <= a1.qstart - a2.qend <= gap):
 			chimeras.append(Chimera([a2, a1], samfile, score_function))
 			
-	return chimeras;	
+	return chimeras;
+	
 
 
 
@@ -104,7 +116,7 @@ def demultiplex(chimeras):
 	'''Demultiplex hits derived from the same read (choose the best ones on basis of key_function). Assignes if the read comes from decoy or nonunique.
 	
 		arwlist list: ArWrappers of the aligned reads(hits) derived from the same reads
-		key_function function: method selects only the best hits on basis of key_function 
+		key_function function: only the best hits are selected on basis of key_function 
 		
 		Returns tuple: 3-element tuple
 			1st ArWrapper|None: the best uniquely aligned read, if the best alignment is nonunique originated from decoy
@@ -134,9 +146,8 @@ def demultiplex(chimeras):
 #filtering API
 #__________________________________________________________________________________
 
-def get_attributes(l, indices):
+def get_attributes(a, indices):
 	'''Converts line in chimera file in a list ready to be passed to filtering'''
-	a = l.strip().split("\t");
 	for i in indices:
 		a[i] = float(a[i]);
 	return a;
@@ -151,7 +162,26 @@ def filter_generator(path, indices):
 	'''
 	with open(path) as f:
 		for l in f:
-			yield get_attributes(l, indices);	
+			a = l.strip().split("\t");
+			yield get_attributes(a, indices);
+			
+			
+def filter_generator_doublebed(path, indices):
+	'''USE FOR DOUBLEBED FORMAT. Yields list of attributes corresponding to the chimera. Each list will be used as entry in further filtering
+		
+		path str:path to the file with chimeras
+		indices list of integers: list of indices important for filtering
+	'''
+	i = 1;
+	with open(path) as f:
+		for l in f:
+			if(i % 2):
+				a1 = l.strip().split("\t");
+			else:
+				a2 = l.strip().split("\t");
+				a = a1[0:6] + a2[0:6] + a1[6:9] + a2[6:]
+				yield get_attributes(a, indices);	
+			i+=1	
 			
 			
 def apply_filter(path, indices, filter_):
@@ -165,11 +195,35 @@ def apply_filter(path, indices, filter_):
 	'''	
 	with open(path) as f:
 		for l in f:
-			x = get_attributes(l, indices)
+			a = l.strip().split("\t");
+			x = get_attributes(a, indices)
 			if(eval(filter_)):
-				yield l
+				yield l;
 			else:
 				pass;
+				
 
-
+def apply_filter_doublebed(path, indices, filter_):
+	'''USE FOR DOUBLEBED FORMAT. Applies given filter to each entry(aligned) in chimeras
 		
+		path str:path to the file with chimeras
+		indices list of integers: list of indices important for filtering
+		filter_ str: rule to filter list corresponding to each chimera
+		
+	Yields str: ready to print representation of chimera
+	'''	
+	for x in filter_generator_doublebed(path, indices):
+			if(eval(filter_)):
+				s1 = "\t".join([str(e) for e in x[0:6] + x[12:15] + x[18:]]);
+				s2 = "\t".join([str(e) for e in x[6:12] + x[15:]]);
+				yield "\n".join((s1, s2));
+			else:
+				pass;		
+
+
+
+				
+				
+#testing section
+if(__name__ == "__main__"):
+	pass

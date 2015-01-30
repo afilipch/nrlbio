@@ -10,8 +10,6 @@ from nrlbio import chimera
 
 parser = argparse.ArgumentParser(description='produce chimeras from merged and already filtered sam file');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
-#parser.add_argument('-n', '--norc', nargs = '?', required = True, type = str, help = "mapping was done not against genome");
-#parser.add_argument('-f', '--filters', nargs = '+', required = True, type = str, help = "list of filters to apply");
 args = parser.parse_args();
 
 samfile = pysam.Samfile(args.path)
@@ -19,7 +17,7 @@ samfile = pysam.Samfile(args.path)
 def _iteration(arlist):
 	chimeras =  arlist2chimera(arlist, samfile, gap = 1, overlap = 4, score_function = chimera.as_gap_score)
 	if(len(chimeras) == 1):
-		print chimeras[0];	
+		print chimeras[0].doublebed();	
 
 
 arlist = [];

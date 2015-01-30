@@ -18,7 +18,7 @@ default_types = ['mRNA', 'CDS', 'misc_RNA', 'regulation']
 
 
 choice_miscrna_types = ['TEC', 'snRNA', 'lincRNA', 'unprocessed_pseudogene', 'antisense', 'retained_intron', 'transcribed_unprocessed_pseudogene', 'sense_intronic', 'processed_transcript', 'rRNA', 'transcribed_processed_pseudogene', 'miRNA', 'misc_RNA', 'snoRNA', 'sense_overlapping', 'processed_pseudogene'];
-default_miscrna_types = ['TEC', 'snRNA', 'lincRNA', 'unprocessed_pseudogene', 'antisense', 'transcribed_unprocessed_pseudogene', 'sense_intronic', 'processed_transcript', 'rRNA', 'transcribed_processed_pseudogene', 'miRNA', 'misc_RNA', 'snoRNA', 'sense_overlapping', 'processed_pseudogene'];
+default_miscrna_types = ['TEC', 'snRNA', 'lincRNA', 'unprocessed_pseudogene', 'transcribed_unprocessed_pseudogene', 'processed_transcript', 'rRNA', 'transcribed_processed_pseudogene', 'miRNA', 'misc_RNA', 'snoRNA', 'processed_pseudogene'];
 
 
 parser = argparse.ArgumentParser(description='converts genbank records into bed file usable for annotation');

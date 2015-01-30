@@ -72,7 +72,7 @@ class Grid(object):
 		if(len(ndims) == 1):
 			ndim = ndims.pop();
 		else:
-			raise DimensionException('all keys in proveded dictionary have to be of equal length\n')
+			raise DimensionException('all keys in provided dictionary have to be of equal length\n')
 		
 		#fill encoding_table
 		encoding_table = list();

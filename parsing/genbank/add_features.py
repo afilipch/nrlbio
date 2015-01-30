@@ -9,13 +9,15 @@ from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio import SeqIO
 from pybedtools import BedTool, Interval;
 
+from nrlbio.ncbi import adjust_name
+
 
 
 parser = argparse.ArgumentParser(description='converts genbank records into bed file usable for annotation');
 parser.add_argument('-r', '--record', nargs = '?', type = str, help = "path to genbank record");
 parser.add_argument('-f', '--features', nargs = '?', type = str, help = "path to the gff/bed file with features");
 parser.add_argument('-o', '--output', nargs = '?', type = str, help = "path to the new genbank record with added features");
-parser.add_argument('-ca', '--chr_adjustment', nargs = '?', default = '', type = str, help = "adds string to the name of chromosome in genbank file to find corresponding features in gff");
+#parser.add_argument('-ca', '--chr_adjustment', nargs = '?', default = '', type = str, help = "adds string to the name of chromosome in genbank file to find corresponding features in gff");
 args = parser.parse_args();
 
 sd = {'+': 1, '-': -1, '.': None};
@@ -28,7 +30,7 @@ def gff2feature(gff):
 
 def add2seqrecord(gff_dict, genbank_file):
 	for seq_record in SeqIO.parse(genbank_file, "genbank"):
-		chrom = "".join([args.chr_adjustment, seq_record.name]);
+		chrom = adjust_name(seq_record.name);
 		for gff in gff_dict[chrom]:
 			seq_record.features.append(gff2feature(gff));
 		yield seq_record

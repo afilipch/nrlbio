@@ -18,15 +18,31 @@ parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, he
 args = parser.parse_args();
 
 
+ss = pysam.Samfile(args.signal)
+sc = pysam.Samfile(args.control)
+filtered = pysam.Samfile(args.name, "wb", template=ss)
 
-signal = filter_generator(pysam.Samfile(args.signal), args.features, ga=get_attributes_masked);
-control = filter_generator(pysam.Samfile(args.control), args.features, ga=get_attributes_masked);
+
+if(not ss.mapped):
+	sys.exit("Error: bam/sam signal file is empty\n")
+if(not sc.mapped):
+	sys.stderr.write("Warning: bam/sam signal file is empty\nAll entries of signal file will pass the filter\n");
+	for ar in ss:
+		filtered.write(ar)
+	sys.exit();	
+	
+
+signal = filter_generator(ss, args.features, ga=get_attributes_masked);
+control = filter_generator(sc, args.features, ga=get_attributes_masked);
 lrg_filter, rule = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
+
+ss.close();
+sc.close();
 
 
 
 samfile = pysam.Samfile(args.signal);
-filtered = pysam.Samfile(args.name, "wb", template=samfile)
+
 
 if(not rule):
 	samfile.close()
