@@ -23,9 +23,15 @@ sc = pysam.Samfile(args.control)
 filtered = pysam.Samfile(args.name, "wb", template=ss)
 
 
-if(not ss.mapped):
+try: 
+	ss.next()
+	ss.reset()
+except:	
 	sys.exit("Error: bam/sam signal file is empty\n")
-if(not sc.mapped):
+try: 
+	sc.next()
+	sc.reset()
+except:	
 	sys.stderr.write("Warning: bam/sam signal file is empty\nAll entries of signal file will pass the filter\n");
 	for ar in ss:
 		filtered.write(ar)
