@@ -82,8 +82,8 @@ class Chimera(object):
 		gen_info = "%1.5f\t%d" % (self.score, self.gap);
 
 			
-		for a, rname in zip(self.aligned_reads, self.rnames):
-			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (rname, a.pos, a.aend, a.qname, a.opt('AS'), '+', a.qstart, a.qend, a.query[-1], gen_info));
+		for c, (a, rname) in enumerate(zip(self.aligned_reads, self.rnames)):
+			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (rname, a.pos, a.aend, "|".join((a.qname, str(c))), a.opt('AS'), '+', a.qstart, a.qend, a.query[-1], gen_info));
 			
 		return "\n".join(l)
 		

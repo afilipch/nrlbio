@@ -34,7 +34,7 @@ def intervals2interaction(intervals, distance, number):
 		sys.stderr.write("Warning: interacting regions may be further split or merged")
 		for i in intervals:
 			sys.stderr.write(str(i))
-		print "_"*140		
+		sys.stderr.write("_"*140	+ "\n")	
 			
 	
 
@@ -47,13 +47,16 @@ interaction2name = defaultdict(list);
 
 for c, i in enumerate(bed.merge(s=True, nms=True, d=args.distance)):
 	 for name in i.name.split(";"):
-		 name2interaction[name].append(c);
+		 n = name.split("|")[0]
+		 name2interaction[n].append(c);
 		 
 for k, v in	name2interaction.iteritems():
 	key = tuple(sorted(v));
 	interaction2name[key].append(k)
 		 
-		
+number_chimeras = len(name2intervals);
+number_interactions = 0
+number_self_intersection = 0;
 		
 for number, (k, v) in enumerate(interaction2name.items()):
 	if(k[0]!=k[1]):
@@ -61,6 +64,12 @@ for number, (k, v) in enumerate(interaction2name.items()):
 		for name in v:
 			for i in name2intervals[name]:
 				intervals.append(i)
-		intervals2interaction(intervals, args.distance, number+1)
+		intervals2interaction(intervals, args.distance, number+1);
+		number_interactions += 1;
+	else:
+		number_self_intersection += 1;
+		
+		
+sys.stderr.write("number of chimeras\t%d\ninteractions generated\t%d\nself interacting removed\t%d\n" % (number_chimeras, number_interactions, number_self_intersection))		
 	
 

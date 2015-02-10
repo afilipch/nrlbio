@@ -34,7 +34,6 @@ if(not rule):
 	sys.exit("Nothing passed the filtering\n")
 
 for l in apply_filter_doublebed(args.signal, indices, lrg_filter):
-	#sys.stdout.write(l);
 	print l
 
 

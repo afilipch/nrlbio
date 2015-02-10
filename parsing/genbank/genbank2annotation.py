@@ -83,7 +83,7 @@ def location2gff(location, chrom, transcript_type, source, gene_id, regulation, 
 	else:
 		strand = '.'
 		
-	return construct_gff_interval(chrom, location.start+1, location.end, transcript_type, strand=strand, source=source, frame='.', attrs={"gene_id": gene_id, 'regulation': regulation, 'transcription': transcription})
+	return construct_gff_interval(chrom, location.start+1, location.end, transcript_type, strand=strand, source=source, frame='.', attrs=(("gene_id", gene_id), ('regulation', regulation), ('transcription', transcription)))
 		
 		
 def annotate_mrna(mrna, cds, chrom, source):

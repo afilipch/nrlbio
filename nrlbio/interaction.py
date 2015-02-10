@@ -47,19 +47,19 @@ class Interaction(object):
 	@classmethod
 	def from_intervals(cls, name, interacting_intervals):
 		r = [];
-		for intervals in interacting_intervals:
+		for c, intervals in enumerate(interacting_intervals):
 			chrom = intervals[0].chrom
 			start = min([int(x.start) for x in intervals])
 			stop = min([int(x.stop) for x in intervals])
-			name = name #"_".join((name, '1'))
+			n = "|".join((name, str(c)))
 			score = str(max([float(x[4]) for x in intervals]))
 			strand = intervals[0].strand
 			gaps = [int(x[10]) for x in intervals]
 			gap = min(gaps, key = lambda x: x**2)
-			interval = pybedtools.Interval(chrom, start, stop, name, score, strand, otherfields = [str(gap)]) 
+			interval = pybedtools.Interval(chrom, start, stop, n, score, strand, otherfields = [str(gap)]) 
 			r.append(interval)
 
-		read_names = [x[3] for x in interacting_intervals[0]];		
+		read_names = [x[3].split("|")[0] for x in interacting_intervals[0]];		
 		return cls(name, r, read_names);
 		
 		
@@ -67,7 +67,7 @@ class Interaction(object):
 		'''converts interaction to a doublebed file entry'''
 		l = [];
 		for i in self.intervals:
-			l.append("%s\t%s\t%s\t%s\t%s\t%s\t%s" % tuple(i));
+			l.append("%s\t%s\t%s\t%s\t%s\t%s\t%s" % tuple(list(i)));
 		return "\n".join(l);	
 			
 		

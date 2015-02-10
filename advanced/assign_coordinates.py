@@ -24,7 +24,6 @@ def reassign(a):
 with open(args.path) as f:
 	for l in f:
 		a = l.strip().split("\t");
-		a[:6] = reassign(a[:6])
-		#a[6:12] = reassign(a[6:12])
+		a[:6] = reassign(a[:6]);
 		print "\t".join(a);
 
