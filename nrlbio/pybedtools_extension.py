@@ -59,6 +59,17 @@ def list2interval(l):
 		return None
 	else:	
 		return Interval(l[0], int(l[1]), int(l[2]), name=l[3], score=l[4], strand=l[5])	
+		
+		
+		
+def interval2seq(interval, reference):
+	if(interval.strand == '+'):
+		return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())
+	elif(interval.strand == '-'):
+		return str(reference[interval.chrom][interval.start:interval.stop].seq.reverse_complement().upper())
+	else:
+		sys.stderr.write("Strand is not defined. Plus strand sequence will be returned\n")
+		return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())		
 	
 	
 #testing section

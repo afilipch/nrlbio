@@ -4,14 +4,15 @@ import argparse;
 import sys;
 import re;
 
-from pybedtools import BedTool
+from pybedtools import BedTool, Interval
 from Bio import SeqIO
 from Bio.Seq import reverse_complement
 
 from nrlbio.generators import generator_doublebed
+from nrlbio.pybedtools_extension import interval2seq
 
 
-
+#sys.exit()
 
 #import pysam;
 #from nrlbio.filters_for_sam import *
@@ -24,7 +25,7 @@ parser.add_argument('-m', '--mirna', nargs = '?', required = True, type = str, h
 parser.add_argument('-s', '--system', nargs = '?', required = True, choices = ['ce6', 'mm9', 'hg19'], type = str, help = "genome ce6|mm9|hg19");
 args = parser.parse_args();
 
-exec("from sequence_data.systems import %s as gsys" % args.system);
+#exec("from sequence_data.systems import %s as gsys" % args.system);
 
 def reassign_coordinates(a):
 	chrom, strand, start, stop = a[0].split("|")[:4]
@@ -43,6 +44,7 @@ def reassign_coordinates(a):
 
 #interactions = BedTool(args.path)
 mirna = SeqIO.to_dict(SeqIO.parse(args.mirna, "fasta"))
+reference = SeqIO.to_dict(SeqIO.parse(args.fasta, "fasta"))
 
 s = 0;	
 n = 0;
@@ -52,8 +54,8 @@ for i1, i2 in generator_doublebed(args.path):
 	
 	
 	chrom, start, stop, name, score, strand = reassign_coordinates(i2[0:6])
-	
-	tseq = gsys.genome.get_oriented(chrom, start, stop, strand).upper()
+	interval = Interval(chrom, start, stop, name=name, score=score, strand=strand)
+	tseq = seq = interval2seq(interval, reference)
 	
 	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i1[3], i2[3], strand, mirid, mirseq, tseq)
 	
