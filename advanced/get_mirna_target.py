@@ -8,6 +8,8 @@ from pybedtools import BedTool
 from Bio import SeqIO
 from Bio.Seq import reverse_complement
 
+from nrlbio.generators import generator_doublebed
+
 
 
 
@@ -39,21 +41,21 @@ def reassign_coordinates(a):
 	return chrom, start, stop, a[3], a[4], strand
 
 
-interactions = BedTool(args.path)
+#interactions = BedTool(args.path)
 mirna = SeqIO.to_dict(SeqIO.parse(args.mirna, "fasta"))
 
 s = 0;	
 n = 0;
-for i in interactions:
-	mirid = i[0]
+for i1, i2 in generator_doublebed(args.path):
+	mirid = i1[0]
 	mirseq = str(mirna[mirid].seq.upper())
 	
 	
-	chrom, start, stop, name, score, strand = reassign_coordinates(i[6:12])
+	chrom, start, stop, name, score, strand = reassign_coordinates(i2[0:6])
 	
 	tseq = gsys.genome.get_oriented(chrom, start, stop, strand).upper()
 	
-	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i[3], i[10], strand, mirid, mirseq, tseq)
+	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i1[3], i2[3], strand, mirid, mirseq, tseq)
 	
 	if(reverse_complement(mirseq[1:7]) in tseq):
 		s+=1;

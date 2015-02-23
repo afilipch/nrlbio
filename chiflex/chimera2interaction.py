@@ -16,15 +16,21 @@ parser.add_argument('-d', '--distance', nargs = '?', default = -12, type = int, 
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for interactions")
 parser.add_argument('-oi', '--interactions', nargs = '?', required = True, type = str, help = "path to output interactions file")
 parser.add_argument('-od', '--dictionary', nargs = '?', required = True, type = str, help = "path to output \"interaction to read id\" file")
+parser.add_argument('--order', nargs = '?', default = False, const=True, type = int, help = "keeps order of left to right parts in interactions");
 args = parser.parse_args();
 
 od = open(args.dictionary, 'w');
 oi = open(args.interactions, 'w');
 
 
-def intervals2interaction(intervals, distance, number):
-	intervals.sort(key = attrgetter('chrom','strand','start'));
-	merged_regions = list(generate_overlaping_intervals(intervals, distance));
+def intervals2interaction(intervals, distance, number, order=False):
+	if(order):
+		merged_regions = [[], []];
+		for interval in intervals:
+			merged_regions[int(name.split("|")[1])].append(interval)			
+	else:
+		intervals.sort(key = attrgetter('chrom','strand','start'));
+		merged_regions = list(generate_overlaping_intervals(intervals, distance));
 
 	if(len(merged_regions)==2):
 		interaction = Interaction.from_intervals("%s_%d" % (args.name, number), merged_regions)
@@ -64,12 +70,11 @@ for number, (k, v) in enumerate(interaction2name.items()):
 		for name in v:
 			for i in name2intervals[name]:
 				intervals.append(i)
-		intervals2interaction(intervals, args.distance, number+1);
+		intervals2interaction(intervals, args.distance, number+1, order=args.order);
 		number_interactions += 1;
 	else:
 		number_self_intersection += 1;
 		
 		
-sys.stderr.write("number of chimeras\t%d\ninteractions generated\t%d\nself interacting removed\t%d\n" % (number_chimeras, number_interactions, number_self_intersection))		
-	
+sys.stderr.write("number of chimeras\t%d\ninteractions generated\t%d\nself interacting removed\t%d\n" % (number_chimeras, number_interactions, number_self_intersection));
 

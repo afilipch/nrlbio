@@ -9,8 +9,6 @@ from nrlbio.itertools_extension import cmp_attributes
 from nrlbio.pybedtools_extension import  generate_overlaping_intervals
 
 
-#Interval = namedtuple('Interval', ' chrom, start, stop, name, score, strand')
-
 
 
 class Interaction(object):

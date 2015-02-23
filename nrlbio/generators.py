@@ -7,6 +7,7 @@ import itertools;
 import sequencetools
 from collections import *
 
+
 fastq = namedtuple('fastq', 'id, seq, sign, qual')
 
 def generator_fastq(path, take = ['id', 'seq', 'sign', 'qual'], reverse = False, shuffle = False):
@@ -39,14 +40,16 @@ def generator_fastq(path, take = ['id', 'seq', 'sign', 'qual'], reverse = False,
 
 	
 def generator_maf(path, aligned_species=None):
-	from conservation import Maf;
-	'''reads maf stitched file taking into account interactions id. Yields conservation.Maf object corresponding to each entry in maf file
+	'''reads maf stitched file, taking into account interactions id. Yields conservation.Maf object corresponding to each entry in maf file
 	
 	path string: path to maf stitched file
 	aligned_species list: names of aligned species(genome suystems: ce6, mm9, etc.) to be considered in further analysis. If not given takes all species
 	
 	Yields conservation.Maf: object corresponding to each entry in maf file
-	'''
+	'''	
+	
+	from conservation import Maf;
+	
 	nonaligned = re.compile('-+$')
 	alignment = OrderedDict()
 	with open(path) as f:
@@ -71,7 +74,25 @@ def generator_maf(path, aligned_species=None):
 			yield Maf(header, alignment)
 		except:
 			pass
+		
+		
+def generator_doublebed(path):
+	'''reads \'double\' bed file. Yields consecutive pairs of bed/gff intervals
+	
+	path string: path to maf stitched file
+	
+	Yields list: 2-element list of BedTool intervals, representing chimera or interaction.
+	'''
 
+	from pybedtools import BedTool;	
+	
+	doublebed  = [];
+	for c, interval in enumerate(BedTool(path)):
+		doublebed.append(interval);
+		if(c % 2):
+			yield doublebed;
+			doublebed = [];
+		
 	
 def grouper(iterable, n):
 	it = iter(iterable);
