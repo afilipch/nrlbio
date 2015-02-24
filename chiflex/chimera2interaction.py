@@ -27,7 +27,8 @@ def intervals2interaction(intervals, distance, number, order=False):
 	if(order):
 		merged_regions = [[], []];
 		for interval in intervals:
-			merged_regions[int(name.split("|")[1])].append(interval)			
+			#sys.stderr.write("%d" % int(interval.name.split("|")[1]))
+			merged_regions[int(interval.name.split("|")[1])].append(interval)			
 	else:
 		intervals.sort(key = attrgetter('chrom','strand','start'));
 		merged_regions = list(generate_overlaping_intervals(intervals, distance));
