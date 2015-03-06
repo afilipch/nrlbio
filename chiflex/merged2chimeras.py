@@ -4,9 +4,9 @@ import argparse;
 import os;
 
 import pysam;
+
 from nrlbio.filters_for_sam import *
-from nrlbio.chimera import arlist2chimera
-from nrlbio import chimera
+from nrlbio.chimera import arlist2chimera, as_gap_score
 
 parser = argparse.ArgumentParser(description='produce chimeras from merged and already filtered sam file');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
@@ -17,7 +17,7 @@ args = parser.parse_args();
 samfile = pysam.Samfile(args.path)
 
 def _iteration(arlist):
-	chimeras =  arlist2chimera(arlist, samfile, gap = args.gap, overlap = args.overlap, score_function = chimera.as_gap_score)
+	chimeras =  arlist2chimera(arlist, samfile, gap = args.gap, overlap = args.overlap, score_function = as_gap_score)
 	if(len(chimeras) == 1):
 		print chimeras[0].doublebed();	
 

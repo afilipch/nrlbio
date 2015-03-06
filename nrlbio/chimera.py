@@ -100,12 +100,11 @@ def arlist2chimera(arlist, samfile, gap = 100, overlap = 100, score_function = a
 	chimeras = []
 
 	for a1, a2 in combinations(arlist, 2):
-
-		if(-overlap <= a2.qstart - a1.qend <= gap):
-			chimeras.append(Chimera([a1, a2], samfile, score_function))
-			
-		elif(-overlap <= a1.qstart - a2.qend <= gap):
-			chimeras.append(Chimera([a2, a1], samfile, score_function))
+		if((-overlap <= a2.qstart - a1.qend <= gap) or (-overlap <= a1.qstart - a2.qend <= gap)):
+			if(a1.qstart < a2.qstart):
+				chimeras.append(Chimera([a1, a2], samfile, score_function))			
+			else:
+				chimeras.append(Chimera([a2, a1], samfile, score_function))
 			
 	return chimeras;
 	
