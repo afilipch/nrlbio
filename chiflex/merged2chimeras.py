@@ -10,12 +10,14 @@ from nrlbio import chimera
 
 parser = argparse.ArgumentParser(description='produce chimeras from merged and already filtered sam file');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
+parser.add_argument('--overlap', nargs = '?', default = 100, type = int, help = "max overlap allowed")
+parser.add_argument('--gap', nargs = '?', default = 100, type = int, help = "max gap allowed")
 args = parser.parse_args();
 
 samfile = pysam.Samfile(args.path)
 
 def _iteration(arlist):
-	chimeras =  arlist2chimera(arlist, samfile, gap = 1, overlap = 4, score_function = chimera.as_gap_score)
+	chimeras =  arlist2chimera(arlist, samfile, gap = args.gap, overlap = args.overlap, score_function = chimera.as_gap_score)
 	if(len(chimeras) == 1):
 		print chimeras[0].doublebed();	
 

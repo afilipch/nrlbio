@@ -5,7 +5,7 @@ import os;
 
 import pysam;
 
-from nrlbio import sam_statistics
+from nrlbio.statistics import sam as sam_statistics
 from nrlbio.samlib import ArWrapper, demultiplex_read_hits
 
 

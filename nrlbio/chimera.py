@@ -88,7 +88,7 @@ class Chimera(object):
 		return "\n".join(l)
 		
 		
-def arlist2chimera(arlist, samfile, gap = 1, overlap = 4, score_function = as_score):
+def arlist2chimera(arlist, samfile, gap = 100, overlap = 100, score_function = as_score):
 	'''Compiles all possible chimeras from hits(pysam aligned reads) provided
 	
 		arlist iterable: element is pysam.AlignedRead. All hits of the initial read to compile into chimeras

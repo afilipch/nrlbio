@@ -1,4 +1,4 @@
-#collections of add-ons to biopython and pysam written in Rajewsky lab
-#Berlin 2014
+#Collection of various libraries for analysis in biology. 
+#Berlin 2014-2015
 
-__version__ = '1.00'
+__version__ = '1.01'
