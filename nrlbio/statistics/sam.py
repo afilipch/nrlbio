@@ -10,7 +10,7 @@ import Bio;
 import pysam;
 import jinja2;
 
-import html;
+from nrlbio import html;
 
 '''set jinja2 enviroment'''
 env = jinja2.Environment(loader=jinja2.PackageLoader('nrlbio', 'templates'))
