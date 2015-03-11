@@ -1,0 +1,16 @@
+{% extends "base_table.html" %}
+
+{% block title %}{{interaction.name}}{% endblock %}
+
+{% block content %}
+	<table cellspacing="2">
+		{% for i in range(interaction.extended_intervals|length) %}
+			<td>
+			<a href="{{interaction.ilinks[i]}}" style="color: {{interaction.icolors[i]}}">{{interaction.extended_intervals[i].chrom}} {{interaction.extended_intervals[i].start}} {{interaction.extended_intervals[i].stop}} {{interaction.extended_intervals[i].strand}}</a>
+			<br>
+			{{interaction.extended_intervals[i].attrs.seq}}
+			<br>
+			</td>	
+		{%endfor%}	
+	</table>		
+{% endblock %}

@@ -1,46 +1,25 @@
 '''Library contains functionality to operate with RNA:RNA interactions'''
 
 import sys
+from copy import copy
 #from collections import namedtuple
 
 import pybedtools
 
 from nrlbio.itertools_extension import cmp_attributes
-from nrlbio.pybedtools_extension import  generate_overlaping_intervals
+from nrlbio.pybedtools_extension import  interval2seq, construct_gff_interval
+from nrlbio.statistics.sam import get_alignment;
+from nrlbio.html import get_link
 
 
-
+	
 
 class Interaction(object):
-	def __init__(self, name, intervals, read_names, attrs = {}):
-		self.name = name
-		self.intervals = intervals
-		self.read_names = read_names
-		self.attrs = attrs
-	
-	@classmethod
-	def from_chimeras(cls, name, chimeras):
-		chrom1 = chimeras[0][6]
-		start1 = min([int(x[7]) for x in chimeras])
-		stop1 = min([int(x[8]) for x in chimeras])
-		name1 = name #"_".join((name, '1'))
-		score1 = str(max([float(x[10]) for x in chimeras]))
-		strand1 = chimeras[0][11]
-		interval1 = pybedtools.Interval(chrom1, start1, stop1, name1, score1, strand1) 
-		
-		
-		chrom2 = chimeras[0][0]
-		start2 = min([int(x[1]) for x in chimeras])
-		stop2 = min([int(x[2]) for x in chimeras])
-		name2 = name #"_".join((name, '2'))
-		score2 = str(max([float(x[4]) for x in chimeras]))
-		strand2 = chimeras[0][5]	
-		interval2 = pybedtools.Interval(chrom2, start2, stop2, name2, score2, strand2) 
-		
-		read_names = [x[3] for x in chimeras];
-		
-		return cls(name, (interval1, interval2), read_names)
-		
+	def __init__(self, name, intervals, aligned_reads = [], read_names = []):
+		self.name = name;
+		self.intervals = intervals;
+		self.aligned_reads = aligned_reads;
+		self.read_names = read_names;
 		
 	@classmethod
 	def from_intervals(cls, name, interacting_intervals):
@@ -58,8 +37,57 @@ class Interaction(object):
 			r.append(interval)
 
 		read_names = [x[3].split("|")[0] for x in interacting_intervals[0]];		
-		return cls(name, r, read_names);
+		return cls(name, r, read_names = read_names);
 		
+		
+	def set_extended_intervals(self, reference=None, extensions=None):
+		'''Sets extended intervals and sequences for the interaction
+		
+			interaction Interaction: interaction between intervals
+			reference dict: key - chrmosome(feature name), value - Bio.SeqRecord.SeqRecord object. Normally reference odject is created via 'Bio.SeqIO.to_dict(Bio.SeqIO.parse([path_to_fasta_file], "fasta"))' call
+			extensions iterable of iterables:Controls how far interacting intervals' sequences will be extended. For example extensions=[(1,4), (0,7)] will extend first interval 1nt upstream and 4nts downstream, while the second interaction will be extended 0nt upstream and 7nts downstream
+		'''
+		if(extensions):
+			if(not reference):
+				raise ValueError('\'reference\' argument cannot be None, while \'extensions\' is set to be not None\n')
+			
+			self.extended_intervals = [];
+			for interval, (eu, ed) in zip(self.intervals, extensions):
+				if(interval.strand == "+"):
+					estart = max(0, interval.start - eu);
+					estop = interval.stop+ed;
+				else:
+					estart = max(0, interval.start - ed);
+					estop = interval.stop+eu;
+				newint = construct_gff_interval(interval.chrom, estart, estop, "extinterval", score='0', strand=interval.strand, source='.', frame='.', attrs=[])
+				newint.attrs['seq'] = interval2seq(newint, reference)
+				self.extended_intervals.append(newint)
+				
+		elif(reference):
+			for interval in self.intervals:
+				interval.attrs['seq'] = interval2seq(interval, reference)
+			self.extended_intervals = self.intervals;
+			
+		else:
+			self.extended_intervals = self.intervals;
+		#for interval in self.extended_intervals:
+			#print interval.file_type
+		#print "_"*120	
+			
+		
+		
+	def	set_html_attributes(self, system):
+		if (not self.aligned_reads):
+			raise AttributeError("HTML attributes cannot be set without aligned_reads. Please add them to Interaction");
+		if(not getattr(self, 'extended_intervals', None)):
+			raise AttributeError("Interaction.set_extended_intervals() has to be called in advance");
+			
+		self.icolors = ['green', 'lightblue', 'purple', 'yellow'];
+		self.ilinks = [get_link(interval, system, internal = False) for interval in self.extended_intervals]
+			
+		def _set_part(arw):
+			pass;
+			
 		
 	def doublebed(self):
 		'''converts interaction to a doublebed file entry'''
@@ -68,25 +96,14 @@ class Interaction(object):
 			l.append("%s\t%s\t%s\t%s\t%s\t%s\t%s" % tuple(list(i)));
 		return "\n".join(l);	
 			
-		
-		
-		
+
 	def __str__(self):
 		l = [];
 		for i in self.intervals:
 			l.append("%s\t%s\t%s\t%s\t%s\t%s" % tuple(i));
 		return "\t".join(l);	
 	
-	
-	
-def bed2interactions(bed, distance, name='interaction'):
-	c = 0;
-	for m1 in generate_overlaping_intervals(bed, distance[0]):
-		tbed = [pybedtools.Interval(i[6], int(i[7]), int(i[8]), i[9], i[10], i[11], otherfields = i[:6] + i[12:]) for i in m1];
-		
-		for m2 in generate_overlaping_intervals(sorted(tbed, cmp=lambda x,y: cmp_attributes(x,y,['chrom', 'strand', 'start'])), distance[1]):
-			c+=1
-			yield Interaction.from_chimeras("%s_%d" % (name, c), m2)
+
 
 		
 		

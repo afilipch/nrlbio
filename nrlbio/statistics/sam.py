@@ -8,12 +8,11 @@ from collections import defaultdict;
 
 import Bio;
 import pysam;
-import jinja2;
+#import jinja2;
 
-from nrlbio import html;
+#from nrlbio import html;
 
-'''set jinja2 enviroment'''
-env = jinja2.Environment(loader=jinja2.PackageLoader('nrlbio', 'templates'))
+
 
 '''pattern to get matched, mismatched and del/ins stretches to a reference from MD field in sam/bam file file'''
 MD_pattern = '([0-9]+)([A-Z]+)*(\^[A-Z]+)*';
@@ -174,7 +173,7 @@ class Stat(object):
 
 			
 	def fill_stat_sheet(self, ar_iter, short_reference = False, detailed = False, sparse_coefficient = 1):
-		'''function extract statistics of provided iterable containg aligned reads and stores it in the attributes of the class
+		'''Extracts statistics of provided iterable containg aligned reads and stores it in the attributes of the class
 
 		ar_iter iterable: any iterable of pysam.AlignedRead. In the most case an output of pysam.Samfile.fetch()
 		short_reference bool: if True additional statistics is collected. Makes sense for a mapping to the reference composed of short reads(piRNA, miRNA, ncRNA etc.)
@@ -204,25 +203,25 @@ class Stat(object):
 					self.increment_basic(ar)
 		return True
 		
-	def tohtml(self, output = None, template = "statistic_tables.html", top_entries = 20):
-		r = html.Stat(self.name, [])
-		attributes = ["ascore", "query_ref_start", "query_start", "ref_start", "clipped_length_right", "query_end", "ref_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right"]
-		names = ["Alignment Score", "Start position of the match in query and reference", "Start position of the match in query", "Start position of the match in reference", "number of nucleotides soft clipped downstream", "End position of the match in query", "End position of the match in reference", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence"]
-		for a, name in zip(attributes, names):
-			attribute = getattr(self, a)
-			if(attribute):
-				html_attribute = html.StatAttribute(name, [a, "total number", "fraction"], [])
-				total = float(sum(attribute.values()))
-				for k, v in sorted(attribute.items(), key = lambda x: x[1], reverse = True)[:top_entries]:
-					f = v/total
-					html_attribute.entries.append([k, "%d" % v, "%1.5f" % f]);
-				r.attributes.append(html_attribute);
-			else:
-				pass;
-		t = env.get_template(template);	
-		if(output):
-			with open(output, 'w') as f:
-				f.write(t.render({"statistics": r}))
-		else:		
-			t.render({"statistics": r})		
+	#def tohtml(self, output = None, template = "statistic_tables.html", top_entries = 20):
+		#r = html.Stat(self.name, [])
+		#attributes = ["ascore", "query_ref_start", "query_start", "ref_start", "clipped_length_right", "query_end", "ref_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right"]
+		#names = ["Alignment Score", "Start position of the match in query and reference", "Start position of the match in query", "Start position of the match in reference", "number of nucleotides soft clipped downstream", "End position of the match in query", "End position of the match in reference", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence"]
+		#for a, name in zip(attributes, names):
+			#attribute = getattr(self, a)
+			#if(attribute):
+				#html_attribute = html.StatAttribute(name, [a, "total number", "fraction"], [])
+				#total = float(sum(attribute.values()))
+				#for k, v in sorted(attribute.items(), key = lambda x: x[1], reverse = True)[:top_entries]:
+					#f = v/total
+					#html_attribute.entries.append([k, "%d" % v, "%1.5f" % f]);
+				#r.attributes.append(html_attribute);
+			#else:
+				#pass;
+		#t = env.get_template(template);	
+		#if(output):
+			#with open(output, 'w') as f:
+				#f.write(t.render({"statistics": r}))
+		#else:		
+			#t.render({"statistics": r})		
 

@@ -92,6 +92,16 @@ def generator_doublebed(path):
 		if(c % 2):
 			yield doublebed;
 			doublebed = [];
+			
+			
+def generator_seqrecord(paths, ftype):
+	'''generates Bio.SeqRecord.SeqRecord objects from multiple files'''
+	from Bio import SeqIO;	
+	for path in paths:
+		for seqrecord in SeqIO.parse(path, ftype):
+			yield seqrecord;
+
+			
 		
 	
 def grouper(iterable, n):

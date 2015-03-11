@@ -8,7 +8,7 @@ from operator import itemgetter, attrgetter
 from pybedtools import BedTool
 
 from nrlbio.pybedtools_extension import doublebed2dict, generate_overlaping_intervals
-from nrlbio.interaction import bed2interactions, Interaction
+from nrlbio.interaction import Interaction
 
 parser = argparse.ArgumentParser(description='converts bed-like file of chimeric reads into interactions. That is merging chimeras with intersecting regions');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to chimeras bed-like file");
