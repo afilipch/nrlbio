@@ -87,4 +87,4 @@ for ipath in args.path:
 		inter.set_extended_intervals(reference=reference, extensions=extensions)
 		inter.set_html_attributes(args.system)
 		print template.render({"interaction": inter})
-		sys.exit()
+		#sys.exit()

@@ -91,24 +91,26 @@ class ArWrapper(object):
 		'''reassigns coordinates coordinates to genomic ones. NOTE: If reassign=False, then only new attributes appear, without reassignment. This is necessary for downstream compatibility'''
 		if(reassign):
 			chrom, strand, start, stop = self.rname.split("|")[:4]
-			self.chrom = chrom
-			start = int(start)
-			stop = int(stop)
+			self.chrom = chrom;
+			self.strand = strand;
+			start = int(start);
+			stop = int(stop);
 			
 			if(strand == '+'):
 				self.stop = start + int(self.aligned_read.aend)
 				self.start = start + int(self.aligned_read.pos)
-				self.is_reverse = False
 			else:
 				self.start = stop - int(self.aligned_read.aend)
 				self.stop = stop - int(self.aligned_read.pos)
-				self.is_reverse = True
 			
 		else:
 			self.start = int(self.aligned_read.pos)
 			self.stop = int(self.aligned_read.aend)
 			self.chrom = self.rname
-			self.is_reverse = self.aligned_read.is_reverse
+			if(self.aligned_read.is_reverse):
+				self.strand = '-'
+			else:
+				self.strand = '+'
 		
 		
 		

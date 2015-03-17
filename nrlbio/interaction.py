@@ -18,8 +18,21 @@ class Interaction(object):
 	def __init__(self, name, intervals, aligned_reads = [], read_names = []):
 		self.name = name;
 		self.intervals = intervals;
-		self.aligned_reads = aligned_reads;
 		self.read_names = read_names;
+		# we have to bin aligned_reads according to which interval do they fall
+		self.aligned_reads = [[] for i in range(len(intervals))];
+		for ar in aligned_reads:
+			for c, interval in enumerate(intervals):
+				if((interval.chrom == ar.chrom) and (interval.strand == ar.strand) and (ar.start >= interval.start) and (ar.stop <= interval.stop)):
+					self.aligned_reads[c].append(ar);
+					#sys.stderr.write("aligned_read: %s %d %d %s\n" % (ar.chrom, ar.start, ar.stop, ar.qname))
+					#sys.stderr.write("interval: %s %d %d %d\n______________________________________________________________________________________________\n" % (interval.chrom, interval.start, interval.stop, c))
+					break;
+			else:
+				sys.stderr.write("%s\nThere is no interval for aligned_read: %s %d %d\n\n" % (str("_"*100), ar.chrom, ar.start, ar.stop))
+				for interval in intervals:
+					sys.stderr.write("interval coordinates: %s %d %d\n" % (interval.chrom, interval.start, interval.stop))
+					
 		
 	@classmethod
 	def from_intervals(cls, name, interacting_intervals):
@@ -27,7 +40,7 @@ class Interaction(object):
 		for c, intervals in enumerate(interacting_intervals):
 			chrom = intervals[0].chrom
 			start = min([int(x.start) for x in intervals])
-			stop = min([int(x.stop) for x in intervals])
+			stop = max([int(x.stop) for x in intervals])
 			n = "|".join((name, str(c)))
 			score = str(max([float(x[4]) for x in intervals]))
 			strand = intervals[0].strand
@@ -36,7 +49,7 @@ class Interaction(object):
 			interval = pybedtools.Interval(chrom, start, stop, n, score, strand, otherfields = [str(gap)]) 
 			r.append(interval)
 
-		read_names = [x[3].split("|")[0] for x in interacting_intervals[0]];		
+		read_names = [x[3].split("|")[0] for x in interacting_intervals[0]];
 		return cls(name, r, read_names = read_names);
 		
 		
@@ -77,6 +90,12 @@ class Interaction(object):
 		
 		
 	def	set_html_attributes(self, system):
+		#for arw in self.aligned_reads:
+			#for a in arw:
+				#sys.stderr.write("%s\n" % str(a.aligned_read.query))
+			#sys.stderr.write("%s\n" %  str("_"*100))
+		
+		#set constants
 		if (not self.aligned_reads):
 			raise AttributeError("HTML attributes cannot be set without aligned_reads. Please add them to Interaction");
 		if(not getattr(self, 'extended_intervals', None)):
@@ -84,9 +103,65 @@ class Interaction(object):
 			
 		self.icolors = ['green', 'lightblue', 'purple', 'yellow'];
 		self.ilinks = [get_link(interval, system, internal = False) for interval in self.extended_intervals]
+		##################################################################################################
+		
+		#set alignments	
+		def _set_part(arw, interval):
+			if(interval.strand == '+'):
+				ladj = arw.start - interval.start; 
+			elif(interval.strand == '-'):
+				ladj = interval.stop - arw.stop
+				
+			match_mismatch = [(" "*ladj, None), ];
+			for nref, nread in get_alignment(arw.aligned_read):
+				if(not nref):
+					continue;
+					
+				if(nref == nread):
+					match_mismatch.append((nread, None));
+				else:
+					if(nread):
+						match_mismatch.append((None, nread));
+					else:
+						match_mismatch.append((None, '-'));
+			#sys.stderr.write("%d\t%s\n" % (ladj, str(match_mismatch)))
 			
-		def _set_part(arw):
-			pass;
+			#sys.stderr.write("%s\n" % str("*"*100))
+			return match_mismatch;			
+		
+		self.match_mismatch = [[] for i in range(len(self.intervals))]
+		for c, (interval, aligned_reads) in enumerate(zip(self.extended_intervals, self.aligned_reads)):
+			for arw in aligned_reads:
+				self.match_mismatch[c].append(_set_part(arw, interval))
+		##################################################################################################
+		
+		#set read sequences
+		def _set_seq(aligned_reads):
+			mapped_unmapped = [];
+			seq = aligned_reads[0].aligned_read.seq
+			last_end = 0;
+			for ar in sorted(aligned_reads, key=lambda x: x.aligned_read.qstart):
+				mapped_unmapped.append((seq[last_end: ar.aligned_read.qstart], seq[ar.aligned_read.qstart:ar.aligned_read.qend]));
+				last_end = ar.aligned_read.qend;
+			return mapped_unmapped	
+						
+		self.mapped_unmapped = [];
+		try:
+			for nrow in range(len(self.aligned_reads[0])):
+				self.mapped_unmapped.append(_set_seq([x[nrow] for x in self.aligned_reads]))
+		except:
+			sys.stderr.write("_"*100 + "\n")
+			for ars in self.aligned_reads:
+				for ar in ars:
+					sys.stderr.write("aligned_read: %s %d %d\n\n" % (ar.chrom, ar.start, ar.stop))
+			for interval in self.intervals:
+				sys.stderr.write("interval coordinates: %s %d %d\n" % (interval.chrom, interval.start, interval.stop))
+				sys.exit()
+			
+		##################################################################################################
+		
+		#set reads' ids
+		self.read_ids = [x.qname for x in self.aligned_reads[0]]
 			
 		
 	def doublebed(self):
