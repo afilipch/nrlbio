@@ -121,7 +121,7 @@ def generator_mirna(paths, seed_start=1, seed_stop=7):
 	from nrlbio.mirna import Mirna
 	for path in paths:
 		for seqrecord in SeqIO.parse(path, 'fasta'):
-			yield Mirna(seqrecord.id, str(seqrecord.seq.upper(), seed_start = seed_start, seed_stop = seed_stop)
+			yield Mirna(seqrecord.id, str(seqrecord.seq.upper()), seed_start = seed_start, seed_stop = seed_stop)
 			
 
 			

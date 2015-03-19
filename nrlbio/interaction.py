@@ -112,18 +112,21 @@ class Interaction(object):
 			elif(interval.strand == '-'):
 				ladj = interval.stop - arw.stop
 				
-			match_mismatch = [(" "*ladj, None), ];
+			match_mismatch = [(" "*ladj, ''), ];
 			for nref, nread in get_alignment(arw.aligned_read):
 				if(not nref):
 					continue;
 					
 				if(nref == nread):
-					match_mismatch.append((nread, None));
+					if(not match_mismatch[-1][1]):
+						match_mismatch[-1][0]+=nread;
+					else:
+						match_mismatch.append((nread, '-'))
 				else:
 					if(nread):
-						match_mismatch.append((None, nread));
+						match_mismatch[-1][1] += nread;
 					else:
-						match_mismatch.append((None, '-'));
+						match_mismatch[-1][1] += '-';
 			#sys.stderr.write("%d\t%s\n" % (ladj, str(match_mismatch)))
 			
 			#sys.stderr.write("%s\n" % str("*"*100))
