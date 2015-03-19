@@ -25,6 +25,7 @@ parser.add_argument('--system', nargs = '?', required = True, choices = system_c
 parser.add_argument('-r', '--reference', nargs = '+', default = None, type = str, help = "path to the references used to extract sequences. If not set, '--extensions' will be set to None");
 parser.add_argument('-e', '--extensions', nargs = '+', default = [], type = str, help = "Controls how far interacting intervals' sequences will be extended. For example extensions= 1,4 0,7 will extend first interval 1nt upstream and 4nts downstream, while the second interaction will be extended 0nt upstream and 7nts downstream. If '--reference' is not set, willl be set to None");
 parser.add_argument('--template', nargs = '?', default = "interaction_detailed.html", type = str, help = "path to jinja2/django template");
+parser.add_argument('--title', nargs = '?', default = 'interactions', type = str, help = "title of html report");
 parser.add_argument('--reassign', nargs = '?', default = False, const = True, type = bool, help = "Has to be set, if sam/bam hits have to be reassigned to genomic coordinates. That is, if nongenomic reference was used for mapping");
 args = parser.parse_args();
 
@@ -80,11 +81,14 @@ for sampath in args.sam:
 
 
 #compile and process interactions
-for ipath in args.path:	
-	for intervals in generator_doublebed(ipath):
-		name = intervals[0].name.split("|")[0]
-		inter = Interaction(name, intervals, aligned_reads = iid2hits[name])
-		inter.set_extended_intervals(reference=reference, extensions=extensions)
-		inter.set_html_attributes(args.system)
-		print template.render({"interaction": inter})
-		#sys.exit()
+def generate_html_interactions():
+	for ipath in args.path:	
+		for intervals in generator_doublebed(ipath):
+			name = intervals[0].name.split("|")[0]
+			inter = Interaction(name, intervals, aligned_reads = iid2hits[name])
+			inter.set_extended_intervals(reference=reference, extensions=extensions)
+			inter.set_html_attributes(args.system)
+			yield inter;
+
+html_interactions = generate_html_interactions()			
+print template.render({"interactions": html_interactions, 'title': args.title})			

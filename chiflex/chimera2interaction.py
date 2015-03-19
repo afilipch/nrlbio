@@ -17,7 +17,9 @@ parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, he
 parser.add_argument('-oi', '--interactions', nargs = '?', required = True, type = str, help = "path to output interactions file")
 parser.add_argument('-od', '--dictionary', nargs = '?', required = True, type = str, help = "path to output \"interaction to read id\" file")
 parser.add_argument('--order', nargs = '?', default = False, const=True, type = int, help = "keeps order of left to right parts in interactions");
+parser.add_argument('--bedtools', nargs = '?', default = '', type = str, help = "path to a bedtools binaries");
 args = parser.parse_args();
+pybedtools.set_bedtools_path(path=args.bedtools)
 
 od = open(args.dictionary, 'w');
 oi = open(args.interactions, 'w');
@@ -52,7 +54,7 @@ name2intervals = doublebed2dict(bed);
 name2interaction = defaultdict(list);
 interaction2name = defaultdict(list);
 
-for c, i in enumerate(bed.merge(s=True, d=args.distance, c='4,6', o='distinct', delim=';')):
+for c, i in enumerate(bed.sort().merge(s=True, d=args.distance, c='4,6', o='distinct', delim=';')):
 	 for name in i.name.split(";"):
 		 n = name.split("|")[0]
 		 name2interaction[n].append(c);

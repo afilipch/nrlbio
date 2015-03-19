@@ -6,7 +6,7 @@ import sys;
 
 import pysam;
 
-from nrlbio import sam_statistics
+import nrlbio.statistics.sam as sam_statistics
 from nrlbio.samlib import ArWrapper, demultiplex_read_hits
 from nrlbio.chimera import as_gap_score, arlist2chimera
 from nrlbio.chimera import demultiplex as demultiplex_ch

@@ -1,32 +1,38 @@
 {% extends "base_table.html" %}
 
-{% block title %}{{interaction.name}}{% endblock %}
+{% block title %}{{title}}{% endblock %}
 
 {% block content %}
-	<table cellspacing="2">
+	<table cellspacing="1" border=1 frame=void rules=rows>
+	{% for interaction in interactions %}
+		<tr>		
 		{% for i in range(interaction.extended_intervals|length) %}
-		<hr />
 			<td>
+			<br><br>
 			<a target="_blank" href="{{interaction.ilinks[i]}}" style="color: {{interaction.icolors[i]}}">{{interaction.extended_intervals[i].chrom}} {{interaction.extended_intervals[i].start}} {{interaction.extended_intervals[i].stop}} {{interaction.extended_intervals[i].strand}}</a>
 			<br><br>
 			<span style="color:{{interaction.icolors[i]}};">{{interaction.extended_intervals[i].attrs.seq}}</span>
 			<br><br>
 			{% for j in range(interaction.aligned_reads[i]|length) %}
-				{% for match, mismatch in interaction.match_mismatch[i][j] %}{% if match%}<span style="color:{{interaction.icolors[i]}};white-space:pre;">{{match}}</span>{%endif%}{% if mismatch%}<span style="background-color:red;margin:0">{{mismatch}}</span>{%endif%}{%endfor%}
+				{% for match, mismatch in interaction.match_mismatch[i][j] %}{% if match%}<span style="color:{{interaction.icolors[i]}};white-space:pre;">{{match}}</span>{%endif%}{% if mismatch%}<span style="background-color:red;margin:0">{{mismatch}}</span>{%endif%}{%endfor%}<br>
 			{%endfor%}
 			</td>	
 		{%endfor%}
 		<td>
+		<br><br>
 		<br><br>readssequences<br><br>
 		{% for mapped_unmapped in interaction.mapped_unmapped %}
 			{% for i in range(mapped_unmapped|length) %}<span style="color:gray">{{mapped_unmapped[i][0]}}</span><span style="color:{{interaction.icolors[i]}}">{{mapped_unmapped[i][1]}}</span>{%endfor%}
 		{%endfor%}
 		</td>	
-		<td>
+<!--		<td>
+		<br><br>
 		<br><br>reads ids<br><br>
 		{% for rid in interaction.read_ids %}
 			{{rid}}
 		{%endfor%}
-		</td>			
+		</td>-->
+		</tr>
+	{%endfor%}	
 </table>		
 {% endblock %}

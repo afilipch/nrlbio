@@ -36,6 +36,8 @@ parser.add_argument('--advanced', nargs = '+', choices = ['repetitive', 'nonuniq
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
 args = parser.parse_args();
 
+print sys.argv
+
 #parse advanced options
 nonunique = 'nonunique' in args.advanced
 repetitive = 'repetitive' in args.advanced
@@ -182,7 +184,7 @@ project_path = os.path.abspath(args.path)
 while (not args.only_makefile):
 	try:
 		os.makedirs(project_path);
-		for folder in ('mkdir', 'sam', 'chimeras', 'interactions', 'html', 'reports', 'bed'):
+		for folder in ('mkdir', 'sam', 'chimeras', 'interactions', 'html', 'reports', 'bed', 'log'):
 			os.mkdir(os.path.join(project_path, folder));
 		break;	
 	except:

@@ -112,7 +112,7 @@ class Interaction(object):
 			elif(interval.strand == '-'):
 				ladj = interval.stop - arw.stop
 				
-			match_mismatch = [(" "*ladj, ''), ];
+			match_mismatch = [[" "*ladj, ''], ];
 			for nref, nread in get_alignment(arw.aligned_read):
 				if(not nref):
 					continue;
@@ -121,7 +121,7 @@ class Interaction(object):
 					if(not match_mismatch[-1][1]):
 						match_mismatch[-1][0]+=nread;
 					else:
-						match_mismatch.append((nread, '-'))
+						match_mismatch.append([nread, ''])
 				else:
 					if(nread):
 						match_mismatch[-1][1] += nread;
