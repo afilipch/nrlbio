@@ -77,7 +77,7 @@ def generator_maf(path, aligned_species=None):
 		
 		
 def generator_doublebed(path):
-	'''reads \'double\' bed file. Yields consecutive pairs of bed/gff intervals
+	'''Reads \'double\' bed file. Yields consecutive pairs of bed/gff intervals
 	
 	path string: path to maf stitched file
 	
@@ -95,11 +95,34 @@ def generator_doublebed(path):
 			
 			
 def generator_seqrecord(paths, ftype):
-	'''generates Bio.SeqRecord.SeqRecord objects from multiple files'''
+	'''Generates Bio.SeqRecord.SeqRecord objects from multiple files
+	
+		paths list: list of paths to files with seqrecords(genbank, fastq, fasta, ets.)
+		ftype str: format of files with seqrecords('genbank', 'fastq', 'fasta', ets.)
+		
+	Yields Bio.SeqRecord.SeqRecord
+	'''
 	from Bio import SeqIO;	
 	for path in paths:
 		for seqrecord in SeqIO.parse(path, ftype):
 			yield seqrecord;
+			
+			
+def generator_mirna(paths, seed_start=1, seed_stop=7):
+	'''Generates miRNAs from given fasta files
+	
+		paths list: list of paths to fasta files with miRNAs
+		seed_start int: start postion of mirna seed, 0-based and inclusive
+		seed_stop int: stop postion of mirna seed, 0-based and exclusive
+		
+	Yields nrlbio.Mirna object
+	'''
+	from Bio import SeqIO;
+	from nrlbio.mirna import Mirna
+	for path in paths:
+		for seqrecord in SeqIO.parse(path, 'fasta'):
+			yield Mirna(seqrecord.id, str(seqrecord.seq.upper(), seed_start = seed_start, seed_stop = seed_stop)
+			
 
 			
 		

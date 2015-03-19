@@ -52,7 +52,7 @@ name2intervals = doublebed2dict(bed);
 name2interaction = defaultdict(list);
 interaction2name = defaultdict(list);
 
-for c, i in enumerate(bed.merge(s=True, nms=True, d=args.distance)):
+for c, i in enumerate(bed.merge(s=True, d=args.distance, c='4,6', o='distinct', delim=';')):
 	 for name in i.name.split(";"):
 		 n = name.split("|")[0]
 		 name2interaction[n].append(c);

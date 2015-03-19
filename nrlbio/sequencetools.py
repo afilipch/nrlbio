@@ -6,6 +6,8 @@ from collections import defaultdict, Counter;
 from numerictools import dict2entropy
 from itertools import combinations, product
 
+RevComplDict = {'G': 'C', 'C': 'G', 'A': 'T', 'T': 'A'}
+
 def diverge_with_1mm(seq, include = False):
 	'''produces all sequences which are 1nt different from the initial one
 	
@@ -19,9 +21,9 @@ def diverge_with_1mm(seq, include = False):
 	else:	
 		variants = [];
 	nset = set("ACTG");
-	for p in range(len(match)):
-		for n in nset - set(match[p]):
-			variants.append(match[:mposition] + n + match[mposition+1:]);
+	for p in range(len(seq)):
+		for n in nset - set(seq[p]):
+			variants.append(seq[:p] + n + seq[p+1:]);
 	return variants;
 	
 	
