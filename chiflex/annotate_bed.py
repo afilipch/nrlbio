@@ -64,11 +64,11 @@ def collapse_annotation(annotations, interval, best_only=True):
 	return construct_gff_interval(interval.chrom, interval.start, interval.stop, feature=args.feature, score=interval.score, strand=interval.strand, source='annotate_bed.py', frame='.', attrs=(('type', ts), ('regulation', rn), ('transcription', tn), ('gene_name', gene_ids), ('ID', interval.name)))
 	
 	
-bed = BedTool(args.path);
+bed = BedTool(args.path).sort();
 offset  = bed.field_count();
-gff_annotation = BedTool(args.annotation);
+gff_annotation = BedTool(args.annotation).sort();
 
-intersection = bed.intersect(gff_annotation, s=True, wao=True, f=args.fraction)
+intersection = bed.intersect(gff_annotation, s=True, wao=True, f=args.fraction, sorted = True, nonamecheck=True)
 previous = intersection[0];
 curname = previous.name;
 local_annotation = [intersection2annotation(previous, offset)];

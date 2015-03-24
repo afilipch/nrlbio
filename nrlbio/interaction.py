@@ -29,7 +29,7 @@ class Interaction(object):
 					#sys.stderr.write("interval: %s %d %d %d\n______________________________________________________________________________________________\n" % (interval.chrom, interval.start, interval.stop, c))
 					break;
 			else:
-				sys.stderr.write("%s\nThere is no interval for aligned_read: %s %d %d\n\n" % (str("_"*100), ar.chrom, ar.start, ar.stop))
+				sys.stderr.write("%s\nThere is no interval for aligned_read: %s %d %d %s\n\n" % (str("_"*100), ar.chrom, ar.start, ar.stop, ar.qname))
 				for interval in intervals:
 					sys.stderr.write("interval coordinates: %s %d %d\n" % (interval.chrom, interval.start, interval.stop))
 					
@@ -146,6 +146,7 @@ class Interaction(object):
 			for ar in sorted(aligned_reads, key=lambda x: x.aligned_read.qstart):
 				mapped_unmapped.append((seq[last_end: ar.aligned_read.qstart], seq[ar.aligned_read.qstart:ar.aligned_read.qend]));
 				last_end = ar.aligned_read.qend;
+			mapped_unmapped.append((seq[last_end: len(seq)], ''));	
 			return mapped_unmapped	
 						
 		self.mapped_unmapped = [];
@@ -153,10 +154,10 @@ class Interaction(object):
 			for nrow in range(len(self.aligned_reads[0])):
 				self.mapped_unmapped.append(_set_seq([x[nrow] for x in self.aligned_reads]))
 		except:
-			sys.stderr.write("_"*100 + "\n")
+			sys.stderr.write("_"*110 + "\n")
 			for ars in self.aligned_reads:
 				for ar in ars:
-					sys.stderr.write("aligned_read: %s %d %d\n\n" % (ar.chrom, ar.start, ar.stop))
+					sys.stderr.write("aligned_read: %s %d %d %s\n\n" % (ar.chrom, ar.start, ar.stop, ar.qname))
 			for interval in self.intervals:
 				sys.stderr.write("interval coordinates: %s %d %d\n" % (interval.chrom, interval.start, interval.stop))
 				sys.exit()

@@ -25,13 +25,13 @@
 			{% for i in range(mapped_unmapped|length) %}<span style="color:gray">{{mapped_unmapped[i][0]}}</span><span style="color:{{interaction.icolors[i]}}">{{mapped_unmapped[i][1]}}</span>{%endfor%}
 		{%endfor%}
 		</td>	
-<!--		<td>
+		<td>
 		<br><br>
 		<br><br>reads ids<br><br>
 		{% for rid in interaction.read_ids %}
 			{{rid}}
 		{%endfor%}
-		</td>-->
+		</td>
 		</tr>
 	{%endfor%}	
 </table>		
