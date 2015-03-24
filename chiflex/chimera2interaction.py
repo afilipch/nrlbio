@@ -5,7 +5,7 @@ import argparse;
 from collections import defaultdict
 from operator import itemgetter, attrgetter
 
-from pybedtools import BedTool
+from pybedtools import BedTool, set_bedtools_path
 
 from nrlbio.pybedtools_extension import doublebed2dict, generate_overlaping_intervals
 from nrlbio.interaction import Interaction
@@ -19,7 +19,7 @@ parser.add_argument('-od', '--dictionary', nargs = '?', required = True, type = 
 parser.add_argument('--order', nargs = '?', default = False, const=True, type = int, help = "keeps order of left to right parts in interactions");
 parser.add_argument('--bedtools', nargs = '?', default = '', type = str, help = "path to a bedtools binaries");
 args = parser.parse_args();
-pybedtools.set_bedtools_path(path=args.bedtools)
+set_bedtools_path(path=args.bedtools)
 
 od = open(args.dictionary, 'w');
 oi = open(args.interactions, 'w');
