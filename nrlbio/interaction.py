@@ -140,27 +140,37 @@ class Interaction(object):
 		
 		#set read sequences
 		def _set_seq(aligned_reads):
-			mapped_unmapped = [];
+			seq_fragments = [];
 			seq = aligned_reads[0].aligned_read.seq
-			last_end = 0;
-			for ar in sorted(aligned_reads, key=lambda x: x.aligned_read.qstart):
-				mapped_unmapped.append((seq[last_end: ar.aligned_read.qstart], seq[ar.aligned_read.qstart:ar.aligned_read.qend]));
-				last_end = ar.aligned_read.qend;
-			mapped_unmapped.append((seq[last_end: len(seq)], ''));	
-			return mapped_unmapped	
+			
+			borders = [(x[0].aligned_read.qstart, x[0].aligned_read.qend, x[1]) for x in zip(aligned_reads, self.icolors)];
+			borders.sort(key = lambda x: x[0]);
+			borders.insert(0, (0,0));
+			borders.append((len(seq), len(seq)));
+			
+			for i in range(1, len(borders)-1):
+				overlap = seq[borders[i][0]: borders[i-1][1]]
+				unmapped = seq[borders[i-1][1]: borders[i][0]]
+				mapped = seq[max(borders[i-1][1], borders[i][0]): min(borders[i+1][0], borders[i][1])]
+				color = borders[i][2]
+				seq_fragments.append((overlap, unmapped, mapped, color));
+			else:	
+				seq_fragments.append(('', seq[borders[-2][1]: borders[-1][0]], '', 'white'));	
+				
+			return seq_fragments
 						
-		self.mapped_unmapped = [];
-		try:
-			for nrow in range(len(self.aligned_reads[0])):
-				self.mapped_unmapped.append(_set_seq([x[nrow] for x in self.aligned_reads]))
-		except:
-			sys.stderr.write("_"*110 + "\n")
-			for ars in self.aligned_reads:
-				for ar in ars:
-					sys.stderr.write("aligned_read: %s %d %d %s\n\n" % (ar.chrom, ar.start, ar.stop, ar.qname))
-			for interval in self.intervals:
-				sys.stderr.write("interval coordinates: %s %d %d\n" % (interval.chrom, interval.start, interval.stop))
-				sys.exit()
+		self.seq_fragments = [];
+		#try:
+		for nrow in range(len(self.aligned_reads[0])):
+			self.seq_fragments.append(_set_seq([x[nrow] for x in self.aligned_reads]))
+		#except:
+			#sys.stderr.write("_"*110 + "\n")
+			#for ars in self.aligned_reads:
+				#for ar in ars:
+					#sys.stderr.write("aligned_read: %s %d %d %s\n\n" % (ar.chrom, ar.start, ar.stop, ar.qname))
+			#for interval in self.intervals:
+				#sys.stderr.write("interval coordinates: %s %d %d\n" % (interval.chrom, interval.start, interval.stop))
+				#sys.exit()
 			
 		##################################################################################################
 		

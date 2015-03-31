@@ -21,8 +21,8 @@
 		<td>
 		<br><br>
 		<br><br>readssequences<br><br>
-		{% for mapped_unmapped in interaction.mapped_unmapped %}
-			{% for i in range(mapped_unmapped|length) %}<span style="color:gray">{{mapped_unmapped[i][0]}}</span><span style="color:{{interaction.icolors[i]}}">{{mapped_unmapped[i][1]}}</span>{%endfor%}
+		{% for seq_fragments in interaction.seq_fragments %}
+			{% for overlap, unmapped, mapped, color in seq_fragments %}<span style="color:red">{{overlap}}</span><span style="color:gray">{{unmapped}}</span><span style="color:{{color}}">{{mapped}}</span>{%endfor%}
 		{%endfor%}
 		</td>	
 		<td>
