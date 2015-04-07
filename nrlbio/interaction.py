@@ -102,7 +102,7 @@ class Interaction(object):
 			raise AttributeError("Interaction.set_extended_intervals() has to be called in advance");
 			
 		self.icolors = ['green', 'lightblue', 'purple', 'yellow'];
-		self.ilinks = [get_link(interval, system, internal = False) for interval in self.extended_intervals]
+		self.ilinks = [get_link(interval, system, internal = False) for interval in self.intervals]
 		##################################################################################################
 		
 		#set alignments	

@@ -26,14 +26,12 @@ parser.add_argument('-r', '--reference', nargs = '+', default = None, type = str
 parser.add_argument('-e', '--extensions', nargs = '+', default = [], type = str, help = "Controls how far interacting intervals' sequences will be extended. For example extensions= 1,4 0,7 will extend first interval 1nt upstream and 4nts downstream, while the second interaction will be extended 0nt upstream and 7nts downstream. If '--reference' is not set, willl be set to None");
 parser.add_argument('--template', nargs = '?', default = "interaction_detailed.html", type = str, help = "path to jinja2/django template");
 parser.add_argument('--title', nargs = '?', default = 'interactions', type = str, help = "title of html report");
-parser.add_argument('--reassign', nargs = '?', default = False, const = True, type = bool, help = "Has to be set, if sam/bam hits have to be reassigned to genomic coordinates. That is, if nongenomic reference was used for mapping");
+parser.add_argument('--reassign', nargs = '+', choices = [0, 1], type = int, help = "Has to be set, if sam/bam hits have to be reassigned to genomic coordinates. That is, if nongenomic reference was used for mapping, or if it is desired to report mapping to the given reference. 1 - means reassign, order of provided values should correspondes to the order of values for \'--sam\' attribute");
 args = parser.parse_args();
 
 #set jinja2 environment
 environment = jinja2.Environment(loader=jinja2.PackageLoader('nrlbio', 'templates'))
 template = environment.get_template(args.template)
-
-
 
 
 #parse extensions
@@ -64,12 +62,12 @@ for table in args.table:
 				hid2iid[hid] = iid;
 				
 iid2hits = defaultdict(list);
-for sampath in args.sam:
+for sampath, reassign in zip(args.sam, args.reassign):
 	samfile = pysam.Samfile(sampath);
 	for aligned_read in samfile.fetch(until_eof=True):
 		rname = samfile.getrname(aligned_read.tid)
 		arw = ArWrapper(aligned_read, rname, add_nr_tag=False);
-		arw.reassign_coordinates(reassign=args.reassign);
+		arw.reassign_coordinates(reassign=bool(reassign));
 		iid = hid2iid.get(arw.qname);
 		if(iid):
 			iid2hits[iid].append(arw);

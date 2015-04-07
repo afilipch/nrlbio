@@ -9,7 +9,7 @@
 		{% for i in range(interaction.extended_intervals|length) %}
 			<td>
 			<br><br>
-			<a target="_blank" href="{{interaction.ilinks[i]}}" style="color: {{interaction.icolors[i]}}">{{interaction.extended_intervals[i].chrom}} {{interaction.extended_intervals[i].start}} {{interaction.extended_intervals[i].stop}} {{interaction.extended_intervals[i].strand}}</a>
+			<a target="_blank" href="{{interaction.ilinks[i]}}" style="color: {{interaction.icolors[i]}}">{{interaction.intervals[i].chrom}} {{interaction.intervals[i].start}} {{interaction.intervals[i].stop}} {{interaction.intervals[i].strand}}</a>
 			<br><br>
 			<span style="color:{{interaction.icolors[i]}};">{{interaction.extended_intervals[i].attrs.seq}}</span>
 			<br><br>
@@ -22,14 +22,14 @@
 		<br><br>
 		<br><br>readssequences<br><br>
 		{% for seq_fragments in interaction.seq_fragments %}
-			{% for overlap, unmapped, mapped, color in seq_fragments %}<span style="color:red">{{overlap}}</span><span style="color:gray">{{unmapped}}</span><span style="color:{{color}}">{{mapped}}</span>{%endfor%}
+			{% for overlap, unmapped, mapped, color in seq_fragments %}<span style="color:red">{{overlap}}</span><span style="color:gray">{{unmapped}}</span><span style="color:{{color}}">{{mapped}}</span>{%endfor%}<br>
 		{%endfor%}
 		</td>	
 		<td>
 		<br><br>
 		<br><br>reads ids<br><br>
 		{% for rid in interaction.read_ids %}
-			{{rid}}
+			{{rid}}<br>
 		{%endfor%}
 		</td>
 		</tr>

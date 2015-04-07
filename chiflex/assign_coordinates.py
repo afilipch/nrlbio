@@ -3,27 +3,36 @@
 import argparse;
 import sys;
 
+from pybedtools import BedTool
+
 parser = argparse.ArgumentParser(description='assigns genomic coordinates to the regions which are on non-genomic reference(transcriptome, 3\'utr, etc.)');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to bed/gff file");
 args = parser.parse_args();
 
-def reassign(a):
-	chrom, strand, start, stop = a[0].split("|")[:4]
-	start = int(start)
-	stop = int(stop)
+def reassign(interval):
+	try:
+		chrom, strand, start, stop = interval.chrom.split("|")
+		#print "_"*120
+		#sys.stdout.write(str(interval));
+	except:
+		#print "_"*120
+		sys.stderr.write('Interval chrom has to be in [chrom]|[strand]|[start]|[stop] format. The actual name is %s\n' % interval.chrom)
+		return interval
+		
+	interval.chrom 	= chrom
+	interval.strand = strand
 	
 	if(strand == '+'):
-		stop = start + int(a[2])
-		start = start + int(a[1])		
+		interval.stop = int(start) + interval.stop
+		interval.start = int(start) + interval.start
 	else:
-		start = stop - int(a[2])
-		stop = stop - int(a[1])
-	
-	return chrom, str(start), str(stop), a[3], a[4], strand
+		tstop = interval.stop
+		interval.stop = int(stop) - interval.start
+		interval.start = int(stop) - tstop
 
-with open(args.path) as f:
-	for l in f:
-		a = l.strip().split("\t");
-		a[:6] = reassign(a[:6]);
-		print "\t".join(a);
+	return interval
+
+
+for interval in BedTool(args.path):
+	sys.stdout.write(str(reassign(interval)));
 
