@@ -86,6 +86,7 @@ class Stat(object):
 			
 			
 
+			
 def get_link(interval, system, internal = False):	
 	if(internal):
 		source = "http://141.80.186.52/"
