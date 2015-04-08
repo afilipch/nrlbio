@@ -11,7 +11,7 @@ args = parser.parse_args();
 
 def reassign(interval):
 	try:
-		chrom, strand, start, stop = interval.chrom.split("|")
+		chrom, strand, start, stop = interval.chrom.split("|")[:4]
 		#print "_"*120
 		#sys.stdout.write(str(interval));
 	except:

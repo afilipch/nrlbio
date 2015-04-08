@@ -32,7 +32,7 @@ class Interaction(object):
 				sys.stderr.write("%s\nThere is no interval for aligned_read: %s %d %d %s\n\n" % (str("_"*100), ar.chrom, ar.start, ar.stop, ar.qname))
 				for interval in intervals:
 					sys.stderr.write("interval coordinates: %s %d %d\n" % (interval.chrom, interval.start, interval.stop))
-					
+					 
 		
 	@classmethod
 	def from_intervals(cls, name, interacting_intervals):

@@ -26,7 +26,7 @@ parser.add_argument('-r', '--reference', nargs = '+', default = None, type = str
 parser.add_argument('-e', '--extensions', nargs = '+', default = [], type = str, help = "Controls how far interacting intervals' sequences will be extended. For example extensions= 1,4 0,7 will extend first interval 1nt upstream and 4nts downstream, while the second interaction will be extended 0nt upstream and 7nts downstream. If '--reference' is not set, willl be set to None");
 parser.add_argument('--template', nargs = '?', default = "interaction_detailed.html", type = str, help = "path to jinja2/django template");
 parser.add_argument('--title', nargs = '?', default = 'interactions', type = str, help = "title of html report");
-parser.add_argument('--reassign', nargs = '+', choices = [0, 1], type = int, help = "Has to be set, if sam/bam hits have to be reassigned to genomic coordinates. That is, if nongenomic reference was used for mapping, or if it is desired to report mapping to the given reference. 1 - means reassign, order of provided values should correspondes to the order of values for \'--sam\' attribute");
+parser.add_argument('--reassign', nargs = '+', choices = [0, 1], type = int, help = "Has to be set, if sam/bam hits have to be reassigned to genomic coordinates. That is, if nongenomic reference was used for mapping, or if it is desired to report mapping to the given reference. 1 - means reassign, order of provided values should correspond to the order of values for \'--sam\' attribute");
 args = parser.parse_args();
 
 #set jinja2 environment
@@ -40,7 +40,7 @@ for e in args.extensions:
 	extensions.append([int(x) for x in e.split(",")])
 ##################################################################################
 
-
+ 
 #get reference dictionary, if needed
 if(args.reference):
 	from nrlbio.generators import generator_seqrecord

@@ -36,7 +36,7 @@ parser.add_argument('--advanced', nargs = '+', choices = ['repetitive', 'nonuniq
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
 args = parser.parse_args();
 
-print sys.argv
+#print sys.argv
 
 #parse advanced options
 nonunique = 'nonunique' in args.advanced
