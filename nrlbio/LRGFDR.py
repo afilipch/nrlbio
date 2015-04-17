@@ -432,8 +432,7 @@ class Cluster(object):
 		return True;
 
 
-
-
+		
 class Negative_cluster(Cluster):
 	def __init__(self, grid, cluster, origin, ID):
 		super(Negative_cluster,self).__init__(grid, origin, ID)
@@ -570,8 +569,12 @@ def total_statistics(grid, clusters):
 		
 	return signal, control, support, fdr	
 
-
-def lrg(signal, control, entry='list', attributes=[], attribute_names=None, support = 0.01, maxiter = 100,  fdr=0.1, lookforward=10, fit_function=ff_balanced, ncsupport=0.1, nciter=0, ncfunction=nc_balanced):
+#def filter_iterable(source,entry='list', attributes=[], attribute_names=[]):
+	
+	#for elem in source:
+		
+	
+def lrg(signal, control, entry='list', attributes=[], attribute_names=[], support = 0.01, maxiter = 10,  fdr=0.1, lookforward=10, fit_function=ff_balanced, ncsupport=0.1, nciter=0, ncfunction=nc_balanced):
 	
 	grid = Grid.from_iterable(signal, control, entry=entry, attributes=attributes, attribute_names=attribute_names);
 	clusters = generate_clusters(grid, support = support, maxiter = maxiter,  fdr=fdr, lookforward=lookforward, fit_function=fit_function, ncsupport=ncsupport, nciter=nciter, ncfunction=ncfunction);

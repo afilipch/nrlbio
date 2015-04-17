@@ -213,26 +213,28 @@ def	cmp_attributes(obj1, obj2, attributes):
 	else:
 		return 0;
 		
-		
-	
-	
+			
 def flatten(iterable):
 	return list(itertools.chain.from_iterable(iterable))
 	
 	
+def counter2list(counter):
+	'''Flatten collections.Counter-like dictionary into  \'original list\', that is: Counter(counter2list(counter)) == counter
+	
+		counter dict: collections.Counter-like dictionary to flatten
+		
+		Returns list: list of counter keys, duplicated \'corresponding\' value times
+	'''	
+		
+	l = [];
+	for k, v in counter.iteritems():
+		l += [k]*v
+	return l;	
 	
 	
 def median(lst):
 	return numpy.median(numpy.array(lst))
 	
-		
-
-
-
-
-
-
-
 
 #testing section
 if(__name__ == "__main__"):
@@ -260,9 +262,16 @@ if(__name__ == "__main__"):
 		
 		
 		
-	a = [[1,12,0], [10,3,4], [1,16,0], [10,5,4], [1,5,3]]
-	for e in sorted(a, cmp=lambda x,y: cmp_indices(x,y,[2,0, 1])):
-		print e
+	#a = [[1,12,0], [10,3,4], [1,16,0], [10,5,4], [1,5,3]]
+	#for e in sorted(a, cmp=lambda x,y: cmp_indices(x,y,[2,0, 1])):
+		#print e
+		
+	from collections import Counter	
+	b = [1,1,1,3,2,3,4,4,6,4,6,6,7,7,9,8,9, 55, 55, 8, 8,8,8,8,8]
+	
+	counter = Counter(b)
+	print counter
+	print counter2list(counter)
 	
 	
 	

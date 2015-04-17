@@ -44,16 +44,16 @@ class Stat(object):
 		Creates stat instance from attributes of given objects
 		'''
 		if(not headers):
-			attributes = headers;
+			headers = attributes;
 		elif(len(headers) != len(attributes)):
 			raise Exception('length of headers has to be equal to the length of attributes, or not provided at all\n')
 
 		
-		instance = cls(title, [])			
+		instance = cls(title)			
 		for a, header in zip(attributes, headers):
 			attribute = getattr(obj, a)
 			if(attribute):
-				html_attribute = StatAttribute(header, [a, "total number", "fraction"], [])
+				html_attribute = StatAttribute(header, [a, "total number", "fraction"], entries = [])
 				total = float(sum(attribute.values()))
 				if(ordered):
 					for k, v in sorted(attribute.items(), key = lambda x: x[1], reverse = True)[:top_entries]:

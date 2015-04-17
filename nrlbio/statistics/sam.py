@@ -10,6 +10,8 @@ import Bio;
 import pysam;
 #import jinja2;
 
+from nrlbio.config.config import load_config
+from nrlbio import pyplot_extension
 #from nrlbio import html;
 
 
@@ -90,7 +92,27 @@ def get_conversions(ar):
 			apair = (next(deliter), None)
 		conversions.append(apair);	
 			
-	return conversions;	
+	return conversions;
+	
+	
+def conv2labels(conversions):
+	_order = [(None, None), ('A', 'C'), ('A', 'T'), ('A', 'G'), ('C', 'A'), ('C', 'T'), ('C', 'G'), ('T', 'A'), ('T', 'C'), ('T', 'G'), ('G', 'A'), ('G', 'C'), ('G', 'T'), ('G', 'G'), ('A', None), ('C', None), ('G', None), ('T', None), (None, 'A'), (None, 'C'), (None, 'T'), (None, 'G')]
+	
+	labels = [];
+	ncounter = {};
+	for c, mtype in enumerate(_order):
+		ncounter[c+1] = conversions[mtype];
+		
+		if(mtype[0] and mtype[1]):
+			labels.append("%s->%s" % mtype);
+		elif((not mtype[0]) and (not mtype[1])):
+			labels.append("perf")
+		elif(not mtype[0]):
+			labels.append("ins %s" % mtype[1]);
+		elif(not mtype[1]):
+			labels.append("del %s" % mtype[0]);
+			
+	return ncounter, labels		
 	
 	
 class Stat(object):
@@ -110,6 +132,8 @@ class Stat(object):
         ref_start collections.defaultdict: Key: start position of the aligned portion of the read sequence (0-based, inclusive) on reference, Value: number of aligned reads corresponding the Key value;
         ref_end collections.defaultdict: Key: end position of the aligned portion of the read sequence (0-based, exclusive) on reference, Value: number of aligned reads corresponding the Key value;
         query_ref_start collections.defaultdict: Key: tuple (start position of the aligned portion of the read sequence (0-based, exclusive) on read sequence, start position of the aligned portion of the read sequence (0-based, inclusive) on reference), Value: number of aligned reads corresponding the Key value;
+        _counters_names list of str: names(names of object attributes) of the counters(statistics attributes).
+        _counters_titles list of str: titles of the counters(statistics attributes) which can be used as table/plot titles
 	'''
 	def __init__(self, name = None):
 		self.name = name;
@@ -131,7 +155,9 @@ class Stat(object):
 		self.query_ref_start = defaultdict(float) 
 		#self.cut_right = defaultdict(float) 
 		
-
+		self._counters_names = ["ascore", "query_start", "clipped_length_right", "query_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right", "query_ref_start", "ref_start", "ref_end"]
+		self._counters_titles = ["Alignment Score", "Start position of the match in query", "number of nucleotides soft clipped downstream", "End position of the match in query", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence", "Start position of the match in query and reference", "Start position of the match in reference", "End position of the match in reference"]
+		
 	def increment_basic(self, ar, conversions=None):
 		self.query_start[ar.qstart] += 1;
 		self.query_end[ar.qend] += 1;
@@ -203,25 +229,29 @@ class Stat(object):
 					self.increment_basic(ar)
 		return True
 		
-	#def tohtml(self, output = None, template = "statistic_tables.html", top_entries = 20):
-		#r = html.Stat(self.name, [])
-		#attributes = ["ascore", "query_ref_start", "query_start", "ref_start", "clipped_length_right", "query_end", "ref_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right"]
-		#names = ["Alignment Score", "Start position of the match in query and reference", "Start position of the match in query", "Start position of the match in reference", "number of nucleotides soft clipped downstream", "End position of the match in query", "End position of the match in reference", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence"]
-		#for a, name in zip(attributes, names):
-			#attribute = getattr(self, a)
-			#if(attribute):
-				#html_attribute = html.StatAttribute(name, [a, "total number", "fraction"], [])
-				#total = float(sum(attribute.values()))
-				#for k, v in sorted(attribute.items(), key = lambda x: x[1], reverse = True)[:top_entries]:
-					#f = v/total
-					#html_attribute.entries.append([k, "%d" % v, "%1.5f" % f]);
-				#r.attributes.append(html_attribute);
-			#else:
-				#pass;
-		#t = env.get_template(template);	
-		#if(output):
-			#with open(output, 'w') as f:
-				#f.write(t.render({"statistics": r}))
-		#else:		
-			#t.render({"statistics": r})		
+	def generate_plots(self, configuration, output=''):
+		n=5
+		config_ = load_config(configuration)
+		for attr_name, title in zip(self._counters_names[:n], self._counters_titles[:n]):
+			attr = getattr(self, attr_name)
+			if(attr):
+				kwargs = config_[attr_name];
+				kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
+				kwargs['label'] = self.name;
+				if(attr_name in ["conv", "conv_weighted"]):
+					ncounter, xticklabels = conv2labels(attr)
+					kwargs['xticklabels'] = xticklabels
+					kwargs['xticks'] = sorted(ncounter.keys())
+					pyplot_extension.histogram(ncounter, **kwargs)
+				else:	
+					pyplot_extension.histogram(attr, **kwargs)
 
+		
+
+if (__name__=='__main__'):
+	samfile = pysam.Samfile(sys.argv[1])
+	samstat = Stat('test');	
+	samstat.fill_stat_sheet(samfile.fetch(until_eof=True), short_reference = False, detailed = False, sparse_coefficient = 1)
+	samstat.generate_plots('samstat')
+	#print samstat.conv
+	

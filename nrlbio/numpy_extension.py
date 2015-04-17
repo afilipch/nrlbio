@@ -34,6 +34,7 @@ def get_slice(a, coordinates):
 	expr = expr[:-1] + "]";
 	return eval(expr);
 		
+		
 def one_side(coordinates, dimension, lookforward, start=True):
 	'''extends coordinates in a given dimension
 		
@@ -53,6 +54,7 @@ def one_side(coordinates, dimension, lookforward, start=True):
 		nc[dimension][1] = nc[dimension][1] + lookforward;	
 	return nc;
 	
+	
 def keymax(a, key=lambda x: x):
 	'''returns maximum(according to key function provided) elemenent of numpy.array
 	
@@ -68,6 +70,7 @@ def keymax(a, key=lambda x: x):
 			m = c;
 	return m;
 	
+	
 def keymin(a, key=lambda x: x):
 	'''returns the minimum(according to key function provided) elemenent of numpy.array
 	
@@ -82,6 +85,7 @@ def keymin(a, key=lambda x: x):
 		if(key(c)<key(m)):
 			m = c;
 	return m;	
+	
 	
 def key_arg_max(a, key=lambda x: x):
 	'''returns coordinates of the maximum(according to key function provided) elemenent of numpy.array
@@ -99,6 +103,7 @@ def key_arg_max(a, key=lambda x: x):
 			m = c;
 			index = i+1;
 	return np.unravel_index(index, a.shape);
+	
 	
 def key_arg_min(a, key=lambda x: x):
 	'''returns coordinates of the minimum(according to key function provided) elemenent of numpy.array
@@ -118,7 +123,8 @@ def key_arg_min(a, key=lambda x: x):
 	return np.unravel_index(index, a.shape);	
 
 	
-	
+def counter2array(counter):
+	pass;
 	
 #testing section	
 if (__name__ == "__main__"):
