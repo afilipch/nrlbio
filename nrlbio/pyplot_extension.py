@@ -134,23 +134,31 @@ def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xtic
 	plt.close();	
 	
 	
-def pie(explode=None, labels=None,
-          colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure' 'seashell', 'darkorchid', 'chartreuse'),
-          autopct=None, pctdistance=0.6, shadow=False,
-          labeldistance=1.1, startangle=None, radius=None,
-          counterclock=True, wedgeprops=None, textprops=None)
+def pie(data, output=None, explode=None, labels=None, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'),
+autopct="%d", pctdistance=0.6, shadow=True, labeldistance=1.1, startangle=90, radius=None, counterclock=True, wedgeprops=None, textprops=None):
           
 	fig = plt.figure()
-	plt.pie(sizes, explode=explode, labels=labels, colors=colors,
-        autopct=autopct, shadow=shadow, startangle=startangle)
+	plt.pie(data, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, shadow=shadow, labeldistance=labeldistance, startangle=startangle, radius=radius, counterclock=counterclock, wedgeprops=wedgeprops, textprops=textprops)
 	
+	plt.axis('equal')
+	
+	if(output):
+		plt.savefig(output)
+	else:
+		plt.show()
+		
+	plt.close();	
 	
 if(__name__ == '__main__'):
 	data = [1,1,1,1,4,5,6,5,5,5,6,6,6,7,7,2,2,2,3,3,3,3,1,1,1,1,4,4,4, 12, 12]
 	c = Counter(data);
 	di = {6: 50, 6.1: 150, 6.2: 250, 6.3: 150, 6.4: 50, 6.8: 70};
 	dj = {5.7: 40, 5.8: 80, 5.7: 100, 6: 120, 6.1: 180, 6.2: 50};
-	multihistogram([di, dj], title = 'konfetka', xlabel='day time', ylabel='bu bu bu level', xticks=list(np.arange(5.5, 6.9, 0.1)), xticklabels= ['%dh' % x for x in range(5,20)], step=0.1, color=('lightgreen', '0.15'), labels=('signal', 'control'));
+	#multihistogram([di, dj], title = 'konfetka', xlabel='day time', ylabel='bu bu bu level', xticks=list(np.arange(5.5, 6.9, 0.1)), xticklabels= ['%dh' % x for x in range(5,20)], step=0.1, color=('lightgreen', '0.15'), labels=('signal', 'control'));
+	labels = 'Frogs', 'Hogs', 'Dogs', 'Logs'
+	sizes = [15, 30, 45, 10]
+	pie(sizes, labels=labels)
+	
 		
 		
 	

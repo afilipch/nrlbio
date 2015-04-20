@@ -22,7 +22,7 @@ class Stat(object):
 		self.attrs = defaultdict(lambda: defaultdict())
 		
 
-	def increment(self, interval, attributes):
+	def increment(self, interval, attributes=[]):
 		self.interval[interval.length] += 1;
 		try:
 			self.score[interval.score] += 1;
@@ -30,7 +30,9 @@ class Stat(object):
 			self.score['unassigned'] += 1;
 		for a in attributes:
 			try:
-				self.score[interval.score] += 1;
+				self.attrs[a][interval.attrs[a]] += 1;
+			except:
+				self.attrs[a]['unassigned'] += 1;
 
 			
 	def fill_stat_sheet(self, bed_iter, sparse_coefficient = 1):
