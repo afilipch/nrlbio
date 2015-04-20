@@ -15,7 +15,7 @@ from nrlbio import html
 parser = argparse.ArgumentParser(description='script generates html reports and plots for each given sam/bam file separately');
 parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "paths to sam/bam files"); 
 parser.add_argument('-o', '--output', nargs = '+', default = [], type = str, help = "paths to the output reports. If not set, reports will be generated in current folder, deriving file names from sam/bam files");
-parser.add_argument('--draw', nargs = '?', default = False, const = True, type = bool, help = "if True, scripts also generates plots for html report");
+parser.add_argument('--draw', nargs = '?', default = False, const = True, type = bool, help = "if True, scripts also generate plots for html report");
 parser.add_argument('--ordered', nargs = '?', default = False, const = True, type = int, help = "If true sorts attributes by value, otherwise by key");
 parser.add_argument('--top_entries', nargs = '?', default = 20, type = int, help = "Reports only top N entries for each statistics. Ignored if '--ordered'=False");
 parser.add_argument('--sparse_coefficient', nargs = '?', default = 1, type = int, help = "If sparse_coefficient set to 3, then only each 3rd record will be analyzed, saves time in a case of large files");

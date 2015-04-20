@@ -311,6 +311,10 @@ class Stat(object):
 		
 	def tohtml(self, output = None, template = "statistic_tables.html", top_entries = 20):
 		from nrlbio import html;
+		import jinja2;
+		'''set jinja2 enviroment'''
+		env = jinja2.Environment(loader=jinja2.PackageLoader('nrlbio', 'templates'))
+
 		
 		r = html.Stat(self.name, [])
 		attributes = ["ascore", "query_ref_start", "query_start", "ref_start", "clipped_length_right", "query_end", "ref_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right"]

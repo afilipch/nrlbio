@@ -23,7 +23,7 @@ class Stat(object):
 		
 
 	def increment(self, interval, attributes=[]):
-		self.interval[interval.length] += 1;
+		self.length[interval.length] += 1;
 		try:
 			self.score[interval.score] += 1;
 		except:
