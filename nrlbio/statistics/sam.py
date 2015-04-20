@@ -112,7 +112,27 @@ def conv2labels(conversions):
 		elif(not mtype[1]):
 			labels.append("del %s" % mtype[0]);
 			
-	return ncounter, labels		
+	return ncounter, labels	
+
+
+def query_ref2labels(query_ref, top=20):
+	labels = [];
+	ncounter = {};
+	for c, ((q, r), v) in enumerate(list(sorted(query_ref.items(), key = lambda x: x[1], reverse=True))[:top]):
+		ncounter[c+1] = v;
+		labels.append("%d<>%d" % (q+1, r+1))
+		
+	return ncounter, labels
+
+
+def start_end2labels(start_end, top=50):
+	labels = [];
+	ncounter = {};
+	for k in range(top):  
+		ncounter[k+1] = start_end[k];
+		labels.append(str(k))
+		
+	return ncounter, labels	
 	
 	
 class Stat(object):
@@ -135,6 +155,12 @@ class Stat(object):
         _counters_names list of str: names(names of object attributes) of the counters(statistics attributes).
         _counters_titles list of str: titles of the counters(statistics attributes) which can be used as table/plot titles
 	'''
+	
+	_counters_names = ["ascore", "query_start", "clipped_length_right", "query_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right", "query_ref_start", "ref_start", "ref_end"]
+	_hist_names = ["ascore", "query_start", "clipped_length_right", "query_end", "conv", "conv_weighted", "conv_number", "query_ref_start", "ref_start", "ref_end"]
+	_multihist_names = ["ascore", "query_start", "clipped_length_right", "query_end", "conv", "conv_weighted", "conv_number", "ref_start", "ref_end"]		
+	_top = 50
+	
 	def __init__(self, name = None):
 		self.name = name;
 		self.query_start = defaultdict(float)#is equal to clipped_length_left, which is therefore redundant and therefore is not used
@@ -154,10 +180,7 @@ class Stat(object):
 		self.ref_end = defaultdict(float)    
 		self.query_ref_start = defaultdict(float) 
 		#self.cut_right = defaultdict(float) 
-		
-		self._counters_names = ["ascore", "query_start", "clipped_length_right", "query_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right", "query_ref_start", "ref_start", "ref_end"]
-		self._counters_titles = ["Alignment Score", "Start position of the match in query", "number of nucleotides soft clipped downstream", "End position of the match in query", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence", "Start position of the match in query and reference", "Start position of the match in reference", "End position of the match in reference"]
-		
+
 	def increment_basic(self, ar, conversions=None):
 		self.query_start[ar.qstart] += 1;
 		self.query_end[ar.qend] += 1;
@@ -229,29 +252,92 @@ class Stat(object):
 					self.increment_basic(ar)
 		return True
 		
-	def generate_plots(self, configuration, output=''):
-		n=5
+		
+	def _set_hist_configuration(self, attr, attr_name):
+		if(attr_name in ["conv", "conv_weighted"]):
+			ncounter, xticklabels = conv2labels(attr)
+			return ncounter, xticklabels, sorted(ncounter.keys())
+		elif(attr_name == 'query_ref_start'):
+			ncounter, xticklabels = query_ref2labels(attr)
+			return ncounter, xticklabels, sorted(ncounter.keys())
+		elif(attr_name in ['ref_start', 'ref_end']):
+			t = max(10, self._top/10)
+			ncounter, xticklabels = start_end2labels(attr, top=self._top)
+			return ncounter, xticklabels[::t], sorted(ncounter.keys())[::t]
+		else:
+			return attr, None, None		
+		
+		
+	def generate_hist(self, configuration='samstat', output=''):
 		config_ = load_config(configuration)
-		for attr_name, title in zip(self._counters_names[:n], self._counters_titles[:n]):
+		for attr_name in self._hist_names:
+			kwargs = config_[attr_name];
+			kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
+			kwargs['label'] = self.name;			
 			attr = getattr(self, attr_name)
 			if(attr):
-				kwargs = config_[attr_name];
-				kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
-				kwargs['label'] = self.name;
-				if(attr_name in ["conv", "conv_weighted"]):
-					ncounter, xticklabels = conv2labels(attr)
+				ncounter, xticklabels, xticks = self._set_hist_configuration(attr, attr_name)
+				kwargs['xticklabels'] = xticklabels
+				kwargs['xticks'] = xticks
+				pyplot_extension.histogram(ncounter, **kwargs);
+			else:
+				pass;
+
+				
+	
+	@classmethod
+	def generate_multihist(cls, instances, configuration='samstat', colors=('lightgreen', '0.15'), labels = ('signal', 'control'), output=''):
+		config_ = load_config(configuration)
+		for attr_name in cls._multihist_names:
+			kwargs = config_[attr_name];
+			kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
+			kwargs['label'] = labels;
+			kwargs['color'] = colors;
+			data = [];
+			
+			for instance in instances:			
+				attr = getattr(instance, attr_name)
+				if(attr):
+					ncounter, xticklabels, xticks = instance._set_hist_configuration(attr, attr_name)
 					kwargs['xticklabels'] = xticklabels
-					kwargs['xticks'] = sorted(ncounter.keys())
-					pyplot_extension.histogram(ncounter, **kwargs)
-				else:	
-					pyplot_extension.histogram(attr, **kwargs)
-
+					kwargs['xticks'] = xticks
+					data.append(ncounter)
+					
+			if(data):		
+				pyplot_extension.multihistogram(data, **kwargs);
 		
-
+		
+	def tohtml(self, output = None, template = "statistic_tables.html", top_entries = 20):
+		r = html.Stat(self.name, [])
+		attributes = ["ascore", "query_ref_start", "query_start", "ref_start", "clipped_length_right", "query_end", "ref_end", "conv", "conv_weighted", "conv_number",	"clipped_seq_left", "clipped_seq_right"]
+		names = ["Alignment Score", "Start position of the match in query and reference", "Start position of the match in query", "Start position of the match in reference", "number of nucleotides soft clipped downstream", "End position of the match in query", "End position of the match in reference", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence"]
+		for a, name in zip(attributes, names):
+			attribute = getattr(self, a)
+			if(attribute):
+				html_attribute = html.StatAttribute(name, [a, "total number", "fraction"], [])
+				total = float(sum(attribute.values()))
+				for k, v in sorted(attribute.items(), key = lambda x: x[1], reverse = True)[:top_entries]:
+					f = v/total
+					html_attribute.entries.append([k, "%d" % v, "%1.5f" % f]);
+				r.attributes.append(html_attribute);
+			else:
+				pass;
+		t = env.get_template(template);	
+		if(output):
+			with open(output, 'w') as f:
+				f.write(t.render({"statistics": r}))
+		else:		
+			t.render({"statistics": r})
+		
 if (__name__=='__main__'):
-	samfile = pysam.Samfile(sys.argv[1])
-	samstat = Stat('test');	
-	samstat.fill_stat_sheet(samfile.fetch(until_eof=True), short_reference = False, detailed = False, sparse_coefficient = 1)
-	samstat.generate_plots('samstat')
+	samfile1 = pysam.Samfile(sys.argv[1])
+	samstat1 = Stat('signal');	
+	samstat1.fill_stat_sheet(samfile1.fetch(until_eof=True), short_reference = True, detailed = True, sparse_coefficient = 1)
+	
+	samfile2 = pysam.Samfile(sys.argv[2])
+	samstat2 = Stat('control');	
+	samstat2.fill_stat_sheet(samfile2.fetch(until_eof=True), short_reference = True, detailed = True, sparse_coefficient = 1)
+	
+	Stat.generate_multihist([samstat1, samstat2], 'samstat', output='plots')
 	#print samstat.conv
 	

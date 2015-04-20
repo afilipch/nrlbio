@@ -17,17 +17,20 @@ class Stat(object):
 	'''
 	def __init__(self, name = None):
 		self.name = name;
-		self.query_start = defaultdict(float)
-		self.query_end = defaultdict(float)  
-
+		self.length = defaultdict(int)
+		self.score = defaultdict(float)  
+		self.attrs = defaultdict(lambda: defaultdict())
 		
 
-	def increment(self, interval):
+	def increment(self, interval, attributes):
 		self.interval[interval.length] += 1;
 		try:
 			self.score[interval.score] += 1;
 		except:
 			self.score['unassigned'] += 1;
+		for a in attributes:
+			try:
+				self.score[interval.score] += 1;
 
 			
 	def fill_stat_sheet(self, bed_iter, sparse_coefficient = 1):

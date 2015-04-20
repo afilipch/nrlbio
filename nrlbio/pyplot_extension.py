@@ -41,7 +41,7 @@ def _get_weights(data):
 	return values, weights
 	
 
-def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=None, label=None, stacked=False, hold=None):
+def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, xticksrotation = 0, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=None, label=None, stacked=False, hold=None):
 	'''Draws histogram with predifined style on basis of provided data
 		
 		data list|numpy.ndarray|dict: list or array of values to plot as histogram. Counter-like dict may be also provided.
@@ -73,20 +73,20 @@ def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabe
 	if(xticks):
 		plt.xticks(xticks)
 	if(xticklabels):
-		ax.set_xticklabels(xticklabels)	
+		ax.set_xticklabels(xticklabels, rotation=xticksrotation)	
 	
 	#print xvals
 	#print yvals
 	
 	if(output):
-		plt.savefig(output)
+		plt.savefig(output, bbox_inches='tight')
 	else:
-		plt.show()
+		plt.show(bbox_inches='tight')
 		
 	plt.close();
 	
 	
-def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, xlabels=None, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=None, labels=None, stacked=False, hold=None):
+def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, xlabels=None, xticksrotation = 0, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=None, label=None, stacked=False, hold=None):
 	'''Draws many histograms in one figure with predifined style on basis of provided data
 		
 		data list|numpy.ndarray|dict: list or array of values to plot as histogram. Counter-like dict may be also provided.
@@ -108,8 +108,8 @@ def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xtic
 	ax = plt.subplot(111)
 	#ax.patch.set_facecolor('white')
 	yxp = [];
-	for (values, weights), color, label in zip(vw, color, labels):
-		yxp.append(plt.hist(values, bins=bins, range=range, normed=normed, weights=weights, cumulative=cumulative, bottom=bottom, histtype=histtype, align=align, orientation=orientation, rwidth=rwidth, log=log, color=color, label=label, stacked=stacked, hold=hold, alpha=0.5));
+	for (values, weights), c, l in zip(vw, color, label):
+		yxp.append(plt.hist(values, bins=bins, range=range, normed=normed, weights=weights, cumulative=cumulative, bottom=bottom, histtype=histtype, align=align, orientation=orientation, rwidth=rwidth, log=log, color=c, label=l, stacked=stacked, hold=hold, alpha=0.5));
 	
 	yvals = set(flatten([x[0] for x in yxp]))
 	xvals = set(flatten([x[1] for x in yxp]))
@@ -124,7 +124,7 @@ def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xtic
 	if(xticks):
 		plt.xticks(xticks)
 	if(xticklabels):
-		ax.set_xticklabels(xticklabels)
+		ax.set_xticklabels(xticklabels, rotation=xticksrotation)
 		
 	if(output):
 		plt.savefig(output)
@@ -132,7 +132,17 @@ def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xtic
 		plt.show()
 		
 	plt.close();	
-		
+	
+	
+def pie(explode=None, labels=None,
+          colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure' 'seashell', 'darkorchid', 'chartreuse'),
+          autopct=None, pctdistance=0.6, shadow=False,
+          labeldistance=1.1, startangle=None, radius=None,
+          counterclock=True, wedgeprops=None, textprops=None)
+          
+	fig = plt.figure()
+	plt.pie(sizes, explode=explode, labels=labels, colors=colors,
+        autopct=autopct, shadow=shadow, startangle=startangle)
 	
 	
 if(__name__ == '__main__'):
