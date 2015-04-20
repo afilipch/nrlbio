@@ -35,7 +35,7 @@ class Stat(object):
 				self.attrs[a]['unassigned'] += 1;
 
 			
-	def fill_stat_sheet(self, bed_iter, sparse_coefficient = 1):
+	def fill_stat_sheet(self, bed_iter, attributes=[], sparse_coefficient = 1):
 		'''Extracts statistics of provided iterable containg intervals and stores it in the attributes of the class
 
 		ar_iter iterable: any iterable of pysam.AlignedRead. In the most case an output of pysam.Samfile.fetch()
@@ -45,5 +45,5 @@ class Stat(object):
 		'''			
 		for c, interval in enumerate(bed_iter):
 			if (c%sparse_coefficient == 0):
-				self.increment(interval)
+				self.increment(interval, attributes=attributes)
 		

@@ -11,7 +11,7 @@ import pysam;
 #import jinja2;
 
 from nrlbio.config.config import load_config
-from nrlbio import pyplot_extension
+#from nrlbio import pyplot_extension
 #from nrlbio import html;
 
 
@@ -269,6 +269,7 @@ class Stat(object):
 		
 		
 	def generate_hist(self, configuration='samstat', output=''):
+		from nrlbio import pyplot_extension
 		config_ = load_config(configuration)
 		for attr_name in self._hist_names:
 			kwargs = config_[attr_name];
@@ -287,6 +288,7 @@ class Stat(object):
 	
 	@classmethod
 	def generate_multihist(cls, instances, configuration='samstat', colors=('lightgreen', '0.15'), labels = ('signal', 'control'), output=''):
+		from nrlbio import pyplot_extension
 		config_ = load_config(configuration)
 		for attr_name in cls._multihist_names:
 			kwargs = config_[attr_name];
