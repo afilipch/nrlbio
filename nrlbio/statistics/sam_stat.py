@@ -61,5 +61,5 @@ for path, name in zip(args.path, report_names):
 		try:
 			os.mkdir(dirname)
 		except:
-			sys.stderr.write("directory %s already exists, plots will be drawn there" % os.path.abspath(dirname));
+			sys.stderr.write("directory %s already exists, plots will be drawn there\n" % os.path.abspath(dirname));
 		samstat.generate_hist(configuration='samstat', output=dirname)

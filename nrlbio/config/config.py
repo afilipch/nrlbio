@@ -11,7 +11,7 @@ class LocalConfigError(Exception):
 	pass;	
 
 #CONFIGS is used for shortcuts while calling configuration file
-CONFIGS = {'samstat': 'samstat.yml'}
+CONFIGS = {'samstat': 'samstat.yml', 'bedstat': 'bedstat.yml'}
 for k, v in CONFIGS.items():
 	CONFIGS[k] = os.path.join(_confdir, v)
 	

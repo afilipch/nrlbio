@@ -1,7 +1,27 @@
 # /usr/bin/python
 '''collections of classes and functions to output python objects in a nice way'''
 
-import collections;
+from collections import defaultdict, Iterable;
+
+def string2dict(s, sep="="):
+	return dict([x.split("=") for x in s.split(",")])
+
+
+def string2fargs(functions, arguments, str2func):
+	if(not arguments):
+		return dict([(str2func[x],{}) for x in functions])
+	if(len(arguments) != len(functions)):
+		raise AttributeError('number of arguments should be equal to number of functions, or not provided at all')
+	
+	f_args = defaultdict(dict);
+	for fname, args in zip(functions, arguments):
+		if(args):
+			f_args[str2func[fname]] = string2dict(args)
+		else:
+			f_args[str2func[fname]] = {}	  
+
+	return f_args
+	
 
 def feature_dict_fraction(d, top = 0, key_names = None):
 	'''outputs formatted representation of feature_dict(any dictionary which keys are values of some feature)
@@ -32,7 +52,7 @@ def feature_dict_fraction(d, top = 0, key_names = None):
 		
 	for k, v in sorted(d.items(), key = lambda x: x[1], reverse = True)[:top]:
 		vn = v/total;
-		if (isinstance(k, collections.Iterable) and type(k) != str):
+		if (isinstance(k, Iterable) and type(k) != str):
 			s += "\t".join([str(x) for x in k])
 		elif(k != ''):
 			s += "%s\t" % str(k)
@@ -67,7 +87,7 @@ def feature_dict_total(d, top = 0, key_names = None):
 		pass;
 		
 	for k, v in sorted(d.items(), key = lambda x: x[1], reverse = True)[:top]:
-		if (isinstance(k, collections.Iterable) and type(k) != str):
+		if (isinstance(k, Iterable) and type(k) != str):
 			s += "\t".join([str(x) for x in k])
 		elif(k != ''):
 			s += "%s\t" % str(k)

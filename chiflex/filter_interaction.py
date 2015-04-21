@@ -4,7 +4,8 @@ import argparse
 import sys;
 
 from nrlbio.generators import generator_doublebed
-from nrlbio.filters_for_bed import *
+from nrlbio import filters_for_bed 
+from nrlbio.formatting import string2fargs
 
 parser = argparse.ArgumentParser(description='applies filter(s) to the given interactions/chimeras');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to interactions/chimeras file");
@@ -12,31 +13,23 @@ parser.add_argument('-f', '--filters', nargs = '+', required = True, choices=['d
 parser.add_argument('-a', '--arguments', nargs = '+', required = False, type = str, help = "key arguments for filters in format \'min_entropy=1.5,length=18 minright=15\'| None if no arguments provided for the filter. arguments have to be provided corresponding to the order of filters");
 args = parser.parse_args();
 
-#some parsing of agrs.arguments to make them ready to paste into eval statement
-arguments = [];
-if(args.arguments):
-	if(len(args.arguments) == len(args.filters)):
-		for a in args.arguments:
-			if(a=='None'):
-				arguments.append('');
-			else:
-				arguments.append("".join((",", a)))
+_str2func={ 'distance': filters_for_bed.distance, 'itype': filters_for_bed.itype}
+arguments = []
+for a in args.arguments:
+	if(a=='None'):
+		arguments.append('');
 	else:
-		raise AttributeError('number of arguments should be equal to number of filters, or not provided at all')
-else:
-	arguments = ['']*len(args.filters);
+		arguments.append(a)	
+
 	
-
-
-
-
+fargs = string2fargs(args.filters, arguments, _str2func)
 passed, removed = 0,0
 
 for doublebed in generator_doublebed(args.path):
-	for f, a in zip(args.filters, arguments):
-		if(not eval('%s(doublebed%s)' % (f, a))):
+	for fun, kwargs in fargs.items():
+		if(not fun(doublebed,**kwargs)):
 			removed +=1;
-			break;
+			break;		
 	else:
 		for interval in doublebed:
 			sys.stdout.write(str(interval));

@@ -3,9 +3,9 @@
 
 import os
 import sys
-import re
 from collections import defaultdict;
 
+from nrlbio.config.config import load_config
 
 class Stat(object):
 	'''Stat class is a container for a various statistics of bed/gff file. Each type of statistics/feature(length, score, etc.) is represented as collections.defaultdict (Key: certain value of feature e.g. length=50, Value: number of entries which have feature value equal to the Key)
@@ -15,22 +15,26 @@ class Stat(object):
         length collections.defaultdict: Key: length of the bed interval, Value: number of entries 
         score collections.defaultdict: Key: score of the bed interval, Value: number of entries
 	'''
+	_hist_names = ["length", "score"]
+	
 	def __init__(self, name = None):
 		self.name = name;
 		self.length = defaultdict(int)
 		self.score = defaultdict(float)  
-		self.attrs = defaultdict(lambda: defaultdict())
+		self.attrs = defaultdict(lambda: defaultdict(int))
 		
 
 	def increment(self, interval, attributes=[]):
 		self.length[interval.length] += 1;
 		try:
-			self.score[interval.score] += 1;
+			self.score[float(interval.score)] += 1;
 		except:
-			self.score['unassigned'] += 1;
+			pass;
 		for a in attributes:
 			try:
-				self.attrs[a][interval.attrs[a]] += 1;
+				ma = filter(bool, interval.attrs[a].split(","))
+				for sa in ma:
+					self.attrs[a][sa] += 1.0/len(ma);
 			except:
 				self.attrs[a]['unassigned'] += 1;
 
@@ -46,4 +50,55 @@ class Stat(object):
 		for c, interval in enumerate(bed_iter):
 			if (c%sparse_coefficient == 0):
 				self.increment(interval, attributes=attributes)
+				
+		#for k, d in self.attrs.items():
+			#print "%s:" % k;
+			#for kk, vv in d.items():
+				#print "\t%s:\t%s" % (kk, str(vv));
+				
+				
+	def generate_plots(self, configuration='samstat', output=''):
+		from nrlbio import pyplot_extension
+		config_ = load_config(configuration)
+		for attr_name in self._hist_names:
+			kwargs = config_[attr_name];
+			kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
+			kwargs['label'] = self.name;			
+			attr = getattr(self, attr_name)
+			if(attr):
+				pyplot_extension.histogram(attr, **kwargs);
+			else:
+				pass;
+		for attr_name, attr in self.attrs.iteritems():
+			kwargs = config_[attr_name];
+			kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
+			if(attr):
+				try:
+					ncounter = dict([ (float(x[0]), x[1]) for x in attr.items() ])
+					flag = "hist"
+				except:
+					ncounter = attr;
+					flag = "pie"
+					
+				if(flag == "hist"):
+					pyplot_extension.histogram(ncounter, **kwargs);
+				elif(flag == "pie"):
+					pyplot_extension.pie(ncounter, **kwargs);
+					
+			else:
+				pass
+					
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
 		

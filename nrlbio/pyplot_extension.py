@@ -4,6 +4,7 @@ from collections import Counter, Iterable
 
 import matplotlib
 #matplotlib.use('pdf')
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -134,13 +135,70 @@ def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xtic
 	plt.close();	
 	
 	
-def pie(data, output=None, explode=None, labels=None, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'),
-autopct="%d", pctdistance=0.6, shadow=True, labeldistance=1.1, startangle=90, radius=None, counterclock=True, wedgeprops=None, textprops=None):
-          
-	fig = plt.figure()
-	plt.pie(data, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, shadow=shadow, labeldistance=labeldistance, startangle=startangle, radius=radius, counterclock=counterclock, wedgeprops=wedgeprops, textprops=textprops)
+def _set_pie_slices(data, labels, top=None, min_fraction=0):
+	if(isinstance(data, dict)):
+		ncounter = list(data.items());
+	elif(isinstance(data, Iterable)):
+		ncounter = list(zip(labels, data));
+	else:
+		raise ValueError("{data} argument should be dictionary or iterable %s type is provided instead" % str(type(data)));	
+	ncounter.sort(key= lambda x: x[1], reverse=True)
 	
-	plt.axis('equal')
+	others = [];
+	total = float(sum([x[1] for x in ncounter]))
+	if(top):
+		others = ncounter[top:]
+		ncounter = ncounter[:top];
+	if(min_fraction):
+		tc = [];
+		for l, v in ncounter:
+			if(v/total>=min_fraction):
+				tc.append((l,v));
+			else:
+				others.append((l, v));
+		ncounter = tc;
+		
+	if(others):
+		ncounter.append(('others', sum([x[1] for x in others])))
+
+	
+	slices = [x[1] for x in ncounter]
+	labels = ['%s\nn=%d' % x for x in ncounter]
+			
+	return slices, labels, others
+	
+
+def _set_wedge_label(w, min_fraction=0.04):
+	if(w/100.0<min_fraction):
+		return ''
+	else:	
+		return "%1.1f%%" % w
+	
+_num_others = 5;	
+	
+def pie(data, top=10, min_fraction=0.04, title=None, labelsize='smaller', labelva='top', output=None, explode=None, labels=None, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), autopct=_set_wedge_label, pctdistance=0.8, shadow=False, labeldistance=1.15, startangle=0, radius=None, counterclock=True, wedgeprops=None, textprops={'fontsize': 'smaller'}):
+      
+	slices, labels, others= _set_pie_slices(data, labels, top=top, min_fraction=min_fraction);
+	
+	#fix for others	
+	if(others):
+		startangle = 271 + (float(slices[-1])/sum(slices))*180
+		others.sort(key= lambda x: x[1], reverse=True)
+		labels[-1] = "\n".join(['%s(n=%d)' % x for x in others[:_num_others]])
+	 
+	plt.figure(1, figsize=(8,8))
+	ax = plt.axes([0.2, 0.2, 0.6, 0.6])
+	patches, texts, autotexts = plt.pie(slices, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, shadow=shadow, labeldistance=labeldistance, startangle=startangle, radius=radius, counterclock=counterclock, wedgeprops=wedgeprops, textprops=textprops)
+	
+	#plt.axis('equal')
+	if(title):	
+		plt.title(title)
+	if(labelsize):
+		for text in texts:
+			text.set_fontsize(labelsize)
+	if(labelva):
+		for text in texts:
+			text.set_verticalalignment(labelva)
 	
 	if(output):
 		plt.savefig(output)
@@ -148,6 +206,11 @@ autopct="%d", pctdistance=0.6, shadow=True, labeldistance=1.1, startangle=90, ra
 		plt.show()
 		
 	plt.close();	
+	
+	
+	
+	
+	
 	
 if(__name__ == '__main__'):
 	data = [1,1,1,1,4,5,6,5,5,5,6,6,6,7,7,2,2,2,3,3,3,3,1,1,1,1,4,4,4, 12, 12]
@@ -157,7 +220,7 @@ if(__name__ == '__main__'):
 	#multihistogram([di, dj], title = 'konfetka', xlabel='day time', ylabel='bu bu bu level', xticks=list(np.arange(5.5, 6.9, 0.1)), xticklabels= ['%dh' % x for x in range(5,20)], step=0.1, color=('lightgreen', '0.15'), labels=('signal', 'control'));
 	labels = 'Frogs', 'Hogs', 'Dogs', 'Logs'
 	sizes = [15, 30, 45, 10]
-	pie(sizes, labels=labels)
+	pie(dj, labels=labels, title="be", top = 10, min_fraction= 0.1)
 	
 		
 		

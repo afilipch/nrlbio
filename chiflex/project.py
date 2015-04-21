@@ -29,6 +29,9 @@ parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help 
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
 
 parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
+parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
+parser.add_argument('--stratify', nargs = '?', default = False, const = True, type = bool, help = "if set, interactions will be stratified according to interaction type");
+
 parser.add_argument('--annotation', nargs = '?', type = str, default = None, help = "path to an annotation file in gff format. If provided, interacting loci will be annotated");
 parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type will be assigned to each interaction");
 
@@ -162,7 +165,13 @@ def makefile():
 		input_files = output_files, os.path.abspath(args.annotation)
 		output_files = os.path.join('interactions', 'annotated.gff')
 		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
-		m.append(dependence(input_files, output_files, script))	
+		m.append(dependence(input_files, output_files, script))
+		
+		input_files = output_files
+		output_files = os.path.join('interactions', 'interactions.ordered.bed')
+		script = get_script('order.py', arguments={}, inp = input_files[0], out=output_files)
+		m.append(dependence(input_files, output_files, script))
+
 
 	#Annotate type of interaction
 	if(args.exons):
@@ -170,7 +179,9 @@ def makefile():
 		output_files = os.path.join('interactions', 'interactions.annotated.gff')
 		script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
 		m.append(dependence(input_files, output_files, script));
-
+	
+	if(args.stratify):
+		
 
 	#makefile header
 	m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % output_files);
