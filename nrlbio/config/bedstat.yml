@@ -1,0 +1,23 @@
+score:
+    title:  'Interval Score'
+    xlabel: 'score'
+    ylabel: 'num of intervals'
+    step: 1
+    color: 'lightgreen'
+length:
+    title:  'Length'
+    xlabel: 'length, nts'
+    ylabel: 'num of intervals'
+    step: 1
+    color: 'lightgreen'
+transcript_types:
+    title: "Type of the transcript"
+transcription_blocks:
+    title: "Transcription units"
+mRNA:
+    title: "mRNA functional parts"
+regulation_regions:
+    title: "Regulatory regions"
+misc_RNA:
+    title: "Types of miscellaneous RNA"
+    

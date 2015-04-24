@@ -4,6 +4,8 @@ import argparse
 import sys
 import os
 
+interaction_types = ['inter', 'intra', 'csj', 'lsj']
+
 bowtie_settings = {'N': ('0','-'),
 'L': ('16','-'),
 'i': ('C,2', '-'),
@@ -28,12 +30,12 @@ parser.add_argument('--reference', nargs = '?', type = str, required = True, hel
 parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
 
-parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
-parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
-parser.add_argument('--stratify', nargs = '?', default = False, const = True, type = bool, help = "if set, interactions will be stratified according to interaction type");
-
 parser.add_argument('--annotation', nargs = '?', type = str, default = None, help = "path to an annotation file in gff format. If provided, interacting loci will be annotated");
 parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type will be assigned to each interaction");
+
+parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
+parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
+parser.add_argument('--stratify', nargs = '?', default = False, const = True, type = bool, help = "if set, interactions will be stratified according to the interaction type. Ignored if NO '--exons\'");
 
 parser.add_argument('--advanced', nargs = '+', choices = ['repetitive', 'nonunique'], default = [], type = str, help = "advanced processing steps to potentialy improve perfomance\n\trepetitive: removes low entropy(repetitive) sequences from analysis\n\tnonunique: keeps high quality, but nonunique mappings")
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
@@ -180,11 +182,17 @@ def makefile():
 		script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
 		m.append(dependence(input_files, output_files, script));
 	
-	if(args.stratify):
-		
-
+		if(args.stratify):
+			input_files = output_files
+			output_files = [os.path.join('interactions', 'interactions.annotated.%s.gff' % x) for x in interaction_types]
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'interaction', '--output': 'interactions'}, inp = input_files)
+			m.append(dependence(input_files, output_files, script));			
+			
 	#makefile header
-	m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % output_files);
+	if( isinstance(output_files, bool):
+		m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % output_files );
+	else:
+		m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % " ".join(list(output_files)));
 	# makefie cleaner
 	m.append('clean:\n\techo "nothing to clean."\n');
 	

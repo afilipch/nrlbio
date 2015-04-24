@@ -10,7 +10,10 @@ import numpy as np
 
 from nrlbio.itertools_extension import flatten
 
-plt.style.use('ggplot')
+try:
+	plt.style.use('ggplot')
+except:
+	pass;
 
 def _set_bins(values, step = None):
 	if(step):

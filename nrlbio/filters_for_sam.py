@@ -4,12 +4,15 @@ from nrlbio.sequencetools import entropy, chunk_entropy;
 
 
 def chimera_left(ar, minright = 15):
-	return (ar.rlen - ar.qend >= minright)
+	mr = float(minright)
+	return (ar.rlen - ar.qend >= mr)
 	
 	
 def repetitive(ar, min_entropy=1.4):
-	return entropy(ar.query) > min_entropy
+	me = float(min_entropy)
+	return entropy(ar.query) > me
 	
 def contain_repetitive(ar, min_entropy=1.5):
-	return chunk_entropy(ar.query, length=18, step = 2, order = 1) > min_entropy	
+	me = float(min_entropy)
+	return chunk_entropy(ar.query, length=18, step = 2, order = 1) > me	
 	
