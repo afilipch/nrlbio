@@ -65,7 +65,7 @@ class Stat(object):
 						html_attribute.entries.append([k, "%d" % v, "%1.5f" % f]);					
 				instance.attributes.append(html_attribute);
 			else:
-				sys.stderr.write('attribute: %s does not exist or empty in the %s object' % (a, str(obj)))				
+				sys.stderr.write('attribute: %s does not exist or empty in the %s object\n' % (a, str(obj)))				
 		return	instance;
 		
 			

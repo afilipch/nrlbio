@@ -3,6 +3,7 @@
 import argparse
 import sys
 import os
+#from collections import OrderedDict
 
 interaction_types = ['inter', 'intra', 'csj', 'lsj']
 
@@ -20,6 +21,7 @@ bowtie_settings = {'N': ('0','-'),
 'D': ('30', '-'),
 'R': ('2', '-'),
 'no-unal': ('True', '--'), 
+'f': ('False', '-'), 
 'p': ('8', '-') }
 bs_string = "\n".join(["\t%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_settings.items()])
 
@@ -36,16 +38,12 @@ parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "
 parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
 parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
 parser.add_argument('--stratify', nargs = '?', default = False, const = True, type = bool, help = "if set, interactions will be stratified according to the interaction type. Ignored if NO '--exons\'");
+parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "if set, repetitive mapped sequences are removed")
+parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "if set, nonunique mappings with high alignment score are kept")
 
-parser.add_argument('--advanced', nargs = '+', choices = ['repetitive', 'nonunique'], default = [], type = str, help = "advanced processing steps to potentialy improve perfomance\n\trepetitive: removes low entropy(repetitive) sequences from analysis\n\tnonunique: keeps high quality, but nonunique mappings")
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
 args = parser.parse_args();
 
-#print sys.argv
-
-#parse advanced options
-nonunique = 'nonunique' in args.advanced
-repetitive = 'repetitive' in args.advanced
 
 #parse bowtie options
 for bo in args.bowtie:
@@ -59,9 +57,10 @@ for bo in args.bowtie:
 	else:
 		sys.stderr.write("provided option \'%s\' is currently not supported by Chiflex and will be ignored\n" % name) 
 	
-bowtie_settings['x'] = os.path.abspath(args.reference), '-'
-bowtie_settings['U'] = os.path.abspath(args.reads), '-'
+bowtie_settings['x'] = os.path.abspath(os.path.abspath(args.reference)), '-'
+bowtie_settings['U'] = os.path.abspath(os.path.abspath(args.reads)), '-'
 bowtie_settings['S'] = os.path.join('sam', 'mapped.sam'), '-'
+
 
 bs_list = ['bowtie2'];
 for k, v in bowtie_settings.items():
@@ -104,20 +103,20 @@ def makefile():
 	m=[];
 	
 	#Map reads with bowtie2
-	input_files = args.reads
+	input_files = os.path.abspath(args.reads)
 	output_files = os.path.join('sam', 'mapped.sam')
 	script = bs_list
 	m.append(dependence(input_files, output_files, script))
 	
 	#Remove repetitive mappings if option 'repetitive' set
-	if(repetitive):
+	if(args.repetitive):
 		input_files = output_files
 		output_files = os.path.join('sam', 'nonrep.bam')
 		script = get_script('filter_sam.py', arguments={'--output': output_files, '--filters': 'repetitive', '--arguments': 'min_entropy=1.6'}, inp = input_files)
 		m.append(dependence(input_files, output_files, script))
 	
 	#Collapse confident, but nonunique mappings into single sam entry, to protect them from further filtering out
-	if(nonunique):
+	if(args.nonunique):
 		input_files = output_files
 		output_files = os.path.join('sam', 'collapsed.bam'), os.path.join('bed', 'collapsed.bed')
 		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 42}, inp = input_files)
@@ -157,7 +156,7 @@ def makefile():
 
 	#Merge chimeras into interactions.That is, sequenced chimeric reads which have two respectively overlaping parts are merged together
 	input_files = output_files
-	output_files = os.path.join('interactions', 'interactions.bed'), os.path.join('interactions', 'interactions2readid.bed')
+	output_files = os.path.join('interactions', 'interactions.gff'), os.path.join('interactions', 'interactions2readid.bed')
 	script = get_script('chimera2interaction.py', arguments={'-oi': output_files[0], '-od': output_files[1], '--name': args.name, '--distance': -16}, inp = input_files)
 	m.append(dependence(input_files, output_files, script))
 	output_files = output_files[0]
@@ -171,7 +170,7 @@ def makefile():
 		
 		input_files = output_files
 		output_files = os.path.join('interactions', 'interactions.ordered.bed')
-		script = get_script('order.py', arguments={}, inp = input_files[0], out=output_files)
+		script = get_script('order.py', arguments={}, inp = input_files, out=output_files)
 		m.append(dependence(input_files, output_files, script))
 
 
@@ -189,7 +188,7 @@ def makefile():
 			m.append(dependence(input_files, output_files, script));			
 			
 	#makefile header
-	if( isinstance(output_files, bool):
+	if(isinstance(output_files, str)):
 		m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % output_files );
 	else:
 		m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % " ".join(list(output_files)));
@@ -207,7 +206,7 @@ while (not args.only_makefile):
 			os.mkdir(os.path.join(project_path, folder));
 		break;	
 	except:
-		answer = raw_input("Project directory \'%s\' is currently exists, please type 'N' if you don't want to create a new project, 'MO' if you want to change/create only the Makefile, [another project name] if you want to create a new folder structure and makefile: " % project_path)
+		answer = raw_input("\nProject directory \'%s\' is currently exists, please type 'N' if you don't want to create a new project, 'MO' if you want to change/create only the Makefile, [another project name] if you want to create a new folder structure and makefile: " % project_path)
 		if(answer=='N'):
 			sys.exit('Project was not created')
 		elif(answer=='MO'):
@@ -220,4 +219,31 @@ while (not args.only_makefile):
 with open(os.path.join(project_path, 'Makefile'), 'w') as mf:
 	mf.write(makefile())
 	
+	
+#report project call:
+arguments_report = (
+('name', ('Project name, assigned to the generated interactions', str)),
+('path', ('Project folder', os.path.abspath)),
+('reads', ('Sequencing reads', os.path.abspath)),
+('chiflex', ('Chiflex module used in the project', os.path.abspath)), 
+('reference', ('Reference(genome, transcriptome) used for mapping', os.path.abspath)), 
+('exons', ('Exon system used for interactions annotation', os.path.abspath)), 
+('annotation', ('Annotation system used for interactions annotation', os.path.abspath)), 
+('repetitive', ('Repetitive mapped sequences are removed', str)),
+('nonunique', ('Nonunique mappings with high alignment score are kept', str)),
+('stratify', ('interactions are stratified according to the interaction type', str)),
+('reports', ('html reports are produced', str)), 
+('only_makefile', ('New Makefile was generated', str)),  
+)
+
+with open(os.path.join(project_path, 'log/project.txt'), 'w') as rf:
+	rf.write("Project call:\npython %s\n\n" % " ".join(sys.argv))
+	
+	for arg, (description, fun) in arguments_report: 
+		rf.write("%s:\t%s\n" % (description, fun(getattr(args, arg))))
+	
+	rf.write("bowtie2 settings:\n")
+	for arg, (value, dashes) in bowtie_settings.items():
+		rf.write("\t%s%s:\t%s\n" % (dashes, arg, value))
+		
 	

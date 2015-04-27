@@ -61,7 +61,12 @@ def collapse_annotation(annotations, interval, best_only=True):
 	tn = ",".join(["|".join(["%".join(y) for y in x]) for x in transcription])
 	gene_ids = ",".join(set([x.gene_id for x in filtered]))
 	
-	return construct_gff_interval(interval.chrom, interval.start, interval.stop, feature=args.feature, score=interval.score, strand=interval.strand, source='annotate_bed.py', frame='.', attrs=(('type', ts), ('regulation', rn), ('transcription', tn), ('gene_name', gene_ids), ('ID', interval.name)))
+	ad = interval.attrs;
+	for k, v in (('type', ts), ('regulation', rn), ('transcription', tn), ('gene_name', gene_ids), ('ID', interval.name)):
+		ad[k] = v;
+	
+	return construct_gff_interval(interval.chrom, interval.start, interval.stop, feature=args.feature, score=interval.score, strand=interval.strand, source='annotate_bed.py', frame='.',
+	attrs= ad.items())
 	
 	
 bed = BedTool(args.path).sort();

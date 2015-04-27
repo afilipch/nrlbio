@@ -34,7 +34,7 @@ def compare_single_chimera(arw, chimera, maxgap):
 	Returns tuple (None, chimera)|(arw|None): returns input arw or chimera depending on their comparison
 	'''
 	chs = as_gap_score(chimera, maxgap=maxgap)
-	sis = arw.AS*(1 + 0.5**min(5, (arw.aligned_read.qstart+1)))
+	sis = arw.AS*(0.8 + 0.5**min(5, (arw.aligned_read.qstart+1)))
 	if(sis>=chs):
 		return arw, None
 	else:	
@@ -125,7 +125,7 @@ for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):
 		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, add_nr_tag=True)
+		arw = ArWrapper(aligned_read, rname, add_nr_tag=False)
 		
 		if(current_name != arw.qname):
 			_iteration(arwlist)

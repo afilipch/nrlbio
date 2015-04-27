@@ -21,8 +21,6 @@ parser.add_argument('--bedtools', nargs = '?', default = '', type = str, help = 
 args = parser.parse_args();
 set_bedtools_path(path=args.bedtools)
 
-od = open(args.dictionary, 'w');
-oi = open(args.interactions, 'w');
 
 
 def intervals2interaction(intervals, distance, number, order=False):
@@ -36,14 +34,15 @@ def intervals2interaction(intervals, distance, number, order=False):
 		merged_regions = list(generate_overlaping_intervals(intervals, distance));
 
 	if(len(merged_regions)==2):
-		interaction = Interaction.from_intervals("%s_%d" % (args.name, number), merged_regions)
-		oi.write("%s\n" % interaction.doublebed())
-		od.write("%s\t%s\n" % (interaction.name, ",".join(interaction.read_names)))
+		return Interaction.from_intervals("%s_%d" % (args.name, number), merged_regions)
+		#oi.write("%s\n" % interaction.doublebed())
+		#od.write("%s\t%s\n" % (interaction.name, ",".join(interaction.read_names)))
 	else:
 		sys.stderr.write("Warning: interacting regions may be further split or merged")
 		for i in intervals:
 			sys.stderr.write(str(i))
-		sys.stderr.write("_"*140	+ "\n")	
+		sys.stderr.write("_"*140	+ "\n")
+		return None;
 			
 	
 
@@ -66,17 +65,24 @@ for k, v in	name2interaction.iteritems():
 number_chimeras = len(name2intervals);
 number_interactions = 0
 number_self_intersection = 0;
-		
-for number, (k, v) in enumerate(interaction2name.items()):
-	if(k[0]!=k[1]):
-		intervals = []
-		for name in v:
-			for i in name2intervals[name]:
-				intervals.append(i)
-		intervals2interaction(intervals, args.distance, number+1, order=args.order);
-		number_interactions += 1;
-	else:
-		number_self_intersection += 1;
+	
+	
+with open(args.dictionary, 'w') as od:
+	with open(args.interactions, 'w') as oi:
+		#oi.write('\t'.join(('#', 'chrom', 'start', 'end', 'name', 'a_score', 'strand', 'gap', 'n_uniq\n')))
+		for number, (k, v) in enumerate(interaction2name.items()):
+			if(k[0]!=k[1]):
+				intervals = []
+				for name in v:
+					for i in name2intervals[name]:
+						intervals.append(i)
+				interaction = intervals2interaction(intervals, args.distance, number+1, order=args.order);
+				if(interaction):
+					oi.write("%s\n" % interaction.doublebed())
+					od.write("%s\t%s\n" % (interaction.name, ",".join(interaction.read_names)))
+				number_interactions += 1;
+			else:
+				number_self_intersection += 1;
 		
 		
 sys.stderr.write("number of chimeras\t%d\ninteractions generated\t%d\nself interacting removed\t%d\n" % (number_chimeras, number_interactions, number_self_intersection));

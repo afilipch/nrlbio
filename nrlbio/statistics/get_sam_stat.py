@@ -20,6 +20,7 @@ parser.add_argument('--ordered', nargs = '?', default = False, const = True, typ
 parser.add_argument('--top_entries', nargs = '?', default = 20, type = int, help = "Reports only top N entries for each statistics. Ignored if '--ordered'=False");
 parser.add_argument('--sparse_coefficient', nargs = '?', default = 1, type = int, help = "If sparse_coefficient set to 3, then only each 3rd record will be analyzed, saves time in a case of large files");
 parser.add_argument('--short_reference', nargs = '?', const = True, default = False, type = str, help = "If set, provides additional statistics. Useful for sam files derived from mapping to short reference(miRNAs, piRNAs, enhancers, etc.)")
+parser.add_argument('--detailed', nargs = '?', const = True, default = False, type = str, help = "If set, provides additional statistics of nucleotide composition")
 args = parser.parse_args();
 
 #parse options
@@ -53,7 +54,7 @@ if(args.short_reference):
 for path, name in zip(args.path, report_names):
 	samfile = pysam.Samfile(path)
 	samstat = sam.Stat(name=os.path.splitext(os.path.basename(name))[0]);	
-	samstat.fill_stat_sheet(samfile.fetch(until_eof=True), short_reference = args.short_reference, detailed = True, sparse_coefficient = args.sparse_coefficient)
+	samstat.fill_stat_sheet(samfile.fetch(until_eof=True), short_reference = args.short_reference, detailed = args.detailed, sparse_coefficient = args.sparse_coefficient)
 	htmlstat = html.Stat.from_stat_object(name, samstat, attributes, headers=headers, ordered=args.ordered, top_entries=args.top_entries);
 	htmlstat.report(output=name)
 	if(args.draw):

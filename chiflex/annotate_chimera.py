@@ -17,7 +17,7 @@ args = parser.parse_args();
 
 
 
-class annotated_chimera(object):
+class AnnotatedChimera(object):
 	def __init__(self, intervals, intersections):
 		self.intervals = intervals
 		self.intersections = intersections
@@ -120,7 +120,7 @@ for i in chimeras_vs_exons[1:]:
 					#sys.stderr.write(str(nkk) + "\n");
 					#sys.stderr.write(str(ni) + "\n");
 					
-		ac = annotated_chimera(intervals, intersections);
+		ac = AnnotatedChimera(intervals, intersections);
 		for ani in ac.yield_annotated(args.distance, offset):
 			print "\t".join(ani)
 
@@ -132,7 +132,7 @@ for i in chimeras_vs_exons[1:]:
 
 		intersections[i[offset+3]][int(pair_number)] = list2interval(i[offset:])
 else:
-	ac = annotated_chimera(intervals, intersections);
+	ac = AnnotatedChimera(intervals, intersections);
 	for ani in ac.yield_annotated(args.distance, offset):
 		print "\t".join(ani)
 

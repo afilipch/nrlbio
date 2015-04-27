@@ -25,9 +25,6 @@ class Interaction(object):
 			for c, interval in enumerate(intervals):
 				if((interval.chrom == ar.chrom) and (interval.strand == ar.strand) and (ar.start >= interval.start) and (ar.stop <= interval.stop)):
 					self.aligned_reads[c].append(ar);
-					#sys.stderr.write("aligned_read: %s %d %d %s\n" % (ar.chrom, ar.start, ar.stop, ar.qname))
-					#sys.stderr.write("interval: %s %d %d %d\n______________________________________________________________________________________________\n" % (interval.chrom, interval.start, interval.stop, c))
-					break;
 			else:
 				sys.stderr.write("%s\nThere is no interval for aligned_read: %s %d %d %s\n\n" % (str("_"*100), ar.chrom, ar.start, ar.stop, ar.qname))
 				for interval in intervals:
@@ -46,7 +43,9 @@ class Interaction(object):
 			strand = intervals[0].strand
 			gaps = [int(x[10]) for x in intervals]
 			gap = min(gaps, key = lambda x: x**2)
-			interval = pybedtools.Interval(chrom, start, stop, n, score, strand, otherfields = [str(gap)]) 
+			unique_reads = len(intervals)
+			interval = construct_gff_interval(chrom, start, stop, 'chimera', score=score, strand=strand, source='chiflex', frame='.', attrs=[("ID", n), ('gap', gap), ('n_uniq', unique_reads)])
+			#interval = pybedtools.Interval(chrom, start, stop, n, score, strand, otherfields = [str(gap), str(unique_reads)]) 
 			r.append(interval)
 
 		read_names = [x[3].split("|")[0] for x in interacting_intervals[0]];
@@ -182,15 +181,16 @@ class Interaction(object):
 		'''converts interaction to a doublebed file entry'''
 		l = [];
 		for i in self.intervals:
-			l.append("%s\t%s\t%s\t%s\t%s\t%s\t%s" % tuple(list(i)));
-		return "\n".join(l);	
+			l.append(str(i));
+		return "".join(l);	
 			
 
 	def __str__(self):
+		'''converts interaction to a doublebed file entry'''
 		l = [];
 		for i in self.intervals:
-			l.append("%s\t%s\t%s\t%s\t%s\t%s" % tuple(i));
-		return "\t".join(l);	
+			l.append(str(i));
+		return "".join(l);		
 	
 
 
