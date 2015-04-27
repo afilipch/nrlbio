@@ -9,13 +9,13 @@ interaction_types = ['inter', 'intra', 'csj', 'lsj']
 
 bowtie_settings = {'N': ('0','-'),
 'L': ('16','-'),
-'i': ('C,2', '-'),
+'i': ('C,1', '-'),
 'ignore-quals': ('True', '--'),
 'norc': ('True', '--'),
 'local': ('True', '--'), 
-'mp': ('6,6', '--'),
-'rfg': ('12,12', '--'),
-'rdg': ('6,4', '--'),
+'mp': ('8,8', '--'),
+'rfg': ('18,12', '--'),
+'rdg': ('8,6', '--'),
 'min-score': ('C,40', '--'), 
 'k': ('4', '-'),
 'D': ('30', '-'),
@@ -127,7 +127,7 @@ def makefile():
 	#Demultiplex sam multiple hits into single hits, control single hits, chimeras and control chimeras
 	input_files = output_files
 	output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'unique_chimera', 'control_chimera', 'control']]
-	script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': args.name, '--score': 'as_qstart', '--score_chimera': 'as_gap', '--maxgap': 6}, inp = input_files)
+	script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': args.name, '--score': 'as_qstart', '--score_chimera': 'as_gap', '--maxgap': 8}, inp = input_files)
 	m.append(dependence(input_files, output_files, script))
 
 	#Merge sam hits into chimeras in doublebed format
@@ -145,7 +145,7 @@ def makefile():
 	#Filter chimeras on basis of control chimeras. LRG is applied for filtering
 	input_files =  os.path.join('chimeras', 'unique.bed') , os.path.join('chimeras', 'control.bed') 
 	output_files = os.path.join('chimeras', 'filtered.bed') 
-	script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS1 AS2 gap', '--fdr': 0.05}, out = output_files)
+	script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS1 AS2', '--fdr': 0.05}, out = output_files)
 	m.append(dependence(input_files, output_files, script))
 
 	#Reassign chimeras coordinates from positions on genomic features(mapping reference) to genomic ones

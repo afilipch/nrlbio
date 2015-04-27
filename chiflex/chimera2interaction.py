@@ -38,10 +38,10 @@ def intervals2interaction(intervals, distance, number, order=False):
 		#oi.write("%s\n" % interaction.doublebed())
 		#od.write("%s\t%s\n" % (interaction.name, ",".join(interaction.read_names)))
 	else:
-		sys.stderr.write("Warning: interacting regions may be further split or merged")
-		for i in intervals:
-			sys.stderr.write(str(i))
-		sys.stderr.write("_"*140	+ "\n")
+		#sys.stderr.write("Warning: interacting regions may be further split or merged")
+		#for i in intervals:
+			#sys.stderr.write(str(i))
+		#sys.stderr.write("_"*140	+ "\n")
 		return None;
 			
 	

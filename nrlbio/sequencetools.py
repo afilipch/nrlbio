@@ -136,9 +136,12 @@ def chunk_entropy(seq, length, step = 2, order = 1):
 		
 		
 if(__name__ == "__main__"):
-	#rep1 = 'AAAAAAAATAAA'
-	#rep2 = 'ATATATATATAT'
-	#seq1 = 'CGTCATCAAGCA'
+	seqs = ['AAAAAAAATAAAAAATGAAAAAAGTAAAAAAAAAAAAAAAAG', 
+	'ATATATATATATATATATATATTATATATGATATATATATAG',
+	'GTACCAGGTACCAGGTACCAGGTACCAGGTACCAGGTACCAG',
+	'CGTCATCAAGCACGATGACATGACCCATCGCATGCTTACAAG']
+	for s in seqs:
+		print "%s\t%1.4f" % (s, entropy(s))
 	#sel1 = 'TCACATGACTAGCGTCATCAAGCAGCATGCGTACACAGTCAGTCAACAGAGCAGATATTCAAATCAGCTAGGCACCATGACGCTATATATGGGGGG'
 	#print entropy(rep1)
 	#print entropy(rep2)
@@ -154,8 +157,8 @@ if(__name__ == "__main__"):
 		#if(me>1.25):
 			#n+=1;
 	#print n
-	for s in generate_mismatched_sequence("AGT", number_of_mismatches = 2):
-		print s;
+	#for s in generate_mismatched_sequence("AGT", number_of_mismatches = 2):
+		#print s;
 	
 	
 			

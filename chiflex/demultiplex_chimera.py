@@ -34,7 +34,7 @@ def compare_single_chimera(arw, chimera, maxgap):
 	Returns tuple (None, chimera)|(arw|None): returns input arw or chimera depending on their comparison
 	'''
 	chs = as_gap_score(chimera, maxgap=maxgap)
-	sis = arw.AS*(0.8 + 0.5**min(5, (arw.aligned_read.qstart+1)))
+	sis = arw.AS*(0.75 + 0.5**min(5, (arw.aligned_read.qstart+1)))
 	if(sis>=chs):
 		return arw, None
 	else:	
