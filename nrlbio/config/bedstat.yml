@@ -20,4 +20,6 @@ regulation_regions:
     title: "Regulatory regions"
 misc_RNA:
     title: "Types of miscellaneous RNA"
+interaction:
+    title:  "Types of the interaction"
     

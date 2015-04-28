@@ -136,12 +136,25 @@ def chunk_entropy(seq, length, step = 2, order = 1):
 		
 		
 if(__name__ == "__main__"):
-	seqs = ['AAAAAAAATAAAAAATGAAAAAAGTAAAAAAAAAAAAAAAAG', 
-	'ATATATATATATATATATATATTATATATGATATATATATAG',
-	'GTACCAGGTACCAGGTACCAGGTACCAGGTACCAGGTACCAG',
-	'CGTCATCAAGCACGATGACATGACCCATCGCATGCTTACAAG']
-	for s in seqs:
-		print "%s\t%1.4f" % (s, entropy(s))
+	#seqs = ['AAAAAAAATAAAAAATGAAAAAAGTAAAAAAAAAAAAAAAAG', 
+	#'ATATATATATATATATATATATTATATATGATATATATATAG',
+	#'GTACCAGGTACCAGGTACCAGGTACCAGGTACCAGGTACCAG',
+	#'CGTCATCAAGCACGATGACATGACCCATCGCATGCTTACAAG']
+	#for s in seqs:
+		#print "%s\t%1.4f" % (s, entropy(s))
+	s = "ACTGACAGTACGCAGTCAGTACATGACGATACGATACATGACAA"
+	s2 = "TATTATATATTATATTATATTTATATATAATCATATATCATATATATCAT"
+	d =_get_transitions(s+s2, 1)
+	m = defaultdict(dict)
+	for k, v in sorted(d.items(), key=lambda x: x[0][0]):
+		m[k[0]][k[1]] = v
+		
+	for kk, vv in m.items():
+		total = sum(vv.values())
+		for k, v in vv.items():
+			print kk, k, float(v)/total
+		
+		
 	#sel1 = 'TCACATGACTAGCGTCATCAAGCAGCATGCGTACACAGTCAGTCAACAGAGCAGATATTCAAATCAGCTAGGCACCATGACGCTATATATGGGGGG'
 	#print entropy(rep1)
 	#print entropy(rep2)

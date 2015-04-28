@@ -16,8 +16,8 @@ order['regulation'] = {};
 order['regulation']['mRNA'] = {'utr5':1, 'utr3':1, 'cds':1}
 order['regulation']['regulation'] = {'TF_binding_site':1, 'enhancer':2, 'promoter':2, 'promoter_flanking_region': 3, 'open_chromatin_region':4, 'CTCF_binding_site':4}
 
-order['regulation']['misc_RNA'] = {"lincRNA":1, "snRNA":1, "miRNA":1, 'known_ncrna':1, "pseudogene":1, 'TEC':1, 
-'transcribed_unprocessed_pseudogene':2, 'unprocessed_pseudogene':2, 'processed_pseudogene':2, "transcribed_processed_pseudogene":2,
+order['regulation']['misc_RNA'] = {"lincRNA":1, "snRNA":1, "miRNA":1, "snoRNA":1, 'known_ncrna':1, "pseudogene":1, 'TEC':1, 'Mt_tRNA':1, 'rRNA': 1,
+'transcribed_unprocessed_pseudogene':2, 'unprocessed_pseudogene':2, 'processed_pseudogene':2, "transcribed_processed_pseudogene":2, 'unitary_pseudogene':2, 'translated_unprocessed_pseudogene':2,'TR_V_pseudogene': 2,
 'non_coding':3, 'retained_intron':3,
 'antisense':4, 'sense_intronic':4, 'sense_overlapping':4, '3prime_overlapping_ncrna':4,
 'misc_RNA':5,

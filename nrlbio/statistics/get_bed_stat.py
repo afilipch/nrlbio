@@ -34,7 +34,7 @@ def annotation_generator(bedtool):
 		
 
 if(args.annotation):
-	attributes = annotation.STAT_ATTRS;
+	attributes = list(annotation.STAT_ATTRS);
 	for a in args.attributes:
 		if(a not in attributes):
 			attributes.append(a);
@@ -54,7 +54,7 @@ else:
 
 
 
-
+#sys.stderr.write("%s\n" % str(attributes))
 
 
 

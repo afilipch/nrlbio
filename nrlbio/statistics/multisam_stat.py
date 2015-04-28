@@ -43,7 +43,7 @@ data = [];
 for path in args.path:
 	samfile = pysam.Samfile(path)
 	samstat = sam.Stat(name=os.path.splitext(os.path.basename(path))[0]);	
-	samstat.fill_stat_sheet(samfile.fetch(until_eof=True), short_reference = args.short_reference, detailed = True, sparse_coefficient = args.sparse_coefficient)
+	samstat.fill_stat_sheet(samfile.fetch(until_eof=True), short_reference = args.short_reference, detailed = False, sparse_coefficient = args.sparse_coefficient)
 	data.append(samstat);
 	
 	
