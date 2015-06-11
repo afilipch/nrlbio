@@ -15,7 +15,7 @@ def weighted2interval(iterable):
 	Returns:
 		items list: list of items to select
 		interval list: probability intervals. 
-	'''	
+	'''
 	items = [x[0] for x in iterable]
 	interval = np.array([x[1] for x in iterable], dtype=float)
 	interval = interval/np.sum(interval)	

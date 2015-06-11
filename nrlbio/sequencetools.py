@@ -64,14 +64,20 @@ def shuffle_string(s):
 	return ''.join(l)
 	
 	
-def random_string(length, number):
+def random_string(length):
+	'''Returns randomly generated nucleotide sequences'''
+	l = []
+	for _ in range(length):
+		l.append(random.choice('ACTG'));
+	return ''.join(l);	
+		
+		
+def generate_random_strings(length, number):	
 	'''Yields randomly generated nucleotide sequences'''
 	for _ in range(number):
-		l = []
-		for _ in range(length):
-			l.append(random.choice('ACTG'));
-		yield ''.join(l);	
-	
+		yield random_string(length);	
+		
+		
 	
 def multifind(string, substring, overlap = False):
 	'''finds all occurences of substring in the string
@@ -136,25 +142,9 @@ def chunk_entropy(seq, length, step = 2, order = 1):
 		
 		
 if(__name__ == "__main__"):
-	#seqs = ['AAAAAAAATAAAAAATGAAAAAAGTAAAAAAAAAAAAAAAAG', 
-	#'ATATATATATATATATATATATTATATATGATATATATATAG',
-	#'GTACCAGGTACCAGGTACCAGGTACCAGGTACCAGGTACCAG',
-	#'CGTCATCAAGCACGATGACATGACCCATCGCATGCTTACAAG']
-	#for s in seqs:
-		#print "%s\t%1.4f" % (s, entropy(s))
-	s = "ACTGACAGTACGCAGTCAGTACATGACGATACGATACATGACAA"
-	s2 = "TATTATATATTATATTATATTTATATATAATCATATATCATATATATCAT"
-	d =_get_transitions(s+s2, 1)
-	m = defaultdict(dict)
-	for k, v in sorted(d.items(), key=lambda x: x[0][0]):
-		m[k[0]][k[1]] = v
-		
-	for kk, vv in m.items():
-		total = sum(vv.values())
-		for k, v in vv.items():
-			print kk, k, float(v)/total
-		
-		
+	#rep1 = 'AAAAAAAATAAA'
+	#rep2 = 'ATATATATATAT'
+	#seq1 = 'CGTCATCAAGCA'
 	#sel1 = 'TCACATGACTAGCGTCATCAAGCAGCATGCGTACACAGTCAGTCAACAGAGCAGATATTCAAATCAGCTAGGCACCATGACGCTATATATGGGGGG'
 	#print entropy(rep1)
 	#print entropy(rep2)
@@ -170,8 +160,8 @@ if(__name__ == "__main__"):
 		#if(me>1.25):
 			#n+=1;
 	#print n
-	#for s in generate_mismatched_sequence("AGT", number_of_mismatches = 2):
-		#print s;
+	for s in generate_mismatched_sequence("AGT", number_of_mismatches = 2):
+		print s;
 	
 	
 			
