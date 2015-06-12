@@ -45,35 +45,35 @@ def find_switch(string, growing, sliding, curpos, slide_size=1200, modeldiff=0.0
 	lookforward = 0;
 		
 	
-	#for i, (ls, rs) in enumerate(zip(string, string[slide_size:])):
-		#diff = markov_difference(growing, sliding);
+	for i, (ls, rs) in enumerate(zip(string, string[slide_size:])):
+		diff = markov_difference(growing, sliding);
 		
-		#if(lookforward==maxlook and maxscore>modelfiff):
-			#growing = growing.shrink(string[i-lookforward-growing.order*2:i])
-			#ngrowing = GrowingMarkovChain.from_string(string[i-lookforward: i+slide_size-lookforward], args.order)
-			#nsliding = SlidingMarkovChain.from_string(string[i+slide_size-lookforward: i+slide_size*2-lookforward], args.order)
+		if(lookforward==maxlook and maxscore>modelfiff):
+			growing = growing.shrink(string[i-lookforward-growing.order*2:i])
+			ngrowing = GrowingMarkovChain.from_string(string[i-lookforward: i+slide_size-lookforward], args.order)
+			nsliding = SlidingMarkovChain.from_string(string[i+slide_size-lookforward: i+slide_size*2-lookforward], args.order)
 			
-			#sys.stderr.write("switch to a new model happens at position (%d), cause the difference (%1.5f) is more than max difference %1.5f and lookforward is more or equal than %d\n" % 
-			#(i+curpos-lookforward, maxscore, modelfiff, lookforward))
-			#return growing, ngrowing, nsliding, i-lookforward+slide_size;
+			sys.stderr.write("switch to a new model happens at position (%d), cause the difference (%1.5f) is more than max difference %1.5f and lookforward is more or equal than %d\n" % 
+			(i+curpos-lookforward, maxscore, modelfiff, lookforward))
+			return growing, ngrowing, nsliding, i-lookforward+slide_size;
 			
-		#elif(diff<jumpdiff or lookforward>maxlook*5):
-			#growing.grow_long(string[i: i+jump])
-			#sliding = SlidingMarkovChain.from_string(string[i+jump: i+slide_size+jump], sliding.order)
-			#sys.stderr.write("jump of length (%d) happens at position (%d), cause the difference (%1.5f) is less than jump difference %1.5f\n" % (jump, i+curpos, diff, jumpdiff))
-			#return None, growing, sliding, i+jump;
+		elif(diff<jumpdiff or lookforward>maxlook*5):
+			growing.grow_long(string[i: i+jump])
+			sliding = SlidingMarkovChain.from_string(string[i+jump: i+slide_size+jump], sliding.order)
+			sys.stderr.write("jump of length (%d) happens at position (%d), cause the difference (%1.5f) is less than jump difference %1.5f\n" % (jump, i+curpos, diff, jumpdiff))
+			return None, growing, sliding, i+jump;
 			
-		#else:
-			#growing.grow(ls);
-			#sliding.slide(rs);	
-			#if(diff>maxscore):
-				#lookforward = 0;
-				#maxscore = diff;
-			#else:
-				#lookforward +=1;
-	#else:
-		#growing.add(sliding)
-		#return growing, None, None, 0
+		else:
+			growing.grow(ls);
+			sliding.slide(rs);	
+			if(diff>maxscore):
+				lookforward = 0;
+				maxscore = diff;
+			else:
+				lookforward +=1;
+	else:
+		growing.add(sliding)
+		return growing, None, None, 0
 
 
 
@@ -351,6 +351,9 @@ class MultiMarkov(object):
 			
 		terminal = len(seq) - (curlength-length)	
 		yield seq[:terminal]
+			
+			
+			
 			
 			
 

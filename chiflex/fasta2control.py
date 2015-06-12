@@ -61,7 +61,10 @@ args = parser.parse_args();
 		#return growing, None, None, 0
 		
 		
-def string2models(string):
+def seqrecord2models(seqrecord, step_size=50000, slide_size=1200):
+	models = []
+	steps = len(seqrecord)/step_size;
+	
 	sz=1200
 	curpos=sz
 	ngrowing = GrowingMarkovChain.from_string(string[:sz], args.order);
@@ -74,7 +77,6 @@ def string2models(string):
 			models.append(growing);		
 		
 
-def strin
 models = [];
 step = 50000
 for seq_record in SeqIO.parse(args.path, "fasta"):
