@@ -85,6 +85,14 @@ def mirnas2families(mirnas):
 	return [Family(x) for x in seed2mirna.values()];
 	
 	
+def find_family(mirid, families):
+	for fam in families:
+		if(mirid in fam.names):
+			return fam
+	else:
+		return None;
+	
+	
 	
 def assign_expression(expr_file, mirdict, sep="\t"):
 	with open(expr_file) as f:
@@ -97,13 +105,9 @@ def assign_expression(expr_file, mirdict, sep="\t"):
 			
 			
 class Family():
-	def __init__(self, mirnas, name=''):
+	def __init__(self, mirnas):
 		if(not mirnas):
 			raise ValueError('It is impossimble to construct miRNA family from empty iterable of miRNAs')
-		if(name):
-			self.name = name;
-		else:
-			self.name = "|".join([x.name for x in mirnas])
 		
 		self.seed_start = mirnas[0].seed_start;
 		self.seed_stop = mirnas[0].seed_stop;		
@@ -111,10 +115,18 @@ class Family():
 		self.match = mirnas[0].match;
 		
 		self.expression = sum([x.expression for x in mirnas])
+		self.names = [x.name for x in mirnas]
+		
+	@property	
+	def name():
+		if(self.name):
+			return self.name
+		else:
+			return "|".join(self.names)
 		
 	def set_1mm_matches(self):
 		self.matches_1mm = diverge_with_1mm(self.match);
-		
+			
 		
 	def find_matches(self, seq, overlap=False):
 		return multifind(seq, self.match, overlap = overlap)

@@ -1,0 +1,10 @@
+#All scripts in this folder help to answer SPECIFIC questions about various dataset.
+
+Script Name: targets_ligated_not_to_perfect.py	
+Question: How many clusters have a perfect seed match for one of the top N expressed miRNAs families, but were actually found ligated to another miRNA?	
+Call: python clusters_with_seed_match.py  /data/BIO2/andrei/human/clash/hek_interactions.bed --mir /data/BIO2/andrei/human/mirbase/hsa.mature.miRBase16.fa --expr /data/BIO2/andrei/human/clash/hek_rough_expression.tsv 
+
+
+Script Name: clusters_with_seed_match.py
+Question: How many clusters have perfect seed matches for >1 of the expressed miRNAs (families)?; How many clusters do not have any seed match for the top 10(?) expressed miRNAs (families)?
+Call: python clusters_with_seed_match.py  /data/BIO2/andrei/Kishore/clusters/clusters.fa --mir /data/BIO2/andrei/human/mirbase/hsa.mature.miRBase16.fa --expr /data/BIO2/andrei/human/clash/hek_rough_expression.tsv
