@@ -10,7 +10,7 @@ import copy
 import numpy as np
 import yaml
 
-from nrlbio.random_extension import weighted_choice_fast, weighted2interval
+from nrlbio.random_extension import weighted_choice_fast, weighted2interval, list2interval
 from nrlbio.statistics.functions import wilson_score_interval_binomial
 from nrlbio import numerictools
 
@@ -270,13 +270,13 @@ class MarkovChain(object):
 		tr = {};	
 		for k, d in self.transitions.iteritems():		
 			tr[k] = weighted2interval(d.items());
-		init = weighted2interval(self.initiation.items())			
+		init = weighted2interval(self.initiation.items());
 				
 		last = weighted_choice_fast(*init);
 		l = [leading_seq, last]
 		curlength = self.order + len(leading_seq)
 		genlength = -len(leading_seq);
-		#o = 0;
+
 		
 		for _ in range(length/self.order):
 			last = weighted_choice_fast(*tr[last]);
@@ -468,9 +468,28 @@ class MultiMarkov(object):
 			else:
 				if(leading_seq):
 					yield leading_seq;
-		else:
-			pass;
+					
+					
+		else:		
+			interval = list2interval(self.switches)
+			generated = 0;
 			
+			while(length>generated):
+				mc = weighted_choice_fast(self.models, interval);
+				change_leading=False
+				for s in mc.generate_string(chunk_size, leading_seq=leading_seq):
+					if(length<=generated+chunk_size):
+						yield s[:length-generated]
+						generated += chunk_size;
+						break;
+					elif(len(s)==chunk_size):
+						yield s;
+						generated += chunk_size;
+					else:
+						leading_seq = s;
+						change_leading = True;
+				if(not change_leading):	
+					leading_seq = ''
 			
 			
 			

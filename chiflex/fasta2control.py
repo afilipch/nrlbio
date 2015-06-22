@@ -17,7 +17,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path
 parser.add_argument('-m', '--multimodel', nargs = '?', default = False, const = True, type = bool, help = "Use set of Markov models to generate decoy sequence");
 parser.add_argument('-o', '--order', nargs = '?', default = 1, type = int, help = "Markov model order. Correspondes to shuffling of \'order\'-nucleotides");
 parser.add_argument('-w', '--window', nargs = '?', default = 400, type = int, help = "Can be used in multimodel regime. Each fasta sequence will be split into sequences of length \'window\', for each of them separate Markov Model will be generated");
-parser.add_argument('-ll', '--line_length', nargs = '?', default = 100, type = int, help = "Max length of line in output fasta file. Makes it more readable");
+parser.add_argument('-ll', '--line_length', nargs = '?', default = 50, type = int, help = "Max length of line in output fasta file. Makes it more readable");
 args = parser.parse_args();
 
 

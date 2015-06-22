@@ -8,3 +8,28 @@ Call: python clusters_with_seed_match.py  /data/BIO2/andrei/human/clash/hek_inte
 Script Name: clusters_with_seed_match.py
 Question: How many clusters have perfect seed matches for >1 of the expressed miRNAs (families)?; How many clusters do not have any seed match for the top 10(?) expressed miRNAs (families)?
 Call: python clusters_with_seed_match.py  /data/BIO2/andrei/Kishore/clusters/clusters.fa --mir /data/BIO2/andrei/human/mirbase/hsa.mature.miRBase16.fa --expr /data/BIO2/andrei/human/clash/hek_rough_expression.tsv
+
+
+Script Name: mirna_has_extensive_complementarity_8_9_10.py
+Question: Script answers to the question: If miRNA:target pair bound via 2-7(with or without 1mm) has an extensive complementarity at positions 8,9,10
+Call: python script.py /data/BIO2/andrei/human/clash/hek_interactions.bed --mismatch
+	
+	
+Script Name:
+Question:
+Call:
+	
+	
+Script Name:
+Question:
+Call:
+	
+	
+Script Name:
+Question:
+Call:
+	
+	
+Script Name:
+Question:
+Call:

@@ -7,19 +7,26 @@ import bisect
 
 import numpy as np
 
-def weighted2interval(iterable):
-	'''creates list of items and probability intervals from iterable. 
-	For example, there are two items: A with probability 40 to be selected, B with probability 60. Then one should provide an iterable [(A, 40), (B, 60)]. Outcome will be [A, B], [0.4, 1] 
+
+def list2interval(l):
+	'''converts list of probabilities into interval, useable for random choice'''
+	interval = np.array(l, dtype=float)
+	interval = interval/np.sum(interval)	
+	interval = np.cumsum(interval)	
+	return interval
 	
-		iterable iterable: element is tuple. 1st element of the tuple is item to select, 2nd is a probability to select this item. Probabilities may be not normalized
+
+def weighted2interval(counter):
+	'''creates list of items and probability intervals from counter. 
+	For example, there are two items: A with probability 40 to be selected, B with probability 60. Then one should provide an counter [(A, 40), (B, 60)]. Outcome will be [A, B], [0.4, 1] 
+	
+		counter iterable: element is tuple. 1st element of the tuple is item to select, 2nd is a probability to select this item. Probabilities may be not normalized
 	Returns:
 		items list: list of items to select
 		interval list: probability intervals. 
 	'''
-	items = [x[0] for x in iterable]
-	interval = np.array([x[1] for x in iterable], dtype=float)
-	interval = interval/np.sum(interval)	
-	interval = np.cumsum(interval)
+	items = [x[0] for x in counter]
+	interval = list2interval([x[1] for x in counter])
 	return items, interval;
 
 	
@@ -30,14 +37,14 @@ def weighted_choice_fast(items, interval):
 	return items[index];
 	
 	
-def weighted_choice(iterable):
-	'''randomly select items from iterable based on their probabilities
+def weighted_choice(counter):
+	'''randomly select items from counter based on their probabilities
 		
-		iterable iterable: element is tuple. 1st element of the tuple is item to select, 2nd is a probability to select this item. Probabilities may be not normalized
+		counter iterable: element is tuple. 1st element of the tuple is item to select, 2nd is a probability to select this item. Probabilities may be not normalized
 	
 	Returns obj: randomly selected item
 	'''
-	items, interval = weighted2interval(iterable);
+	items, interval = weighted2interval(counter);
 	return weighted_choice_fast(items, interval)
 	
 	
