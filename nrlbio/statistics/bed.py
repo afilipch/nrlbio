@@ -40,21 +40,16 @@ class Stat(object):
 
 			
 	def fill_stat_sheet(self, bed_iter, attributes=[], sparse_coefficient = 1):
-		'''Extracts statistics of provided iterable containg intervals and stores it in the attributes of the class
+		'''Get statistics of provided iterable of intervals and stores it in the attributes of the object
 
 		ar_iter iterable: any iterable of pysam.AlignedRead. In the most case an output of pysam.Samfile.fetch()
-		sparse_coefficient int: analyses only each {sparse_coefficient}th pysam.AlignedRead;
-
-		Return True if no exception raised
+		sparse_coefficient int: statistics is generated only for each {sparse_coefficient}th entry;
 		'''			
 		for c, interval in enumerate(bed_iter):
 			if (c%sparse_coefficient == 0):
 				self.increment(interval, attributes=attributes)
 				
-		#for k, d in self.attrs.items():
-			#print "%s:" % k;
-			#for kk, vv in d.items():
-				#print "\t%s:\t%s" % (kk, str(vv));
+
 				
 				
 	def generate_plots(self, configuration='samstat', output=''):

@@ -108,6 +108,21 @@ def generator_seqrecord(paths, ftype):
 			yield seqrecord;
 			
 			
+def generator_seq(paths, ftype):
+	'''Generates sequences from fasta/fastq/genbank files. NOTE: sequences will be converted to upper case
+	
+		paths list: list of paths to files with seqrecords(genbank, fastq, fasta, ets.)
+		ftype str: format of files with seqrecords('genbank', 'fastq', 'fasta', ets.)
+		
+	Yiels str: nucleotide sequence
+	'''
+	from Bio import SeqIO;	
+	for path in paths:
+		for seqrecord in SeqIO.parse(path, ftype):
+			yield str(seqrecord.seq.upper());
+			
+			
+			
 def generator_mirna(paths, seed_start=1, seed_stop=7):
 	'''Generates miRNAs from given fasta files
 	

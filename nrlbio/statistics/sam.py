@@ -222,12 +222,12 @@ class Stat(object):
 
 			
 	def fill_stat_sheet(self, ar_iter, short_reference = False, detailed = False, sparse_coefficient = 1):
-		'''Extracts statistics of provided iterable containg aligned reads and stores it in the attributes of the class
+		'''Get statistics of provided iterable of alligned reads and stores it in the attributes of the object
 
 		ar_iter iterable: any iterable of pysam.AlignedRead. In the most case an output of pysam.Samfile.fetch()
 		short_reference bool: if True additional statistics is collected. Makes sense for a mapping to the reference composed of short reads(piRNA, miRNA, ncRNA etc.)
 		detailed bool: if True collects advanced statistics, which can require more memory
-		sparse_coefficient int: analyses only each {sparse_coefficient}th pysam.AlignedRead;
+		sparse_coefficient int: statistics is generated only for each {sparse_coefficient}th entry;
 
 		Return True if no exception raised
 		'''			

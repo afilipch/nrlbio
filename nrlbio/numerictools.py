@@ -1,6 +1,7 @@
 # /usr/bin/python
 '''collections of classes and functions to solve diverse numerical problems'''
 from math import log
+from itertools import chain
 
 import numpy as np;
 
@@ -118,10 +119,8 @@ def overlap_hyperrectangles(hr1, hr2):
 		else:
 			return None
 	return c;
-	
-	
-
 		
+	
 		
 def dict2entropy(d):
 	'''Calculates entropy for a given dictionary
@@ -135,7 +134,20 @@ def dict2entropy(d):
 	
 	return -1*sum([(p*log(p)) for p in probs])	
 		
+
 		
+def get_simple_stat(array):
+	return len(array), sum(array), array.mean(), np.median(array), min(array), max(array)
+
+
+def counter2array(counter):
+	return np.array(list(chain(*[[x[0]]*x[1] for x in counter.items()])))
+	
+		
+def dict2simple_stat(counter):	
+	return get_simple_stat(counter2array(counter))
+	
+	
 #testing section
 if(__name__ == "__main__"):
 	#print overlap([5,8], [4,10])

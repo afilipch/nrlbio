@@ -15,7 +15,7 @@ from nrlbio import annotation
 
 
 parser = argparse.ArgumentParser(description='script generates html reports and plots for given bed/gff file');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "paths to bed/gff file"); 
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to bed/gff file"); 
 parser.add_argument('-o', '--output', nargs = '?', default = None, type = str, help = "path to the output report. If not set, report will be generated in current folder, deriving file name from bed/gff file");
 parser.add_argument('--attributes', nargs = '+', default = [], type = str, help = "set gff attributes to produce statistics of");
 parser.add_argument('--annotation', nargs = '?', default = False, const = True, type = bool, help = "if True, process given files as chiflex/annotate_bed.py annotated file");
