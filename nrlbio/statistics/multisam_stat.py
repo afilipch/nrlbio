@@ -6,7 +6,7 @@ import argparse;
 
 import pysam
 
-import sam
+from nrlbio.statistics import sam
 from nrlbio import html
 
 

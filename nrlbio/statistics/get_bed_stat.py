@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from pybedtools import BedTool
 
-import bed
+from nrlbio.statistics import bed
 from nrlbio import html
 from nrlbio import annotation 
 

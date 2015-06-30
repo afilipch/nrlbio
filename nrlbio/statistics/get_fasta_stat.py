@@ -4,7 +4,7 @@ import os;
 import sys;
 import argparse;
 
-import fasta
+from nrlbio.statistics import fasta
 from nrlbio import html
 
 

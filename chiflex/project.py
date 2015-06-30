@@ -25,8 +25,8 @@ bowtie_settings = {'N': ('0','-'),
 'p': ('8', '-') }
 bs_string = "\n".join(["\t%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_settings.items()])
 
-parser = argparse.ArgumentParser(description='assignes hybridization energy to interactions');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the project folder");
+parser = argparse.ArgumentParser(description='Creates makefile and directory structure for chiflex project');
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the project folder. If folder does not exist, it will be created");
 parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "path to collapsed reads fastq file");
 parser.add_argument('--reference', nargs = '?', type = str, required = True, help = "path to the mapping reference");
 parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
