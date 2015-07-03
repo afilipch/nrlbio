@@ -367,8 +367,13 @@ if (__name__=='__main__'):
 	#Stat.generate_multihist([samstat1, samstat2], 'samstat', output='plots')
 	#print samstat.conv
 	
-	
-	
+	for ar in pysam.Samfile(sys.argv[1]):
+		#print ar.opt('MD')
+		#print get_alignment(ar)
+		print ar.get_tag('MD')
+		#for attr in dir(ar):
+			#print "%s\t%s" % (attr, str(getattr(ar, attr))) 
+		sys.exit();
 	
 	
 	
