@@ -25,10 +25,6 @@ args = parser.parse_args();
 def _iteration(arwlist):
 	if(arwlist):
 		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score)
-		if(nonunique):
-			for ar in arwlist:
-				print ar.AS, ar.qname, ar.aligned_read.qname, ar.rname, ar.aligned_read.pos, ar.aligned_read.tid
-			print "_"*120	
 		if(unique):
 			sam_unique.write(unique.aligned_read);
 			stat_unique.increment_basic(unique.aligned_read, conversions = unique.conversions)
