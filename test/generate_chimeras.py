@@ -26,6 +26,9 @@ parser.add_argument('-lr', '--left_random', nargs = 2, default = (1, 0), type = 
 parser.add_argument('-rr', '--right_random', nargs = 2, default = (1, 0), type = float, help = "options of 3' random sequence length (Probability of 0, maximum length of the random tail)");
 args = parser.parse_args();
 
+TOTAL_COUNT=0#count of reads generated	
+
+
 # set left and right random sequence length probability
 def _get_intervals_items(zero_prob, max_length):
 	max_length = int(max_length)
@@ -96,7 +99,7 @@ def get_seq(interval, fasta_dict, left, right):
 	
 	
 def interval2read(interval, fasta_dict, type_, left=0, right=0):
-	header = "|".join(["single", '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, '%d:%d' % (left, right)])
+	header = "|".join([str(TOTAL_COUNT), "single", '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, '%d:%d' % (left, right)])
 	seq = get_seq(interval, fasta_dict, left, right)
 	
 	if(seq):
@@ -106,7 +109,7 @@ def interval2read(interval, fasta_dict, type_, left=0, right=0):
 	
 	
 def interval2shuffled(interval, fasta_dict, type_):
-	header = "|".join(["shuffled", '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, str(len(interval))])
+	header = "|".join([str(TOTAL_COUNT), "shuffled", '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, str(len(interval))])
 	seq = get_seq(interval, fasta_dict, 0, 0)
 	
 	if(seq):
@@ -116,13 +119,13 @@ def interval2shuffled(interval, fasta_dict, type_):
 	
 	
 def get_random_entry(length):
-	header = "|".join(["random", '0', '0', str(length)])
+	header = "|".join([str(TOTAL_COUNT), "random", '0', '0', str(length)])
 	seq = random_string(length);	
 	return ">%s\n%s" % (header, seq);
 
 	
 def intervals2chimera(intervals, fasta_dict, type_, gap = 0, left=0, right=0):
-	header = "|".join(['chimera', ";".join(['%s:%s:%d:%d' % (x.chrom, x.strand, x.start, x.end) for x in intervals]), type_, '%d:%d:%d' % (left, right, gap)])
+	header = "|".join([str(TOTAL_COUNT), 'chimera', "&".join(['%s:%s:%d:%d' % (x.chrom, x.strand, x.start, x.end) for x in intervals]), type_, '%d:%d:%d' % (left, right, gap)])
 	seqs = get_seq(intervals[0], fasta_dict, left, gap), get_seq(intervals[1], fasta_dict, 0, right)
 	
 	if(all(seqs)):
@@ -146,6 +149,9 @@ for k, v in fasta.iteritems():
 genes = list(generate_genes_from_refseq(args.genes));
 #for c, gene in enumerate(generate_genes_from_refseq(args.genes)):
 	#genes[c, len(gene.transcript)] = gene;
+	
+	
+
 #_______________________________________________________________________________________________________________
 
 
@@ -158,6 +164,7 @@ for _ in range(args.num_chimeric_reads[0]):
 		exon2 = select_exon(genes, args.length-joint)
 		entry = intervals2chimera(get_random_intervals(exon1, exon2, args.length, joint = joint), fasta, "exon:exon")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
@@ -172,6 +179,7 @@ for _ in range(args.num_chimeric_reads[1]/2):
 		intron = select_intron(genes, args.length-joint)
 		entry = intervals2chimera(get_random_intervals(exon, intron, args.length, joint = joint), fasta, "exon:intron")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 
@@ -187,6 +195,7 @@ for _ in range(args.num_chimeric_reads[1]/2):
 		exon = select_exon(genes, args.length - joint)
 		entry = intervals2chimera(get_random_intervals(intron, exon, args.length, joint = joint), fasta, "intron:exon")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 		
@@ -202,6 +211,7 @@ for _ in range(args.num_chimeric_reads[2]/2):
 		chrom = select_chromosome(chromosomes, args.length - joint)
 		entry = intervals2chimera(get_random_intervals(exon, chrom, args.length, joint = joint), fasta, "exon:intergenic")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 		
@@ -217,6 +227,7 @@ for _ in range(args.num_chimeric_reads[2]/2):
 		exon = select_exon(genes, args.length - joint)
 		entry = intervals2chimera(get_random_intervals(chrom, exon, args.length, joint = joint), fasta, "intergenic:exon")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 
@@ -232,6 +243,7 @@ for _ in range(args.num_chimeric_reads[3]):
 		intron2 = select_intron(genes, args.length - joint)
 		entry = intervals2chimera(get_random_intervals(intron1, intron2, args.length, joint = joint), fasta, "intron:intron")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 
@@ -247,6 +259,7 @@ for _ in range(args.num_chimeric_reads[4]/2):
 		chrom = select_chromosome(chromosomes, args.length - joint)
 		entry = intervals2chimera(get_random_intervals(intron, chrom, args.length, joint = joint), fasta, "intron:intergenic")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 		
@@ -263,6 +276,7 @@ for _ in range(args.num_chimeric_reads[4]/2):
 		intron = select_intron(genes, args.length - joint)
 		entry = intervals2chimera(get_random_intervals(chrom, intron, args.length, joint = joint), fasta, "intergenic:intron")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 
@@ -278,6 +292,7 @@ for _ in range(args.num_chimeric_reads[5]):
 		chrom2 = select_chromosome(chromosomes, args.length - joint)
 		entry = intervals2chimera(get_random_intervals(chrom1, chrom2, args.length, joint = joint), fasta, "intergenic:intergenic")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
@@ -295,6 +310,7 @@ for _ in range(args.num_single_reads[0]):
 		exon = select_exon(genes, length)
 		entry = interval2read(get_random_interval(exon, length), fasta, "exon", left=left, right=right)
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
@@ -309,6 +325,7 @@ for _ in range(args.num_single_reads[1]):
 		exon = select_intron(genes, length)
 		entry = interval2read(get_random_interval(intron, length), fasta, "intron", left=left, right=right)
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
@@ -323,6 +340,7 @@ for _ in range(args.num_single_reads[2]):
 		chrom = select_chromosome(chromosomes, length)
 		entry = interval2read(get_random_interval(chrom, length), fasta, "intergenic", left=left, right=right)
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
@@ -336,6 +354,7 @@ for _ in range(args.num_random_reads[0]/3):
 		exon = select_exon(genes, args.length)		
 		entry = interval2shuffled(get_random_interval(exon, args.length), fasta, "exon")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
@@ -347,6 +366,7 @@ for _ in range(args.num_random_reads[0]/3):
 		exon = select_intron(genes, args.length)	
 		entry = interval2shuffled(get_random_interval(intron, args.length), fasta, "intron")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
@@ -358,12 +378,14 @@ for _ in range(args.num_random_reads[0]/3):
 		chrom = select_chromosome(chromosomes, args.length)
 		entry = interval2shuffled(get_random_interval(chrom, args.length), fasta, "intergenic")
 		if(entry):
+			TOTAL_COUNT+=1;
 			print entry;
 			break;
 #_______________________________________________________________________________________________________________
 
 #random reads:
 for _ in range(args.num_random_reads[1]):
+	TOTAL_COUNT+=1;
 	print get_random_entry(args.length);
 
 

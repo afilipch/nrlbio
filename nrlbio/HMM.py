@@ -295,8 +295,8 @@ class MarkovChain(object):
 			if(nl>0):
 				yield s[:nl];
 				
-			if(genlength +nl != self.length):
-				print 'bo'
+			#if(genlength +nl != self.length):
+				#print 'bo'
 
 				
 				

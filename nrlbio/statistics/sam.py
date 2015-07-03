@@ -19,6 +19,11 @@ from nrlbio.config.config import load_config
 '''pattern to get matched, mismatched and del/ins stretches to a reference from MD field in sam/bam file file'''
 MD_pattern = '([0-9]+)([A-Z]+)*(\^[A-Z]+)*';
 MD_compiled_pattern = re.compile(MD_pattern);
+#soft_pattern = '([0-9]+)(S)'
+#soft_compiled_pattern = re.compile(soft_pattern);
+
+def fix_aligned_pairs(ar):
+	return ar.get_aligned_pairs()[ar.qstart: ar.qend]
 
 def intermediate_alignment(ar):
 	'''function to get all mismatches/deletions at defined positions of the aligned read based on the aligned sequence and MD field in sam/bam file. The output is used further to define mismatches/deletions/insertions or/and alignment
@@ -28,6 +33,8 @@ def intermediate_alignment(ar):
 	Return tuple. 1st element is mismatch dictionary (Key: position of mismatch in query, Value: corresponding nucleotide in reference). 2nd element is listiterator (Element: Deleted nucleotides in an order they appear in reference)
 	'''	
 	mdlist = MD_compiled_pattern.findall(ar.opt('MD'));
+	#for attr in dir(ar):
+		#print "%s\t%s" % (attr, str(getattr(ar, attr))) 
 	mmdict = {};
 	dellist = [];
 	p = 0;
@@ -41,6 +48,7 @@ def intermediate_alignment(ar):
 		
 	deliter = iter(dellist);
 	return mmdict, deliter
+	
 
 def get_alignment(ar):	
 	'''function to get actual alignment for given pysam.AlignedRead
@@ -52,7 +60,7 @@ def get_alignment(ar):
 	alignment = [];
 	mmdict, deliter = intermediate_alignment(ar);
 	ins_adjust = 0;	
-	for i, j in ar.aligned_pairs:
+	for i, j in fix_aligned_pairs(ar):
 		if(i != None):
 			if(j != None):
 				if(i - ins_adjust in mmdict):
@@ -78,7 +86,8 @@ def get_conversions(ar):
 	conversions = [];
 	mmdict, deliter = intermediate_alignment(ar);
 	ins_adjust = 0;	
-	for i, j in ar.aligned_pairs:
+	sys.exit()
+	for i, j in fix_aligned_pairs(ar):
 		if(i != None):
 			if(j != None):
 				if(i - ins_adjust in mmdict):

@@ -78,5 +78,5 @@ class Stat(object):
 		
 		sn = "\n".join(["%s: %d" % (x, self.nucleotides.get(x,0)) for x in "ACTGN"])
 		
-		return "%s%s\n\nNucleotide Composition:\n%s" % ("_"*140, sl, sn)
+		return "%s\n%s\n\nNucleotide Composition:\n%s" % ("_"*100, sl, sn)
 		

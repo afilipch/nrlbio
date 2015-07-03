@@ -28,7 +28,7 @@ def intervals2interaction(intervals, distance, number, order=False):
 		merged_regions = [[], []];
 		for interval in intervals:
 			#sys.stderr.write("%d" % int(interval.name.split("|")[1]))
-			merged_regions[int(interval.name.split("|")[1])].append(interval)			
+			merged_regions[int(interval.name.split("|")[-1])].append(interval)			
 	else:
 		intervals.sort(key = attrgetter('chrom','strand','start'));
 		merged_regions = list(generate_overlaping_intervals(intervals, distance));
@@ -54,8 +54,9 @@ name2interaction = defaultdict(list);
 interaction2name = defaultdict(list);
 
 for c, i in enumerate(bed.sort().merge(s=True, d=args.distance, c='4,6', o='distinct', delim=';')):
-	 for name in i.name.split(";"):
-		 n = name.split("|")[0]
+	print i;
+	for name in i.name.split(";"):
+		 n = "|".join(name.split("|")[:-1])
 		 name2interaction[n].append(c);
 		 
 for k, v in	name2interaction.iteritems():

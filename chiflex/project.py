@@ -27,7 +27,7 @@ bs_string = "\n".join(["\t%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_se
 
 parser = argparse.ArgumentParser(description='Creates makefile and directory structure for chiflex project');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the project folder. If folder does not exist, it will be created");
-parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "path to collapsed reads fastq file");
+parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "path to sequencing reads. fastq/fasta file");
 parser.add_argument('--reference', nargs = '?', type = str, required = True, help = "path to the mapping reference");
 parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
@@ -40,6 +40,7 @@ parser.add_argument('--reports', nargs = '?', default = False, const = True, typ
 parser.add_argument('--stratify', nargs = '?', default = False, const = True, type = bool, help = "if set, interactions will be stratified according to the interaction type. Ignored if NO '--exons\'");
 parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "if set, repetitive mapped sequences are removed")
 parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "if set, nonunique mappings with high alignment score are kept")
+parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "if set, hits position on a reference will be reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers has to be in [chrom]|[strand]|[start]|[stop] format")
 
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
 args = parser.parse_args();
@@ -149,10 +150,11 @@ def makefile():
 	m.append(dependence(input_files, output_files, script))
 
 	#Reassign chimeras coordinates from positions on genomic features(mapping reference) to genomic ones
-	input_files = output_files
-	output_files = os.path.join('chimeras', 'assigned.bed') 
-	script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
-	m.append(dependence(input_files, output_files, script))
+	if(args.reassign):
+		input_files = output_files
+		output_files = os.path.join('chimeras', 'assigned.bed') 
+		script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
+		m.append(dependence(input_files, output_files, script))
 
 	#Merge chimeras into interactions.That is, sequenced chimeric reads which have two respectively overlaping parts are merged together
 	input_files = output_files
@@ -240,8 +242,12 @@ with open(os.path.join(project_path, 'log/project.txt'), 'w') as rf:
 	rf.write("Project call:\npython %s\n\n" % " ".join(sys.argv))
 	
 	for arg, (description, fun) in arguments_report: 
-		rf.write("%s:\t%s\n" % (description, fun(getattr(args, arg))))
-	
+		av = getattr(args, arg);
+		if(av):
+			rf.write("%s:\t%s\n" % (description, fun(av)))
+		else:
+			rf.write("%s:\tnot set\n" % description)
+			
 	rf.write("bowtie2 settings:\n")
 	for arg, (value, dashes) in bowtie_settings.items():
 		rf.write("\t%s%s:\t%s\n" % (dashes, arg, value))
