@@ -19,11 +19,14 @@ args = parser.parse_args();
 
 _str2func={ 'repetitive': filters_for_sam.repetitive, 'chimera_left': filters_for_sam.chimera_left, 'contain_repetitive': filters_for_sam.contain_repetitive}
 arguments = []
-for a in args.arguments:
-	if(a=='None'):
-		arguments.append('');
-	else:
-		arguments.append(a)	
+if(args.arguments):
+	for a in args.arguments:
+		if(a=='None'):
+			arguments.append('');
+		else:
+			arguments.append(a)	
+else:
+	arguments = ['']*len(args.filters)
 
 	
 fargs = string2fargs(args.filters, arguments, _str2func)

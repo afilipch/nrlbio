@@ -86,7 +86,6 @@ def get_conversions(ar):
 	conversions = [];
 	mmdict, deliter = intermediate_alignment(ar);
 	ins_adjust = 0;	
-	sys.exit()
 	for i, j in fix_aligned_pairs(ar):
 		if(i != None):
 			if(j != None):
