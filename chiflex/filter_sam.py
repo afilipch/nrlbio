@@ -41,59 +41,14 @@ for aligned_read in samfile.fetch(until_eof=True):
 			if(not fun(aligned_read,**kwargs)):
 				removed +=1;
 				break;		
-			else:
-				passed+=1
-				filtered.write(aligned_read);
+		else:
+			passed+=1
+			filtered.write(aligned_read);
 
 				
 			
 sys.stderr.write("total interactions: %d\npassed interactions: %d\nremoved interactions: %d\n" % (passed + removed, passed, removed));	
 
-
-
-
-
-
-
-
-
-#some parsing of agrs.arguments to make them ready to paste into eval statement
-#arguments = [];
-#if(args.arguments):
-	#if(len(args.arguments) == len(args.filters)):
-		#for a in args.arguments:
-			#if(a=='None'):
-				#arguments.append('');
-			#else:
-				#arguments.append("".join((",", a)))
-	#else:
-		#raise AttributeError('number of arguments should be equal to number of filters, or not provided at all')
-#else:
-	#arguments = ['']*len(args.filters);
 	
-	
-
-
-
-
-##main part
-
-#samfile = pysam.Samfile(args.path)
-#filtered = pysam.Samfile(args.output, "wb", template=samfile)
-
-#passed, removed = 0,0
-
-#for aligned_read in samfile.fetch(until_eof=True):
-	#if(not aligned_read.is_unmapped):
-		#for f, a in zip(args.filters, arguments):
-			#if(not eval('%s(aligned_read%s)' % (f, a))):
-				#removed +=1;
-				#break;
-		#else:
-			#filtered.write(aligned_read);
-			#passed +=1
-			
-			
-#sys.stderr.write("total hits: %d\npassed hits: %d\nremoved hits: %d\n" % (passed + removed, passed, removed));			
 			
 	

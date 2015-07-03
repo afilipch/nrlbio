@@ -25,6 +25,10 @@ args = parser.parse_args();
 def _iteration(arwlist):
 	if(arwlist):
 		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score)
+		if(nonunique):
+			for ar in arwlist:
+				print ar.AS, ar.qname, ar.aligned_read.qname, ar.rname, ar.aligned_read.pos, ar.aligned_read.tid
+			print "_"*120	
 		if(unique):
 			sam_unique.write(unique.aligned_read);
 			stat_unique.increment_basic(unique.aligned_read, conversions = unique.conversions)
@@ -69,13 +73,14 @@ for aligned_read in samfile.fetch(until_eof=True):
 		rname = samfile.getrname(aligned_read.tid)
 		arw = BackwardWrapper(aligned_read, rname, args.From, args.To, add_nr_tag=True)
 		
-		if(arw.qname and current_name != arw.qname):
-			_iteration(arwlist)
-			arwlist = [arw];
-			current_name = arw.qname;
-			
-		elif(arw.qname):
-			arwlist.append(arw);
+		if(arw.qname):
+			if(current_name != arw.qname):
+				_iteration(arwlist)
+				arwlist[:] = [arw];
+				current_name = arw.qname;
+				
+			else:
+				arwlist.append(arw);
 else:
 	_iteration(arwlist);
 			
