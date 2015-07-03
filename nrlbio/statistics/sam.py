@@ -373,7 +373,7 @@ if (__name__=='__main__'):
 		print ar.get_tag('MD')
 		#for attr in dir(ar):
 			#print "%s\t%s" % (attr, str(getattr(ar, attr))) 
-		sys.exit();
+
 	
 	
 	
