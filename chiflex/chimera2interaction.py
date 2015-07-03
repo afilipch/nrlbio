@@ -27,7 +27,6 @@ def intervals2interaction(intervals, distance, number, order=False):
 	if(order):
 		merged_regions = [[], []];
 		for interval in intervals:
-			#sys.stderr.write("%d" % int(interval.name.split("|")[1]))
 			merged_regions[int(interval.name.split("|")[-1])].append(interval)			
 	else:
 		intervals.sort(key = attrgetter('chrom','strand','start'));
@@ -35,8 +34,7 @@ def intervals2interaction(intervals, distance, number, order=False):
 
 	if(len(merged_regions)==2):
 		return Interaction.from_intervals("%s_%d" % (args.name, number), merged_regions)
-		#oi.write("%s\n" % interaction.doublebed())
-		#od.write("%s\t%s\n" % (interaction.name, ",".join(interaction.read_names)))
+
 	else:
 		#sys.stderr.write("Warning: interacting regions may be further split or merged")
 		#for i in intervals:
@@ -54,10 +52,10 @@ name2interaction = defaultdict(list);
 interaction2name = defaultdict(list);
 
 for c, i in enumerate(bed.sort().merge(s=True, d=args.distance, c='4,6', o='distinct', delim=';')):
-	print i;
 	for name in i.name.split(";"):
 		 n = "|".join(name.split("|")[:-1])
 		 name2interaction[n].append(c);
+		  
 		 
 for k, v in	name2interaction.iteritems():
 	key = tuple(sorted(v));
