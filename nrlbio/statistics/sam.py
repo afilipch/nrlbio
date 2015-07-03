@@ -23,7 +23,13 @@ MD_compiled_pattern = re.compile(MD_pattern);
 #soft_compiled_pattern = re.compile(soft_pattern);
 
 def fix_aligned_pairs(ar):
-	return ar.get_aligned_pairs()[ar.qstart: ar.qend]
+	fixed = [];
+	for qp, rp in ar.get_aligned_pairs()[ar.qstart: ar.qend]:
+		if(qp):
+			fixed.append((qp-ar.qstart, rp));
+		else:
+			fixed.append((qp, rp));
+	return fixed
 
 def intermediate_alignment(ar):
 	'''function to get all mismatches/deletions at defined positions of the aligned read based on the aligned sequence and MD field in sam/bam file. The output is used further to define mismatches/deletions/insertions or/and alignment
@@ -86,6 +92,10 @@ def get_conversions(ar):
 	conversions = [];
 	mmdict, deliter = intermediate_alignment(ar);
 	ins_adjust = 0;	
+	#print ar.seq
+	#print fix_aligned_pairs(ar)
+	#print ar.get_aligned_pairs()
+	#print "_"*120
 	for i, j in fix_aligned_pairs(ar):
 		if(i != None):
 			if(j != None):
@@ -346,14 +356,20 @@ class Stat(object):
 			t.render({"statistics": r})
 		
 if (__name__=='__main__'):
-	samfile1 = pysam.Samfile(sys.argv[1])
-	samstat1 = Stat('signal');	
-	samstat1.fill_stat_sheet(samfile1.fetch(until_eof=True), short_reference = True, detailed = True, sparse_coefficient = 1)
+	#samfile1 = pysam.Samfile(sys.argv[1])
+	#samstat1 = Stat('signal');	
+	#samstat1.fill_stat_sheet(samfile1.fetch(until_eof=True), short_reference = True, detailed = True, sparse_coefficient = 1)
 	
-	samfile2 = pysam.Samfile(sys.argv[2])
-	samstat2 = Stat('control');	
-	samstat2.fill_stat_sheet(samfile2.fetch(until_eof=True), short_reference = True, detailed = True, sparse_coefficient = 1)
+	#samfile2 = pysam.Samfile(sys.argv[2])
+	#samstat2 = Stat('control');	
+	#samstat2.fill_stat_sheet(samfile2.fetch(until_eof=True), short_reference = True, detailed = True, sparse_coefficient = 1)
 	
-	Stat.generate_multihist([samstat1, samstat2], 'samstat', output='plots')
+	#Stat.generate_multihist([samstat1, samstat2], 'samstat', output='plots')
 	#print samstat.conv
+	
+	
+	
+	
+	
+	
 	
