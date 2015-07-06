@@ -77,7 +77,7 @@ with open(args.dictionary, 'w') as od:
 						intervals.append(i)
 				interaction = intervals2interaction(intervals, args.distance, number+1, order=args.order);
 				if(interaction):
-					oi.write("%s\n" % interaction.doublebed())
+					oi.write(interaction.doublebed())
 					od.write("%s\t%s\n" % (interaction.name, ",".join(interaction.read_names)))
 				number_interactions += 1;
 			else:
