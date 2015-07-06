@@ -174,7 +174,7 @@ class BackwardWrapper(ArWrapper):
 		else:
 			self.conversions = get_conversions(self.aligned_read);
 			
-		#self.aligned_read.qname = self.qname;
+		self.aligned_read.qname = self.qname;
 
 
 def demultiplex_read_hits(arwlist, key_function):
