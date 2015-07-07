@@ -27,19 +27,19 @@ args = parser.parse_args();
 
 #exec("from sequence_data.systems import %s as gsys" % args.system);
 
-def reassign_coordinates(a):
-	chrom, strand, start, stop = a[0].split("|")[:4]
+def reassign_coordinates(interval):
+	chrom, strand, start, stop = interval.chrom.split("|")[:4]
 	start = int(start)
 	stop = int(stop)
 	
 	if(strand == '+'):
-		stop = start + int(a[2])
-		start = start + int(a[1])		
+		stop = start + interval.stop
+		start = start + interval.start
 	else:
-		start = stop - int(a[2])
-		stop = stop - int(a[1])
+		start = stop - interval.stop
+		stop = stop - interval.start
 	
-	return chrom, start, stop, a[3], a[4], strand
+	return chrom, start, stop, interval.name, interval.score, strand
 
 
 #interactions = BedTool(args.path)
@@ -49,15 +49,14 @@ reference = SeqIO.to_dict(SeqIO.parse(args.fasta, "fasta"))
 s = 0;	
 n = 0;
 for i1, i2 in generator_doublebed(args.path):
-	mirid = i1[0]
-	mirseq = str(mirna[mirid].seq.upper())
+	mirseq = str(mirna[i1.chrom].seq.upper())
 	
 	
-	chrom, start, stop, name, score, strand = reassign_coordinates(i2[0:6])
+	chrom, start, stop, name, score, strand = reassign_coordinates(i2)
 	interval = Interval(chrom, start, stop, name=name, score=score, strand=strand)
-	tseq = seq = interval2seq(interval, reference)
+	tseq = interval2seq(interval, reference)
 	
-	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i1[3], i2[3], strand, mirid, mirseq, tseq)
+	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i2.name[:-2], i2.score, strand, i1.chrom, mirseq, tseq)
 	
 	if(reverse_complement(mirseq[1:7]) in tseq):
 		s+=1;
