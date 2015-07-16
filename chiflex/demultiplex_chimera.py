@@ -8,7 +8,7 @@ import pysam;
 
 import nrlbio.statistics.sam as sam_statistics
 from nrlbio.samlib import ArWrapper, demultiplex_read_hits
-from nrlbio.chimera import as_gap_score, arlist2chimera
+from nrlbio.chimera import as_gap_score, arwlist2chimera
 from nrlbio.chimera import demultiplex as demultiplex_ch
 
 
@@ -22,6 +22,8 @@ parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as
 parser.add_argument('-sh', '--score_chimera', nargs = '?', default = 'as', choices = ['as', 'as_gap', 'as_gap_entropy'], type = str, help = "score function for chimeras");
 parser.add_argument('-mg', '--maxgap', nargs = '?', default = 8, type = int, help = "maxgap is used to calculate chimera score, the more the maxgap, the less important is gap between hits for chimera evaluation");
 args = parser.parse_args();
+
+testid = '20|chimera|chr2:+:58086349:58086399&chr2:-:210192834:210192884|exon:exon|0:0:0'
 
 
 def compare_single_chimera(arw, chimera, maxgap):
@@ -46,12 +48,22 @@ counts = [0]*6
 
 def _iteration(arwlist):
 	if(arwlist):
+		if(arwlist[0].qname == testid):
+			for arw in arwlist:
+				print arw.aligned_read;
+			print 
+			unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
+			print "BEST UNIQUE", unique.aligned_read;
+			chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
+			print "\npossible chimeras: %d\n" % len(chimeras);
+			unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras);
+			for arw in unique_chimera.ar_wrappers:
+				print "BEST CHIMERA", arw.aligned_read
 		#demultiplex single hits
 		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
 		
 		#gather hits into chimeras
-		chimeras = arlist2chimera([x.aligned_read for x in arwlist], samfile, gap = 0, overlap = 4, score_function = key_score_chimera)
-		#demultiplex chimeras
+		chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
 		unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras);
 		
 		#assign read to be chimeric or single separately for control and signal
@@ -79,17 +91,17 @@ def _iteration(arwlist):
 		#output chimeras
 		if(unique_chimera):
 			counts[3] += 1
-			for ar in unique_chimera.aligned_reads:
-				sam_unique_chimera.write(ar);
+			for arw in unique_chimera.ar_wrappers:
+				sam_unique_chimera.write(arw.aligned_read);
 		elif(control_chimera):
 			counts[4] += 1
-			for ar in control_chimera.aligned_reads:
-				sam_control_chimera.write(ar);
+			for arw in control_chimera.ar_wrappers:
+				sam_control_chimera.write(arw.aligned_read);
 		if(nonunique):
 			counts[5] += 1
 			for nu in nonunique_chimera:
-				for ar in nu.aligned_reads:
-					sam_nonunique_chimera.write(ar);
+				for arw in nu.ar_wrappers:
+					sam_nonunique_chimera.write(arw.aligned_read);
 
 
 

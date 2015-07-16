@@ -46,6 +46,9 @@ def intervals2interaction(intervals, distance, number, order=False):
 
 
 bed = BedTool(args.path);
+if(not len(bed)):
+	sys.exit('Provided bed file is empty. Interactions cannot be generated\n')
+	
 	
 name2intervals = doublebed2dict(bed);
 name2interaction = defaultdict(list);

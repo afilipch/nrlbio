@@ -6,7 +6,8 @@ import os;
 import pysam;
 
 from nrlbio.filters_for_sam import *
-from nrlbio.chimera import arlist2chimera, as_gap_score
+from nrlbio.chimera import arwlist2chimera, as_gap_score
+from nrlbio.samlib import ArWrapper
 
 parser = argparse.ArgumentParser(description='produce chimeras from merged and already filtered sam file');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
@@ -16,27 +17,29 @@ args = parser.parse_args();
 
 samfile = pysam.Samfile(args.path)
 
-def _iteration(arlist):
-	chimeras =  arlist2chimera(arlist, samfile, gap = args.gap, overlap = args.overlap, score_function = as_gap_score)
+def _iteration(arwlist):
+	chimeras =  arwlist2chimera(arwlist, gap = args.gap, overlap = args.overlap, score_function = as_gap_score)
 	if(len(chimeras) == 1):
 		print chimeras[0].doublebed();	
 
 
-arlist = [];
+arwlist = [];
 current_name = '';
 for ar in samfile.fetch(until_eof=True):
 	if(not ar.is_unmapped):
+		rname = samfile.getrname(ar.tid)
+		arw = ArWrapper(ar, rname, add_nr_tag=False)
 		
-		if(current_name != ar.qname):
-			_iteration(arlist);
+		if(current_name != arw.qname):
+			_iteration(arwlist);
 				
-			arlist = [ar];
-			current_name = ar.qname;
+			arlist = [arw];
+			current_name = arw.qname;
 			
 		else:
-			arlist.append(ar);
+			arlist.append(arw);
 			
 else:
-	_iteration(arlist)
+	_iteration(arwlist)
 			
 			

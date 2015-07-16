@@ -20,9 +20,9 @@ from nrlbio.pybedtools_extension import interval2seq
 #from nrlbio import chimera
 
 parser = argparse.ArgumentParser(description='produces old-fashion interaction.bed file of mirna and their targets');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the new-style interaction file");
-parser.add_argument('-m', '--mirna', nargs = '?', required = True, type = str, help = "path to miRNA fasta file");
-parser.add_argument('-f', '--fasta', nargs = '?', required = True, type = str, help = "path to reference(genome) fasta file");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the new-style(double bed/gff file) interaction file");
+parser.add_argument('-m', '--mirna', nargs = '?', required = True, type = str, help = "path to a miRNA fasta file");
+parser.add_argument('-f', '--fasta', nargs = '?', required = True, type = str, help = "path to a reference(genome) fasta file");
 args = parser.parse_args();
 
 #exec("from sequence_data.systems import %s as gsys" % args.system);

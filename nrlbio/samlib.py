@@ -9,40 +9,58 @@ from nrlbio import numerictools;
 from nrlbio.statistics.sam import get_conversions, get_alignment
 from nrlbio.sequencetools import entropy;
 
+#__________________________________________________________________________________
+#Local Auxillary functions
+#__________________________________________________________________________________
+
+def convert_positions_query(segment):
+	'''For mappings on reverse strand, query start and end of the allignment are reversed and have to be reversed for chimeras. 
+	This function returns \'true\' start and end position of an alignment on a query for both reverse and forward mappings.
+	
+	Returns int, int: \'true\' start and end position of an alignment on a query 
+	'''
+	if(segment.is_reverse):
+		return segment.query_length-segment.query_alignment_end, segment.query_length-segment.query_alignment_start
+	else:
+		return segment.query_alignment_start, segment.query_alignment_end
+
+
 
 #__________________________________________________________________________________
-#demultiplexing API
-
+#Scoring functions
 #__________________________________________________________________________________
 def as_score(arw):
 	return arw.AS;
 	
 def as_qstart_score(arw):
-	qs = 2-log(arw.aligned_read.qstart+1);
+	qs = 2-log(arw.qstart+1);
 	return arw.AS*(1+qs)
 	
 def as_qstart_entropy_score(arw):
-	qs = 2-log(arw.aligned_read.qstart+1);
+	qs = 2-log(arw.qstart+1);
 	e = (entropy(arw.aligned_read.query) - 1.5)
 	if(e<0):
 		e = e*5
 	return arw.AS*(1+qs+e)		
 	
 def as_qstart_pos_score(arw):
-	qs = 2-log(arw.aligned_read.qstart+1);
+	qs = 2-log(arw.qstart+1);
 	rs = 1-log(arw.aligned_read.pos+1);
 	return arw.AS*(1+qs+rs)
 	
 def as_qstart_pos_entropy_score(arw):
-	qs = 2-log(arw.aligned_read.qstart+1);
+	qs = 2-log(arw.qstart+1);
 	rs = 1-log(arw.aligned_read.pos+1);
 	e = (entropy(arw.aligned_read.query) - 1.5)
 	if(e<0):
 		e = e*5
 	return arw.AS*(1+qs+rs+e)	
-	
+#__________________________________________________________________________________	
 	
 
+#__________________________________________________________________________________
+#Demultiplexing API
+#__________________________________________________________________________________	
 
 class ArWrapper(object):
 	'''Wrapper for pysam.aligned read. Adds some additional fields
@@ -61,6 +79,9 @@ class ArWrapper(object):
 		self.qname = aligned_read.qname;
 		self.rname = rname
 		
+		self.qstart, self.qend = convert_positions_query(aligned_read)
+		
+			
 		self.AS = aligned_read.opt("AS")
 		
 		if(rname.split("_")[0] == "random"):
@@ -176,6 +197,7 @@ class BackwardWrapper(ArWrapper):
 			
 		self.aligned_read.qname = self.qname;
 
+		
 
 def demultiplex_read_hits(arwlist, key_function):
 	'''Demultiplex hits derived from the same read (choose the best ones on basis of key_function). Assignes if the read comes from decoy or nonunique.
@@ -188,7 +210,11 @@ def demultiplex_read_hits(arwlist, key_function):
 			2nd list: list of nonunique alignments. List is empty if the best uniquely aligned read present
 			3rd ArWrapper|None: the best aligned read originated from decoy, None if it is not the best among all alignments for the read
 	'''
-			
+	#for arw in arwlist:
+		#print arw.aligned_read
+		#print key_function(arw)
+		#print arw.aligned_read.query_length
+	#print "*"*140	
 	real = filter(lambda x: not x.control, arwlist);
 	control = filter(lambda x: x.control, arwlist);
 	best_real, max_real = numerictools.maxes(real, key_function)
@@ -204,6 +230,7 @@ def demultiplex_read_hits(arwlist, key_function):
 		return None, best_real, None
 		
 		
+		
 def remove_duplicates(arwlist, key_function, minscore=0):
     
     real = filter(lambda x: not x.control, arwlist);
@@ -215,10 +242,15 @@ def remove_duplicates(arwlist, key_function, minscore=0):
         if(len(set([x.aligned_read.query for x in best_real]))==1):
             return best_real[0], [(x.rname, x.aligned_read.pos, x.aligned_read.aend, x.aligned_read.is_reverse) for x in best_real]
     else:
-        return None		
+        return None
 
-		
-		
+        
+        
+        
+        
+        
+        
+        
 #__________________________________________________________________________________
 #filtering API
 #__________________________________________________________________________________
@@ -276,7 +308,17 @@ def apply_filter(samfile, attributes, filter_, ga = get_attributes):
 				yield aligned_read
 			else:
 				pass;
-	samfile.close();			
+	samfile.close();
+	
+	
+	
+
+#__________________________________________________________________________________	
+#Miscellaneous
+#__________________________________________________________________________________
+def sort_segments_qstart(segments):
+	segments.sort(key=lambda x: convert_positions_query(x)[0]);
+
 			
 			
 			

@@ -79,7 +79,7 @@ def generator_maf(path, aligned_species=None):
 def generator_doublebed(path):
 	'''Reads \'double\' bed file. Yields consecutive pairs of bed/gff intervals
 	
-	path string: path to maf stitched file
+	path string: path to doublebed file
 	
 	Yields list: 2-element list of BedTool intervals, representing chimera or interaction.
 	'''
@@ -92,6 +92,22 @@ def generator_doublebed(path):
 		if(c % 2):
 			yield doublebed;
 			doublebed = [];
+			
+			
+def generator_doublesam(samfile):
+	'''Reads \'double\' sam file(chimeras). Yields consecutive pairs of sam segments
+	
+	samfile pysam.Samfile: sam file python wrapper
+	
+	Yields list: 2-element list of pysam segments, representing chimera
+	'''
+	
+	doublesam  = [];
+	for c, segment in enumerate(samfile.fetch(until_eof=True)):
+		doublesam.append(segment);
+		if(c % 2):
+			yield doublesam;
+			doublesam = [];			
 			
 			
 def generator_seqrecord(paths, ftype):
@@ -157,13 +173,14 @@ def grouper(iterable, n):
 				
 #testing			
 if(__name__ == "__main__"):
-	#mygen = generator_fastq(sys.argv[1], take = ["id", "seq", "sign", "qual"], shuffle = True)
-	#for fq in mygen:
-		#print fq;
-		#print;
+	mygen = generator_fastq(sys.argv[1], take = ["id", "seq", "sign", "qual"], shuffle = True)
+	for fq in mygen:
+		print fq;
+		print;
 	from conservation import conservation_perfect;	
 	mygen = generator_maf(sys.argv[1])
 	for fq in mygen:
 		print fq;
 		print conservation_perfect(fq, "AA")
 		print;
+		

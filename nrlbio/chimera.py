@@ -17,6 +17,8 @@ class ChimeraException(Exception):
 
 #__________________________________________________________________________________    
     
+strand_conv = {True: '-', False: '+'}
+    
 def as_score(chimera):
 	'''score function for Chimera based only on alignment score'''
 	return sum(chimera.AS)
@@ -43,31 +45,29 @@ class Chimera(object):
 	'''	
 		
 		
-	def __init__(self, aligned_reads, samfile, score_function):
-		if(len(set([x.qname for x in aligned_reads])) != 1): 
-			raise ChimeraException('chimera cannot be made from aligned reads with differenr identifiers')
-			return None
+	def __init__(self, ar_wrappers, score_function):
+		if(len(set([x.qname for x in ar_wrappers])) != 1): 
+			raise ChimeraException('Chimera cannot be made from aligned reads with differenr identifiers\nFollowing are given:\n%s\n' % "\n".join(["\t%s" % x for x.qname in ar.wrappers]))
 			
-		self.aligned_reads = copy(aligned_reads);
-		self.rnames = [samfile.getrname(x.tid) for x in aligned_reads];
-		self.control = [x.split("_")[0] == "random" for x in self.rnames]
+		self.ar_wrappers = ar_wrappers;
+		self.control = [x.rname.split("_")[0] == "random" for x in self.ar_wrappers]
 		
-		self.AS = [x.opt('AS') for x in aligned_reads]
-		self.gap = aligned_reads[1].qstart - aligned_reads[0].qend
+		self.AS = [x.AS for x in ar_wrappers];
+		self.gap = ar_wrappers[1].qstart - ar_wrappers[0].qend
 		self.score = score_function(self);
 		
 		
 	def __str__(self):
 		'''converts Chimera in a bed-like entry(line). First six elements correspond to the first hit, Second six elements to the second one'''
 		l = [];
-		for a, rname in zip(self.aligned_reads, self.rnames):
-			l.append("%s\t%d\t%d\t%s\t%d\t%s\t" % (rname, a.pos, a.aend, a.qname, a.opt('AS'), '+'))
+		for arw in self.ar_wrappers:
+			l.append("%s\t%d\t%d\t%s\t%d\t%s\t" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, arw.qname, arw.AS, strand_conv[arw.aligned_read.is_reverse]))
 			
 		gen_info = "%1.5f\t%d" % (self.score, self.gap);
 		l.append(gen_info)
 	
 		for a in self.aligned_reads:
-			l.append("\t%d\t%d\t%s" % (a.qstart, a.qend, a.query[-1]))
+			l.append("\t%d\t%d\t%s" % (a.qstart, a.qend, a.aligned_read.query[-1]))
 		
 		return "".join(l);	
 		
@@ -82,13 +82,13 @@ class Chimera(object):
 		gen_info = "%1.5f\t%d" % (self.score, self.gap);
 
 			
-		for c, (a, rname) in enumerate(zip(self.aligned_reads, self.rnames)):
-			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (rname, a.pos, a.aend, "|".join((a.qname, str(c))), a.opt('AS'), '+', a.qstart, a.qend, a.query[-1], gen_info));
+		for c, arw in enumerate(self.aligned_reads):
+			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (arw.rname, arw.pos, arw.aligned_read.aend, "|".join((arw.qname, str(c))), arw.AS, strand_conv[arw.aligned_read.is_reverse], arw.qstart, arw.qend, arw.aligned_read.query[-1], gen_info));
 			
 		return "\n".join(l)
 		
 		
-def arlist2chimera(arlist, samfile, gap = 100, overlap = 100, score_function = as_score):
+def arwlist2chimera(arwlist, gap = 100, overlap = 100, score_function = as_score):
 	'''Compiles all possible chimeras from hits(pysam aligned reads) provided
 	
 		arlist iterable: element is pysam.AlignedRead. All hits of the initial read to compile into chimeras
@@ -98,13 +98,17 @@ def arlist2chimera(arlist, samfile, gap = 100, overlap = 100, score_function = a
 		Returns list: all possible chimeras compiled from hits(pysam aligned reads)
 	'''	
 	chimeras = []
-
-	for a1, a2 in combinations(arlist, 2):
+	#print "*"*120
+	for a1, a2 in combinations(arwlist, 2):
+		#print a1
+		#print a2
+		#print a1.qstart, a1.qend, a2.qstart, a2.qend
+		#print "_"*120
 		if((-overlap <= a2.qstart - a1.qend <= gap) or (-overlap <= a1.qstart - a2.qend <= gap)):
 			if(a1.qstart < a2.qstart):
-				chimeras.append(Chimera([a1, a2], samfile, score_function))			
+				chimeras.append(Chimera([a1, a2], score_function))			
 			else:
-				chimeras.append(Chimera([a2, a1], samfile, score_function))
+				chimeras.append(Chimera([a2, a1], score_function))
 			
 	return chimeras;
 	
