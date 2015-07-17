@@ -1,5 +1,5 @@
 #! /usr/lib/python
-'''Assignes to each read, if it comes from mapping to real or control reference. Convolutes backward converted reads. Filters out non-unique and not the best hits'''
+'''evaluates chiflex performance on artificially generated reads'''
 import argparse
 import os;
 import sys;
@@ -23,7 +23,7 @@ parser.add_argument('-cu', '--chimera_unique', nargs = '?', required = True, typ
 parser.add_argument('-cc', '--chimera_control', nargs = '?', required = True, type = str, help = "Path to the control chimera hits. Sam/bam format");
 parser.add_argument('-sn', '--single_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique single hits. Sam/bam format");
 parser.add_argument('-cn', '--chimera_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique chimera hits. Sam/bam format");
-parser.add_argument('-fc', '--coverage_cutoff', nargs = '?', default = 0.8, type = float, help = "if fraction of read covered by mapping is more than [coverage_cutoff], then such a mapping is reported to be exact");
+parser.add_argument('--coverage_cutoff', nargs = '?', default = 0.8, type = float, help = "if fraction of read covered by mapping is more than [coverage_cutoff], then such a mapping is reported to be exact");
 args = parser.parse_args();
 
 

@@ -444,9 +444,9 @@ class MultiMarkov(object):
 	def deserialize(cls, serialized):
 		with open(serialized, 'r') as f:
 			d = yaml.load(f)
-			models, order = d['models'], d['order']
-			for m in models:
-				m._fix_integrity();
+		models, order = d['models'], d['order']
+		for m in models:
+			m._fix_integrity();
 		return	cls(models, order)
 	
 		
