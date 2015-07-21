@@ -48,17 +48,17 @@ counts = [0]*6
 
 def _iteration(arwlist):
 	if(arwlist):
-		if(arwlist[0].qname == testid):
-			for arw in arwlist:
-				print arw.aligned_read;
-			print 
-			unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
-			print "BEST UNIQUE", unique.aligned_read;
-			chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
-			print "\npossible chimeras: %d\n" % len(chimeras);
-			unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras);
-			for arw in unique_chimera.ar_wrappers:
-				print "BEST CHIMERA", arw.aligned_read
+		#if(arwlist[0].qname == testid):
+			#for arw in arwlist:
+				#print arw.aligned_read;
+			#print 
+			#unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
+			#print "BEST UNIQUE", unique.aligned_read;
+			#chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
+			#print "\npossible chimeras: %d\n" % len(chimeras);
+			#unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras);
+			#for arw in unique_chimera.ar_wrappers:
+				#print "BEST CHIMERA", arw.aligned_read
 		#demultiplex single hits
 		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
 		

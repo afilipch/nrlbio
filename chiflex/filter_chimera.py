@@ -2,11 +2,22 @@
 '''filters mapping results on read features basis'''
 import argparse
 import sys;
+import os;
 
 import pysam;
 
 from nrlbio.chimera import filter_generator, filter_generator_doublebed, apply_filter, apply_filter_doublebed
 from nrlbio.LRGFDR import lrg
+
+import logging
+
+# create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler()
+fh = logging.FileHandler(os.path.join("log", "chimera_filtering.txt"))
+logger.addHandler(sh)
+logger.addHandler(fh)
 
 parser = argparse.ArgumentParser(description='filters mapping results on read features basis');
 parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, help = "path to the sam file to be filtered");
@@ -26,7 +37,7 @@ for f in args.features:
 
 signal = filter_generator_doublebed(args.signal, indices);
 control = filter_generator_doublebed(args.control, indices);
-lrg_filter, rule = lrg(signal, control, entry='list', attributes = indices, attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=2)
+lrg_filter, rule, log_message = lrg(signal, control, entry='list', attributes = indices, attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=2);
 
 if(not rule):
 	samfile.close()
@@ -37,6 +48,6 @@ for l in apply_filter_doublebed(args.signal, indices, lrg_filter):
 	print l
 
 
-
+logger.info(log_message)
 
 

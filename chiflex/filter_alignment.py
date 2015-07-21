@@ -8,6 +8,15 @@ import pysam;
 from nrlbio.samlib import filter_generator, apply_filter
 from nrlbio.LRGFDR import lrg
 
+import logging
+# create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+sh = logging.StreamHandler()
+fh = logging.FileHandler(os.path.join("log", "alignment_filtering.txt"))
+logger.addHandler(sh)
+logger.addHandler(fh)
+
 parser = argparse.ArgumentParser(description='filters mapping results on read features basis');
 parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, help = "path to the sam file to be filtered");
 parser.add_argument('-c', '--control', nargs = '?', required = True, type = str, help = "path to the sam file originated from decoy");
@@ -21,7 +30,7 @@ args = parser.parse_args();
 
 signal = filter_generator(pysam.Samfile(args.signal), args.features);
 control = filter_generator(pysam.Samfile(args.control), args.features);
-lrg_filter, rule = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
+lrg_filter, rule, log_message = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
 
 
 
@@ -40,7 +49,7 @@ for ar in apply_filter(samfile, args.features, lrg_filter):
 samfile.close()	
 
 
-
+logger.info(log_message)
 
 
 	

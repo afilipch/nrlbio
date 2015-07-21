@@ -590,9 +590,9 @@ def lrg(signal, control, entry='list', attributes=[], attribute_names=[], suppor
 		
 	signal_total, control_total, support_total, fdr_total = total_statistics(grid, clusters);
 	
-	sys.stderr.write("\nfilter applied: %s\n\nrule generated: %s\n\nnumber of instances passed filter: %d\nnumber of control instances passed filter: %d\nfraction of instances passed filter: %1.5f\nestimated FDR: %1.5f\n" % (lrg_filter, rule, signal_total, control_total, support_total, fdr_total))
+	log_message = "\nfilter applied: %s\n\nrule generated: %s\n\nnumber of instances passed filter: %d\nnumber of control instances passed filter: %d\nfraction of instances passed filter: %1.5f\nestimated FDR: %1.5f\n" % (lrg_filter, rule, signal_total, control_total, support_total, fdr_total)
 		
-	return 	lrg_filter, rule
+	return 	lrg_filter, rule, log_message
 		
 	
 
