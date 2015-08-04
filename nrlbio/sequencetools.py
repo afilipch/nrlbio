@@ -7,6 +7,7 @@ from numerictools import dict2entropy
 from itertools import combinations, product
 
 RevComplDict = {'G': 'C', 'C': 'G', 'A': 'T', 'T': 'A'}
+NUCLEOTIDES = set("ACTG")
 
 def diverge_with_1mm(seq, include = False):
 	'''produces all sequences which are 1nt different from the initial one
@@ -35,14 +36,13 @@ def generate_mismatched_sequence(seq, number_of_mismatches = 1):
 
 		Yields str: mismatched sequence
 	'''	
-	nucleotides = set("ACTG")
 	
 	for positions in combinations(range(len(seq)), number_of_mismatches):
 		
 		variants = [];
 		for p in positions:
 			locker = set(seq[p]);
-			variants.append(nucleotides-locker)
+			variants.append(NUCLEOTIDES-locker)
 			
 		mm_at_positions = product(*variants) 
 		
@@ -53,6 +53,22 @@ def generate_mismatched_sequence(seq, number_of_mismatches = 1):
 				l[positions[i]] = m;
 				
 			yield "".join(l)
+			
+			
+def introduce_conversions(seq, probabilty):
+	'''intoduces random conversions into a given string with defined probability
+	
+	Returns str, int: mutated sequence, number of conversions
+	'''
+	nlist = [];
+	num = 0;
+	for s in seq:
+		if(random.random()<probabilty):
+			nlist.append(random.choice(list(NUCLEOTIDES-set(s))))
+			num +=1;
+		else:
+			nlist.append(s);
+	return "".join(nlist), num
 
 
 	
@@ -160,11 +176,12 @@ if(__name__ == "__main__"):
 		#if(me>1.25):
 			#n+=1;
 	#print n
-	for s in generate_mismatched_sequence("AGT", number_of_mismatches = 2):
-		print s;
+	
+	#for s in generate_mismatched_sequence("AGT", number_of_mismatches = 2):
+		#print s;
 	
 	
-			
+	print introduce_conversions('AAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 0.1)
 			
 			
 			

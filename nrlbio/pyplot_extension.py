@@ -15,9 +15,12 @@ try:
 except:
 	pass;
 
-def _set_bins(values, step = None):
+def _set_bins(values, step = None, range_=None):
 	if(step):
-		return int(round((max(values)-min(values))/step+1))
+		if(range_):
+			return int(round((range_[1]-range_[0])/step))
+		else:
+			return int(round((max(values)-min(values))/step+1))
 	return len(values)
 	
 def _set_range(values, bins, step = None):
@@ -27,7 +30,7 @@ def _set_range(values, bins, step = None):
 		ext = (max(values)-min(values))/(bins-1)
 		return min(values), max(values)+ext
 	
-def _set_axis_extension(xvals, yvals, xext=0.2, yext=0.2):
+def _set_axis_extension(xvals, yvals, xext=0.1, yext=0.1):
 	xext_ = (max(xvals) - min(xvals))*xext
 	return min(xvals)-xext_, max(xvals)+xext_, 0, max(yvals)*(1+yext)
 	
@@ -53,21 +56,21 @@ def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabe
 	'''
 	values, weights = _get_weights(data);
 	if(not bins):
-		bins = _set_bins(values, step=step);
+		bins = _set_bins(values, step=step, range_=range);
 	if(not range):
 		range = _set_range(values, bins, step=step);
 		
-	#print values
-	#print weights
-	#print bins
-	#print range
-	
 	fig = plt.figure()
 	ax = plt.subplot(111)
+	ax.patch.set_facecolor('white')
+	
 	yvals, xvals, npathes = plt.hist(values, bins=bins, range=range, normed=normed, weights=weights, cumulative=cumulative, bottom=bottom, histtype=histtype, align=align, orientation=orientation, rwidth=rwidth, log=log, color=color, label=label, stacked=stacked, hold=hold);
 	
+	
 	plt.axis(_set_axis_extension(xvals, yvals))
-	plt.legend(loc='upper right')
+	
+	if(label):
+		plt.legend(loc='upper right')
 	if(xlabel):
 		plt.xlabel(xlabel)
 	if(ylabel):	
@@ -79,8 +82,6 @@ def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabe
 	if(xticklabels):
 		ax.set_xticklabels(xticklabels, rotation=xticksrotation)	
 	
-	#print xvals
-	#print yvals
 	
 	if(output):
 		plt.savefig(output, bbox_inches='tight')
@@ -88,7 +89,9 @@ def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabe
 		plt.show(bbox_inches='tight')
 		
 	plt.close();
-	
+	return yvals, xvals, npathes
+
+
 	
 def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, xlabels=None, xticksrotation = 0, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=None, label=None, stacked=False, hold=None):
 	'''Draws many histograms in one figure with predifined style on basis of provided data
@@ -107,6 +110,7 @@ def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xtic
 	if(not range):
 		range = _set_range(merged_values, bins, step=step);
 		
+	
 	
 	fig = plt.figure()
 	ax = plt.subplot(111)

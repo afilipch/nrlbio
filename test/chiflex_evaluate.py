@@ -24,33 +24,36 @@ parser.add_argument('-cc', '--chimera_control', nargs = '?', required = True, ty
 parser.add_argument('-sn', '--single_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique single hits. Sam/bam format");
 parser.add_argument('-cn', '--chimera_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique chimera hits. Sam/bam format");
 parser.add_argument('--coverage_cutoff', nargs = '?', default = 0.8, type = float, help = "if fraction of read covered by mapping is more than [coverage_cutoff], then such a mapping is reported to be exact");
+parser.add_argument('-o', '--outdir', nargs = '?', default = 'evaluation_data', type = str, help = "Name of the output directory. If directory exists, files will be (re)written there")
 args = parser.parse_args();
 
 
-Chimera = namedtuple('Chimera', 'typename chrom1 strand1 start1 stop1 ttype1 chrom2 strand2 start2 stop2 ttype2 left right gap')
-Single = namedtuple('Single', 'typename chrom strand start stop ttype left right')
+Chimera = namedtuple('Chimera', 'typename chrom1 strand1 start1 stop1 ttype1 chrom2 strand2 start2 stop2 ttype2 left right gap conv1 conv2')
+Single = namedtuple('Single', 'typename chrom strand start stop ttype left right conv')
 Shuffled = namedtuple('Shuffled', 'typename chrom strand start stop ttype length')
 Random = namedtuple('Random', 'typename length ttype');
 
 #get initial reads
 #_____________________________________________________________________________________________________________________________
-def name2chimera(region, ttype, gaps):
+def name2chimera(region, ttype, gaps, convnum):
 	chrom1, strand1, start1, stop1, chrom2, strand2, start2, stop2= chain(*[x.split(":") for x in region.split("&")]);
 	start1, stop1, start2, stop2 = [int(x) for x in (start1, stop1, start2, stop2)]
+	conv1, conv2 = [int(x) for x in convnum.split(":")]
 	
 	ttype1, ttype2 = ttype.split(":");
 	left, right, gap = [int(x) for x in gaps.split(":")]
 	
-	return Chimera('chimera', chrom1, strand1, start1, stop1, ttype1, chrom2, strand2, start2, stop2, ttype2, left, right, gap)
+	return Chimera('chimera', chrom1, strand1, start1, stop1, ttype1, chrom2, strand2, start2, stop2, ttype2, left, right, gap, conv1, conv2)
 	
 	
-def name2single(region, ttype, gaps):
+def name2single(region, ttype, gaps, convnum):
 	chrom, strand, start, stop = region.split(":");
 	start, stop = int(start), int(stop)
+	conv = int(convnum)
 
 	left, right = [int(x) for x in gaps.split(":")]
 	
-	return Single('single', chrom, strand, start, stop, ttype, left, right)
+	return Single('single', chrom, strand, start, stop, ttype, left, right, conv)
 	
 	
 def name2shuffled(region, ttype, gaps):
@@ -68,11 +71,11 @@ def name2random(gaps):
 	
 
 def get_source(name):
-	number, rtype, region, ttype, gaps = name.split("|")
+	number, rtype, region, ttype, gaps, convnum = name.split("|")
 	if(rtype == "chimera"):
-		return name2chimera(region, ttype, gaps)
+		return name2chimera(region, ttype, gaps, convnum)
 	elif(rtype == "single"):
-		return name2single(region, ttype, gaps)
+		return name2single(region, ttype, gaps, convnum)
 	elif(rtype == 'shuffled'):
 		return name2shuffled(region, ttype, gaps)
 	elif(rtype == 'random'):
@@ -394,46 +397,66 @@ def get_chimera_mapping(read, comparisons, fcutoff):
 	if(comparisons):
 		comp = collapse_comparisons(comparisons);
 		is_correct = (float(comp.overlap1)/comp.length1 > fcutoff) and (float(comp.overlap2)/comp.length2 > fcutoff);
-		return comp.read_type, comp.mapped_type, is_correct, "|".join((read.ttype1, read.ttype2)) ;
+		return (comp.read_type, comp.mapped_type, is_correct, "|".join((read.ttype1, read.ttype2))), (comp.mapped_type, is_correct, comp.length1, comp.length2, read.conv1, read.conv2)
 	else:
-		return read.typename, 'unmapped', False, "|".join((read.ttype1, read.ttype2));
+		return (read.typename, 'unmapped', False, "|".join((read.ttype1, read.ttype2))), ('unmapped', False, read.stop1-read.start1, read.stop2-read.start2, read.conv1, read.conv2)
 	
 	
 def get_single_mapping(read, comparisons, fcutoff):
 	if(comparisons):
 		comp = collapse_comparisons(comparisons);
-		is_correct = float(comp.overlap)/comp.length > fcutoff
-		return comp.read_type, comp.mapped_type, is_correct, read.ttype;
+		is_correct = float(comp.overlap)/comp.length > fcutoff		
+		return (comp.read_type, comp.mapped_type, is_correct, read.ttype), (comp.mapped_type, is_correct, comp.length, read.conv)
 	else:
-		return read.typename, 'unmapped', False, read.ttype;
+		return (read.typename, 'unmapped', False, read.ttype), ('unmapped', False, read.stop-read.start, read.conv)
 		
 		
 def get_control_mapping(read, comparisons):
 	if(comparisons):
 		comp = collapse_comparisons(comparisons);
-		return comp.read_type, comp.mapped_type, False, read.ttype;
+		return (comp.read_type, comp.mapped_type, False, read.ttype), (comp.mapped_type, False, comp.AS);
 	else:
-		return read.typename, 'unmapped', False, read.ttype;
+		return (read.typename, 'unmapped', False, read.ttype), ('unmapped', False, 0);
 	
 	
 
 mapping_stat = defaultdict(int)
+chimera_stat = defaultdict(int)
+single_stat = defaultdict(int)
+control_stat = defaultdict(int)
 for num, read in enumerate(reads):
 	if(read.typename=='chimera'):
-		mapping_stat[get_chimera_mapping(read, comparison_dict[num], args.coverage_cutoff)] += 1;
+		ms_key, ch_key = get_chimera_mapping(read, comparison_dict[num], args.coverage_cutoff)
+		mapping_stat[ms_key] += 1;
+		chimera_stat[ch_key] += 1
 	elif(read.typename=='single'):
-		mapping_stat[get_single_mapping(read, comparison_dict[num], args.coverage_cutoff)] += 1;
+		ms_key, si_key = get_single_mapping(read, comparison_dict[num], args.coverage_cutoff)		
+		mapping_stat[ms_key] += 1;
+		single_stat[si_key] += 1;
 	else:
-		mapping_stat[get_control_mapping(read, comparison_dict[num])] += 1;
+		ms_key, co_key = get_control_mapping(read, comparison_dict[num])
+		mapping_stat[ms_key] += 1;
+		control_stat[co_key] += 1;
 		
 		
 #for k, v in sorted(mapping_stat.items(), key=lambda x: x[1], reverse=True):
 	#print "%s:\t%d" % (str(k), v)
 	
 	
-sys.stdout.write(yaml.dump(dict(mapping_stat), default_flow_style=False))
+if(not os.path.exists(args.outdir)):
+    os.makedirs(args.outdir)	
 	
-
+with open(os.path.join(args.outdir, 'mapping_stat.yml'), 'w') as f:
+	f.write(yaml.dump(dict(mapping_stat), default_flow_style=False))
+	
+with open(os.path.join(args.outdir, 'chimera_stat.yml'), 'w') as f:
+	f.write(yaml.dump(dict(chimera_stat), default_flow_style=False))
+	
+with open(os.path.join(args.outdir, 'single_stat.yml'), 'w') as f:
+	f.write(yaml.dump(dict(single_stat), default_flow_style=False))
+	
+with open(os.path.join(args.outdir, 'control_stat.yml'), 'w') as f:
+	f.write(yaml.dump(dict(control_stat), default_flow_style=False))
 
 	
 #for num, comparisons in comparison_dict.items():
