@@ -9,6 +9,7 @@ from itertools import chain
 import pysam;
 import yaml
 from Bio import SeqIO;
+from pybedtools import BedTool
 
 from nrlbio.numerictools import overlap as get_overlap
 from nrlbio.generators import generator_doublesam
@@ -23,6 +24,7 @@ parser.add_argument('-cu', '--chimera_unique', nargs = '?', required = True, typ
 parser.add_argument('-cc', '--chimera_control', nargs = '?', required = True, type = str, help = "Path to the control chimera hits. Sam/bam format");
 parser.add_argument('-sn', '--single_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique single hits. Sam/bam format");
 parser.add_argument('-cn', '--chimera_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique chimera hits. Sam/bam format");
+parser.add_argument('-cf', '--chimera_filtered', nargs = '?', required = True, type = str, help = "Path to the filterd chimeras. Doublebed format");
 parser.add_argument('--coverage_cutoff', nargs = '?', default = 0.8, type = float, help = "if fraction of read covered by mapping is more than [coverage_cutoff], then such a mapping is reported to be exact");
 parser.add_argument('-o', '--outdir', nargs = '?', default = 'evaluation_data', type = str, help = "Name of the output directory. If directory exists, files will be (re)written there")
 args = parser.parse_args();
@@ -384,6 +386,15 @@ samfile.close();
 
 #_____________________________________________________________________________________________________________________________			
 #Get overall mapping stastics
+
+#get indices of filtered chimeras
+cf_indices = [];
+for interval in BedTool(args.chimera_filtered):
+	cf_indices.append(int(interval.name.split("|")[0]))
+cf_indices = set(cf_indices)
+
+
+#Evaluate mappings
 def collapse_comparisons(comparisons):
 	_order = {'single': 1, 'chimera': 2, 'control': 3, 'control_chimera_complete': 4, 'control_chimera_partial': 5, 'chimera_nonunique': 6, 'single_nonunique': 7}
 	lc = len(comparisons);
@@ -394,27 +405,30 @@ def collapse_comparisons(comparisons):
 		
 			
 def get_chimera_mapping(read, comparisons, fcutoff):
+		
 	if(comparisons):
 		comp = collapse_comparisons(comparisons);
 		is_correct = (float(comp.overlap1)/comp.length1 > fcutoff) and (float(comp.overlap2)/comp.length2 > fcutoff);
-		return (comp.read_type, comp.mapped_type, is_correct, "|".join((read.ttype1, read.ttype2))), (comp.mapped_type, is_correct, comp.length1, comp.length2, read.conv1, read.conv2)
+		return (read.typename, comp.mapped_type, is_correct, "|".join((read.ttype1, read.ttype2))), (comp.mapped_type, is_correct, comp.length1, comp.length2, read.conv1, read.conv2)
 	else:
 		return (read.typename, 'unmapped', False, "|".join((read.ttype1, read.ttype2))), ('unmapped', False, read.stop1-read.start1, read.stop2-read.start2, read.conv1, read.conv2)
 	
 	
 def get_single_mapping(read, comparisons, fcutoff):
+	
 	if(comparisons):
 		comp = collapse_comparisons(comparisons);
 		is_correct = float(comp.overlap)/comp.length > fcutoff		
-		return (comp.read_type, comp.mapped_type, is_correct, read.ttype), (comp.mapped_type, is_correct, comp.length, read.conv)
+		return (read.typename, comp.mapped_type, is_correct, read.ttype), (comp.mapped_type, is_correct, comp.length, read.conv)
 	else:
 		return (read.typename, 'unmapped', False, read.ttype), ('unmapped', False, read.stop-read.start, read.conv)
 		
 		
 def get_control_mapping(read, comparisons):
+		
 	if(comparisons):
 		comp = collapse_comparisons(comparisons);
-		return (comp.read_type, comp.mapped_type, False, read.ttype), (comp.mapped_type, False, comp.AS);
+		return (read.typename, comp.mapped_type, False, read.ttype), (comp.mapped_type, False, comp.AS);
 	else:
 		return (read.typename, 'unmapped', False, read.ttype), ('unmapped', False, 0);
 	
@@ -424,19 +438,29 @@ mapping_stat = defaultdict(int)
 chimera_stat = defaultdict(int)
 single_stat = defaultdict(int)
 control_stat = defaultdict(int)
+filtered_stat = defaultdict(int)
+
 for num, read in enumerate(reads):
 	if(read.typename=='chimera'):
 		ms_key, ch_key = get_chimera_mapping(read, comparison_dict[num], args.coverage_cutoff)
 		mapping_stat[ms_key] += 1;
 		chimera_stat[ch_key] += 1
+		if(num in cf_indices):
+			filtered_stat[ms_key] += 1;
+			
 	elif(read.typename=='single'):
 		ms_key, si_key = get_single_mapping(read, comparison_dict[num], args.coverage_cutoff)		
 		mapping_stat[ms_key] += 1;
 		single_stat[si_key] += 1;
+		if(num in cf_indices):
+			filtered_stat[ms_key] += 1
+			
 	else:
 		ms_key, co_key = get_control_mapping(read, comparison_dict[num])
 		mapping_stat[ms_key] += 1;
 		control_stat[co_key] += 1;
+		if(num in cf_indices):
+			filtered_stat[ms_key] += 1		
 		
 		
 #for k, v in sorted(mapping_stat.items(), key=lambda x: x[1], reverse=True):
@@ -448,6 +472,9 @@ if(not os.path.exists(args.outdir)):
 	
 with open(os.path.join(args.outdir, 'mapping_stat.yml'), 'w') as f:
 	f.write(yaml.dump(dict(mapping_stat), default_flow_style=False))
+	
+with open(os.path.join(args.outdir, 'filtered_stat.yml'), 'w') as f:
+	f.write(yaml.dump(dict(filtered_stat), default_flow_style=False))	
 	
 with open(os.path.join(args.outdir, 'chimera_stat.yml'), 'w') as f:
 	f.write(yaml.dump(dict(chimera_stat), default_flow_style=False))
