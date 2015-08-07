@@ -1,9 +1,8 @@
 #! /usr/lib/python
-'''Creates makefile and directory structure for chiflex project'''
+'''Creates makefile and directory structure for testing chiflex project'''
 import argparse
 import sys
 import os
-#from collections import OrderedDict
 
 interaction_types = ['inter', 'intra', 'csj', 'lsj']
 
@@ -25,22 +24,17 @@ bowtie_settings = {'N': ('0','-'),
 'p': ('8', '-') }
 bs_string = "\n".join(["\t%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_settings.items()])
 
-parser = argparse.ArgumentParser(description='Creates makefile and directory structure for chiflex project');
+parser = argparse.ArgumentParser(description='Creates makefile and directory structure for testing chiflex projec');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the project folder. If folder does not exist, it will be created");
 parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "path to sequencing reads. fastq/fasta file");
 parser.add_argument('--reference', nargs = '?', type = str, required = True, help = "path to the mapping reference");
 parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
+parser.add_argument('--test', nargs = '?', type = str, required = True, help = "path to the test(folder with testing scrtipts for Chiflex) folder")
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
 
-parser.add_argument('--annotation', nargs = '?', type = str, default = None, help = "path to an annotation file in gff format. If provided, interacting loci will be annotated");
-parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type will be assigned to each interaction");
-
 parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
-parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
-parser.add_argument('--stratify', nargs = '?', default = False, const = True, type = bool, help = "if set, interactions will be stratified according to the interaction type. Ignored if NO '--exons\'");
 parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "if set, repetitive mapped sequences are removed")
 parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "if set, nonunique mappings with high alignment score are kept")
-parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "if set, hits position on a reference will be reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers has to be in [chrom]|[strand]|[start]|[stop] format")
 
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
 args = parser.parse_args();
@@ -84,7 +78,20 @@ def get_script(script, arguments={}, inp = '', out = None):
 	if(out):
 		l.append(">")
 		l.append(out)
-	return l;	
+	return l;
+
+
+def get_test_script(script, arguments={}, inp = '', out = None):
+	'''Example: get_script(something.py, {'--a': ""}) will output: ('python [chiflex folder]/something.py'), '-a')
+	'''
+	l = [" ".join(('python', os.path.join(os.path.abspath(args.test), script) )), inp]
+	for k,v in arguments.items():
+		l.append(k)
+		l.append(str(v))
+	if(out):
+		l.append(">")
+		l.append(out)
+	return l;
 		
 	
 def dependence(input_files, output_files, script):
@@ -148,46 +155,30 @@ def makefile():
 	output_files = os.path.join('chimeras', 'filtered.bed') 
 	script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS1 AS2', '--fdr': 0.05}, out = output_files)
 	m.append(dependence(input_files, output_files, script))
-
-	#Reassign chimeras coordinates from positions on genomic features(mapping reference) to genomic ones
-	if(args.reassign):
-		input_files = output_files
-		output_files = os.path.join('chimeras', 'assigned.bed') 
-		script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
-		m.append(dependence(input_files, output_files, script))
-
-	#Merge chimeras into interactions.That is, sequenced chimeric reads which have two respectively overlaping parts are merged together
-	input_files = output_files
-	output_files = os.path.join('interactions', 'interactions.gff'), os.path.join('interactions', 'interactions2readid.bed')
-	script = get_script('chimera2interaction.py', arguments={'-oi': output_files[0], '-od': output_files[1], '--name': args.name, '--distance': -16}, inp = input_files)
+	
+	#Filter single hits on basis of control single hits. LRG is applied for filtering
+	input_files =  os.path.join('sam', '%s.unique.bam' % args.name) , os.path.join('sam', '%s.control.bam' % args.name) 
+	output_files = os.path.join('sam', '%s.single_filtered.bam' % args.name) 
+	script = get_script('filter_alignment.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS qstart', '--fdr': 0.05, '--name': output_files})
 	m.append(dependence(input_files, output_files, script))
-	output_files = output_files[0]
 	
-	#Annotate interacting loci
-	if(args.annotation):
-		input_files = output_files, os.path.abspath(args.annotation)
-		output_files = os.path.join('interactions', 'annotated.gff')
-		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
-		m.append(dependence(input_files, output_files, script))
-		
-		input_files = output_files
-		output_files = os.path.join('interactions', 'interactions.ordered.bed')
-		script = get_script('order.py', arguments={}, inp = input_files, out=output_files)
-		m.append(dependence(input_files, output_files, script))
-
-
-	#Annotate type of interaction
-	if(args.exons):
-		input_files = output_files, os.path.abspath(args.exons)
-		output_files = os.path.join('interactions', 'interactions.annotated.gff')
-		script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
-		m.append(dependence(input_files, output_files, script));
 	
-		if(args.stratify):
-			input_files = output_files
-			output_files = [os.path.join('interactions', 'interactions.annotated.%s.gff' % x) for x in interaction_types]
-			script = get_script('stratify_gff.py', arguments={'--attributes': 'interaction', '--output': 'interactions'}, inp = input_files)
-			m.append(dependence(input_files, output_files, script));			
+	#Evalute mapping statistics
+	input_files =  os.path.abspath(args.reads), os.path.join('sam', '%s.unique.bam' % args.name), os.path.join('sam', '%s.control.bam' % args.name), os.path.join('sam', '%s.unique_chimera.bam' % args.name) , os.path.join('sam', '%s.control_chimera.bam' % args.name), os.path.join('sam', '%s.nonunique.bam' % args.name), os.path.join('sam', '%s.nonunique_chimera.bam' % args.name), os.path.join('chimeras', 'filtered.bed'), os.path.join('sam', '%s.single_filtered.bam' % args.name)
+	
+	output_files = [os.path.join('evaluation_data', x)  for x in ['mapping_stat.yml', 'chimera_stat.yml', 'single_stat.yml', 'control_stat.yml', 'cf_stat.yml',  'sf_stat.yml']] 
+	
+	script = get_test_script('chiflex_evaluate.py', arguments={'-su': input_files[1], '-sc': input_files[2], '-cu': input_files[3], '-cc': input_files[4], '-sn': input_files[5], '-cn': input_files[6], '-cf' : input_files[7],'-sf': input_files[8]}, inp = input_files[0])
+	m.append(dependence(input_files, output_files, script))
+	
+	
+	#Visualize mapping statistics
+	input_files = tuple(output_files)
+	output_files = os.path.join('evaluation_plots', 'real2mapped', 'chimera.png')
+	script = get_test_script('chiflex_visualize.py', arguments={'--mapping_stat': input_files[0], '--chimera_stat': input_files[1], '--single_stat': input_files[2], '--control_stat': input_files[3], '--fc_stat': input_files[4], '--fs_stat': input_files[5]})
+	m.append(dependence(input_files, output_files, script))
+	
+	
 			
 	#makefile header
 	if(isinstance(output_files, str)):
@@ -204,7 +195,7 @@ project_path = os.path.abspath(args.path)
 while (not args.only_makefile):
 	try:
 		os.makedirs(project_path);
-		for folder in ('sam', 'chimeras', 'interactions', 'html', 'bed', 'log'):
+		for folder in ('sam', 'chimeras', 'log'):
 			os.mkdir(os.path.join(project_path, folder));
 		break;	
 	except:
@@ -229,12 +220,8 @@ arguments_report = (
 ('reads', ('Sequencing reads', os.path.abspath)),
 ('chiflex', ('Chiflex module used in the project', os.path.abspath)), 
 ('reference', ('Reference(genome, transcriptome) used for mapping', os.path.abspath)), 
-('exons', ('Exon system used for interactions annotation', os.path.abspath)), 
-('annotation', ('Annotation system used for interactions annotation', os.path.abspath)), 
 ('repetitive', ('Repetitive mapped sequences are removed', str)),
-('nonunique', ('Nonunique mappings with high alignment score are kept', str)),
-('stratify', ('interactions are stratified according to the interaction type', str)),
-('reports', ('html reports are produced', str)), 
+('nonunique', ('Nonunique mappings with high alignment score are kept', str)), 
 ('only_makefile', ('New Makefile was generated', str)),  
 )
 

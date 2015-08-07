@@ -2,6 +2,7 @@
 '''filters mapping results on read features basis'''
 import argparse
 import sys;
+import os;
 
 import pysam;
 
@@ -22,7 +23,7 @@ parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, 
 parser.add_argument('-c', '--control', nargs = '?', required = True, type = str, help = "path to the sam file originated from decoy");
 parser.add_argument('-f', '--features', nargs = '+', default = ['AS'], type = str, help = "read features to be used for filtering");
 parser.add_argument('--fdr', nargs = '?', default = 0.05, type = float, help = "False Discovery Rate allowed");
-parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
+#parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for filtered sam");
 args = parser.parse_args();
 

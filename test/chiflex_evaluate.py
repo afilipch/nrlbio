@@ -24,7 +24,10 @@ parser.add_argument('-cu', '--chimera_unique', nargs = '?', required = True, typ
 parser.add_argument('-cc', '--chimera_control', nargs = '?', required = True, type = str, help = "Path to the control chimera hits. Sam/bam format");
 parser.add_argument('-sn', '--single_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique single hits. Sam/bam format");
 parser.add_argument('-cn', '--chimera_nonunique', nargs = '?', required = True, type = str, help = "Path to the nonunique chimera hits. Sam/bam format");
+
 parser.add_argument('-cf', '--chimera_filtered', nargs = '?', required = True, type = str, help = "Path to the filterd chimeras. Doublebed format");
+parser.add_argument('-sf', '--single_filtered', nargs = '?', required = True, type = str, help = "Path to the filterd single hits. Sam/bam format");
+
 parser.add_argument('--coverage_cutoff', nargs = '?', default = 0.8, type = float, help = "if fraction of read covered by mapping is more than [coverage_cutoff], then such a mapping is reported to be exact");
 parser.add_argument('-o', '--outdir', nargs = '?', default = 'evaluation_data', type = str, help = "Name of the output directory. If directory exists, files will be (re)written there")
 args = parser.parse_args();
@@ -394,6 +397,14 @@ for interval in BedTool(args.chimera_filtered):
 cf_indices = set(cf_indices)
 
 
+#get indices of filtered single hits
+sf_indices = [];
+for segment in pysam.Samfile(args.single_filtered).fetch(until_eof=True):
+	sf_indices.append(int(segment.query_name.split("|")[0]))
+sf_indices = set(sf_indices)	
+	
+
+
 #Evaluate mappings
 def collapse_comparisons(comparisons):
 	_order = {'single': 1, 'chimera': 2, 'control': 3, 'control_chimera_complete': 4, 'control_chimera_partial': 5, 'chimera_nonunique': 6, 'single_nonunique': 7}
@@ -418,7 +429,7 @@ def get_single_mapping(read, comparisons, fcutoff):
 	
 	if(comparisons):
 		comp = collapse_comparisons(comparisons);
-		is_correct = float(comp.overlap)/comp.length > fcutoff		
+		is_correct = float(comp.overlap)/comp.length > fcutoff
 		return (read.typename, comp.mapped_type, is_correct, read.ttype), (comp.mapped_type, is_correct, comp.length, read.conv)
 	else:
 		return (read.typename, 'unmapped', False, read.ttype), ('unmapped', False, read.stop-read.start, read.conv)
@@ -438,7 +449,10 @@ mapping_stat = defaultdict(int)
 chimera_stat = defaultdict(int)
 single_stat = defaultdict(int)
 control_stat = defaultdict(int)
-filtered_stat = defaultdict(int)
+cf_stat = defaultdict(int)
+sf_stat = defaultdict(int)
+
+errors = []
 
 for num, read in enumerate(reads):
 	if(read.typename=='chimera'):
@@ -446,21 +460,33 @@ for num, read in enumerate(reads):
 		mapping_stat[ms_key] += 1;
 		chimera_stat[ch_key] += 1
 		if(num in cf_indices):
-			filtered_stat[ms_key] += 1;
+			cf_stat[ms_key] += 1;
+		if(num in sf_indices):
+			sf_stat[ms_key] += 1;
+		if(not ms_key[2] or ms_key[0]!=ms_key[1]):
+			errors.append(tuple(list(ms_key[:2]) + [num]))
 			
 	elif(read.typename=='single'):
 		ms_key, si_key = get_single_mapping(read, comparison_dict[num], args.coverage_cutoff)		
 		mapping_stat[ms_key] += 1;
 		single_stat[si_key] += 1;
 		if(num in cf_indices):
-			filtered_stat[ms_key] += 1
+			cf_stat[ms_key] += 1;
+		if(num in sf_indices):
+			sf_stat[ms_key] += 1
+		if(not ms_key[2] or ms_key[0]!=ms_key[1]):
+			errors.append(tuple(list(ms_key[:2]) + [num]))
 			
 	else:
 		ms_key, co_key = get_control_mapping(read, comparison_dict[num])
 		mapping_stat[ms_key] += 1;
 		control_stat[co_key] += 1;
 		if(num in cf_indices):
-			filtered_stat[ms_key] += 1		
+			cf_stat[ms_key] += 1;
+		if(num in sf_indices):
+			sf_stat[ms_key] += 1
+		if(not ms_key[2] or ms_key[0]!=ms_key[1]):
+			errors.append(tuple(list(ms_key[:2]) + [num]))			
 		
 		
 #for k, v in sorted(mapping_stat.items(), key=lambda x: x[1], reverse=True):
@@ -473,8 +499,11 @@ if(not os.path.exists(args.outdir)):
 with open(os.path.join(args.outdir, 'mapping_stat.yml'), 'w') as f:
 	f.write(yaml.dump(dict(mapping_stat), default_flow_style=False))
 	
-with open(os.path.join(args.outdir, 'filtered_stat.yml'), 'w') as f:
-	f.write(yaml.dump(dict(filtered_stat), default_flow_style=False))	
+with open(os.path.join(args.outdir, 'cf_stat.yml'), 'w') as f:
+	f.write(yaml.dump(dict(cf_stat), default_flow_style=False))
+	
+with open(os.path.join(args.outdir, 'sf_stat.yml'), 'w') as f:
+	f.write(yaml.dump(dict(sf_stat), default_flow_style=False))		
 	
 with open(os.path.join(args.outdir, 'chimera_stat.yml'), 'w') as f:
 	f.write(yaml.dump(dict(chimera_stat), default_flow_style=False))
@@ -484,6 +513,13 @@ with open(os.path.join(args.outdir, 'single_stat.yml'), 'w') as f:
 	
 with open(os.path.join(args.outdir, 'control_stat.yml'), 'w') as f:
 	f.write(yaml.dump(dict(control_stat), default_flow_style=False))
+	
+	
+with open(os.path.join(args.outdir, 'errors.tsv'), 'w') as f:
+	for er in errors:
+		f.write("%s\n" % "\t".join([str(x) for x in er]))
+
+	
 
 	
 #for num, comparisons in comparison_dict.items():

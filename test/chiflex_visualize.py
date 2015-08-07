@@ -15,7 +15,9 @@ parser = argparse.ArgumentParser(description='visualizes chiflex performance on 
 #parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to initial reads. Fasta file");
 parser.add_argument('-o', '--outdir', nargs = '?', default = 'evaluation_plots', type = str, help = "Name of the output directory. If directory exists, files will be (re)written there")
 parser.add_argument('-ms', '--mapping_stat', nargs = '?', required = True, type = str, help = "Path to the mapping statistics in yaml format");
-parser.add_argument('-fs', '--filtered_stat', nargs = '?', required = True, type = str, help = "Path to the filtered chimeric stat in yaml format");
+parser.add_argument('-fc', '--fc_stat', nargs = '?', required = True, type = str, help = "Path to the filtered chimeric stat in yaml format");
+parser.add_argument('-fs', '--fs_stat', nargs = '?', required = True, type = str, help = "Path to the filtered single hits stat in yaml format");
+
 parser.add_argument('--chimera_stat', nargs = '?', required = True, type = str, help = "Path to the chimera mapping statistics in yaml format");
 parser.add_argument('--single_stat', nargs = '?', required = True, type = str, help = "Path to the single mapping statistics in yaml format");
 parser.add_argument('--control_stat', nargs = '?', required = True, type = str, help = "Path to the control mapping statistics in yaml format");
@@ -23,7 +25,8 @@ args = parser.parse_args();
 
 mapped2real_dir =  os.path.join(args.outdir, "mapped2real")
 real2mapped_dir =  os.path.join(args.outdir, "real2mapped")
-filtered_dir = os.path.join(args.outdir, "filtered")
+fc_dir = os.path.join(args.outdir, "filtered_chimeras")
+fs_dir = os.path.join(args.outdir, "filtered_single")
 
 real2mapped_detailed_dir =  os.path.join(real2mapped_dir, "detailed")
 mapped2real_detailed_dir =  os.path.join(mapped2real_dir, "detailed")
@@ -37,8 +40,10 @@ if(not os.path.exists(mapped2real_dir)):
 	os.makedirs(mapped2real_dir)
 if(not os.path.exists(real2mapped_dir)):
 	os.makedirs(real2mapped_dir)
-if(not os.path.exists(filtered_dir)):
-	os.makedirs(filtered_dir)	
+if(not os.path.exists(fc_dir)):
+	os.makedirs(fc_dir)
+if(not os.path.exists(fs_dir)):
+	os.makedirs(fs_dir)		
 	
 if(not os.path.exists(real2mapped_detailed_dir)):
 	os.makedirs(real2mapped_detailed_dir)
@@ -86,30 +91,67 @@ for title, data in mapped2real.items():
 #________________________________________________________________________________________________________________
 #get basic mapping statistics for filtered chimeras
 #________________________________________________________________________________________________________________
-with open(args.filtered_stat, 'r') as f:
-	filtered_stat = yaml.load(f);
+with open(args.fc_stat, 'r') as f:
+	fc_stat = yaml.load(f);
 	
 	
-filtered = defaultdict(lambda: defaultdict(int))
-for (read_type, mapped_type, is_exact, ttype), counts in filtered_stat.iteritems():
+fc = defaultdict(lambda: defaultdict(int))
+fc_incorrect = defaultdict(lambda: defaultdict(int))
+for (read_type, mapped_type, is_exact, ttype), counts in fc_stat.iteritems():
 	if(read_type==mapped_type):
 		if(is_exact):
 			mp = "%s(correct)" % mapped_type
 		else:
 			mp = "%s(incorrect)" % mapped_type
-		filtered[read_type][mp] += counts;	
+			fc_incorrect["%s(incorrect)" % read_type]["%s(%s)" % (read_type, ttype)] += counts;
+		fc[read_type][mp] += counts;	
 	else:
-		filtered[mapped_type]["%s(%s)" % (read_type, ttype)] += counts;
-	#filtered["%s(%s)" % (read_type, ttype)][mp] += counts;
+		fc[mapped_type]["%s(%s)" % (read_type, ttype)] += counts;
+		fc_incorrect["%s(incorrect)" % mapped_type]["%s(%s)" % (read_type, ttype)] += counts;
+
 
 	
 	
-for title, data in filtered.items():
-	output = os.path.join(filtered_dir, title)
+for title, data in fc.items():
+	output = os.path.join(fc_dir, title)
 	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
 	
+for title, data in fc_incorrect.items():
+	output = os.path.join(fc_dir, title)
+	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
+
+
+#________________________________________________________________________________________________________________
+#get basic mapping statistics for filtered single hits
+#________________________________________________________________________________________________________________
+with open(args.fs_stat, 'r') as f:
+	fs_stat = yaml.load(f);
 	
-sys.exit()	
+	
+fs = defaultdict(lambda: defaultdict(int))
+fs_incorrect = defaultdict(lambda: defaultdict(int))
+for (read_type, mapped_type, is_exact, ttype), counts in fs_stat.iteritems():
+	if(read_type==mapped_type):
+		if(is_exact):
+			mp = "%s(correct)" % mapped_type
+		else:
+			mp = "%s(incorrect)" % mapped_type
+			fs_incorrect["%s(incorrect)" % read_type]["%s(%s)" % (read_type, ttype)] += counts;
+		fs[read_type][mp] += counts;	
+	else:
+		fs[mapped_type]["%s(%s)" % (read_type, ttype)] += counts;
+		fs_incorrect["%s(incorrect)" % mapped_type]["%s(%s)" % (read_type, ttype)] += counts;
+
+	
+	
+for title, data in fs.items():
+	output = os.path.join(fs_dir, title)
+	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)
+
+for title, data in fs_incorrect.items():
+	output = os.path.join(fs_dir, title)
+	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
+
 	
 	
 	

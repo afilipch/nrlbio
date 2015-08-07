@@ -23,7 +23,7 @@ parser.add_argument('-sh', '--score_chimera', nargs = '?', default = 'as', choic
 parser.add_argument('-mg', '--maxgap', nargs = '?', default = 8, type = int, help = "maxgap is used to calculate chimera score, the more the maxgap, the less important is gap between hits for chimera evaluation");
 args = parser.parse_args();
 
-testid = '20|chimera|chr2:+:58086349:58086399&chr2:-:210192834:210192884|exon:exon|0:0:0'
+testid = '22462|chimera|chr1:+:108451004:108451037&chr1:-:227677228:227677295|intron:intergenic|0:0:0|0:0'
 
 
 def compare_single_chimera(arw, chimera, maxgap):
@@ -47,18 +47,29 @@ def compare_single_chimera(arw, chimera, maxgap):
 counts = [0]*6
 
 def _iteration(arwlist):
-	if(arwlist):
+	#if(arwlist):
 		#if(arwlist[0].qname == testid):
 			#for arw in arwlist:
-				#print arw.aligned_read;
+				#segment = arw.aligned_read;
+				#print "%s\t%s\t%d\t%s\t%d\t%s\n" % (segment.query_name.split("|")[2], arw.rname, segment.reference_start, segment.cigarstring, segment.get_tag("AS"), segment.query_name)
 			#print 
+			
 			#unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
-			#print "BEST UNIQUE", unique.aligned_read;
+			#segment = unique.aligned_read;
+			#print "BEST UNIQUE", "%s\t%s\t%d\t%s\t%d\t%s\n" % (segment.query_name.split("|")[2], unique.rname, segment.reference_start, segment.cigarstring, segment.get_tag("AS"), segment.query_name)
+			
 			#chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
 			#print "\npossible chimeras: %d\n" % len(chimeras);
+			
 			#unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras);
 			#for arw in unique_chimera.ar_wrappers:
-				#print "BEST CHIMERA", arw.aligned_read
+				#segment = arw.aligned_read;
+				#print "BEST CHIMERA", "%s\t%s\t%d\t%s\t%d\t%s\n" % (segment.query_name.split("|")[2], arw.rname, segment.reference_start, segment.cigarstring, segment.get_tag("AS"), segment.query_name)
+			#print	
+				
+				
+				
+				
 		#demultiplex single hits
 		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
 		
