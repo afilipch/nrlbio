@@ -1,4 +1,4 @@
-#! /usr/lib/python
+#! /usr/bin/python
 '''Outputs reverse complement for STDIN sequences'''
 import argparse;
 from Bio.Seq import reverse_complement;

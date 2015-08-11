@@ -146,7 +146,7 @@ def makefile():
 	#Filter chimeras on basis of control chimeras. LRG is applied for filtering
 	input_files =  os.path.join('chimeras', 'unique.bed') , os.path.join('chimeras', 'control.bed') 
 	output_files = os.path.join('chimeras', 'filtered.bed') 
-	script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS1 AS2', '--fdr': 0.05}, out = output_files)
+	script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS1 AS2 gap', '--fdr': 0.05}, out = output_files)
 	m.append(dependence(input_files, output_files, script))
 
 	#Reassign chimeras coordinates from positions on genomic features(mapping reference) to genomic ones

@@ -25,7 +25,7 @@ def gen_model(seqrecord):
 	
 for seqrecord in SeqIO.parse(args.path, 'fasta'):
 	mc = gen_model(seqrecord)
-	print ">%s" % seqrecord.name
+	print ">random_%s" % seqrecord.name
 	for s in mc.generate_string(args.line_length):
 		print s;	
 
