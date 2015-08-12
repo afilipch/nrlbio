@@ -21,6 +21,8 @@ parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, he
 parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_qstart', 'as_qstart_entropy', 'as_qstart_pos', 'as_qstart_pos_entropy'], type = str, help = "score function for hits");
 parser.add_argument('-sh', '--score_chimera', nargs = '?', default = 'as', choices = ['as', 'as_gap', 'as_gap_entropy'], type = str, help = "score function for chimeras");
 parser.add_argument('-mg', '--maxgap', nargs = '?', default = 8, type = int, help = "maxgap is used to calculate chimera score, the more the maxgap, the less important is gap between hits for chimera evaluation");
+parser.add_argument('--s_distance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique");
+parser.add_argument('--ch_distance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best chimera. If the actual distance is less, than chimera will be assigned as nonunique");
 args = parser.parse_args();
 
 testid = '22462|chimera|chr1:+:108451004:108451037&chr1:-:227677228:227677295|intron:intergenic|0:0:0|0:0'
@@ -46,7 +48,7 @@ def compare_single_chimera(arw, chimera, maxgap):
 
 counts = [0]*6
 
-def _iteration(arwlist):
+def _iteration(arwlist, s_distance, ch_distance):
 	#if(arwlist):
 		#if(arwlist[0].qname == testid):
 			#for arw in arwlist:
@@ -71,11 +73,11 @@ def _iteration(arwlist):
 				
 				
 		#demultiplex single hits
-		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
+		unique, nonunique, control = demultiplex_read_hits(arwlist, s_distance);
 		
 		#gather hits into chimeras
 		chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
-		unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras);
+		unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras, ch_distance);
 		
 		#assign read to be chimeric or single separately for control and signal
 		if(unique and unique_chimera):
@@ -148,17 +150,17 @@ for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):
 		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, add_nr_tag=False)
+		arw = ArWrapper(aligned_read, rname, score_function=key_score, add_nr_tag=False)
 		
 		if(current_name != arw.qname):
-			_iteration(arwlist)
+			_iteration(arwlist, args.s_distance, args.ch_distance)
 			arwlist = [arw];
 			current_name = arw.qname;
 			
 		else:
 			arwlist.append(arw);
 else:
-	_iteration(arwlist);
+	_iteration(arwlist, args.s_distance, args.ch_distance);
 	
 	
 sys.stderr.write("number of unique hits: %d\nnumber of control hits: %d\nnumber of nonunique hits: %d\n\nnumber of unique chimeras: %d\nnumber of control chimeras: %d\nnumber of nonunique chimeras: %d\n\n" % tuple(counts));

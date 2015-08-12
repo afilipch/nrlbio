@@ -1,4 +1,4 @@
-#! /usr/lib/python
+#! /usr/bin/python
 '''Convert Circular Pipeline ouput file into Chiflex doublebed format''' 
 import argparse
 import sys;

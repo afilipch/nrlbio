@@ -74,7 +74,7 @@ class ArWrapper(object):
 		conversions list of tuples: 1st element in each tuple is nucleotide/gap (string/None) in reference. 2st element in each tuple is nucleotide/gap (string/None) in query.
 	'''	
 		
-	def __init__(self, aligned_read, rname, add_nr_tag = False):
+	def __init__(self, aligned_read, rname, score_function=as_score, add_nr_tag = False):
 		self.aligned_read = aligned_read;
 		self.qname = aligned_read.qname;
 		self.rname = rname
@@ -93,7 +93,9 @@ class ArWrapper(object):
 			number_of_reads = int(self.qname.split("_")[-1][1:])
 			self.aligned_read.tags = self.aligned_read.tags + [("NR", number_of_reads)];
 			
-			
+		self.score = score_function(self);
+		
+		
 	def set_conv(self, from_, to):
 		'''adds number of given type of conversions as a tag to the self.aligned_read
 		#filtering API		
@@ -148,9 +150,9 @@ class BackwardWrapper(ArWrapper):
 		to char: backward conversion to (to 'T' in PAR-CLIP)	
 	
 	'''
-	def __init__(self, aligned_read, rname, from_, to, add_nr_tag = False):
+	def __init__(self, aligned_read, rname, from_, to, score_function=as_score, add_nr_tag = False):
 		
-		super(BackwardWrapper, self).__init__(aligned_read, rname, add_nr_tag = False);
+		super(BackwardWrapper, self).__init__(aligned_read, rname, score_function=score_function, add_nr_tag = False);
 		
 		self.from_ = from_
 		self.to = to
@@ -199,27 +201,31 @@ class BackwardWrapper(ArWrapper):
 
 		
 
-def demultiplex_read_hits(arwlist, key_function):
-	'''Demultiplex hits derived from the same read (choose the best ones on basis of key_function). Assignes if the read comes from decoy or nonunique.
+def demultiplex_read_hits(arwlist, min_difference):
+	'''Demultiplex hits derived from the same read (choose the best ones on basis of its score). Assignes if the read comes from decoy or nonunique.
 	
 		arwlist list: ArWrappers of the aligned reads(hits) derived from the same reads
-		key_function function: method selects only the best hits on basis of key_function 
+		min_difference int: minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique
 		
 		Returns tuple: 3-element tuple
-			1st ArWrapper|None: the best uniquely aligned read, if the best alignment is nonunique originated from decoy
-			2nd list: list of nonunique alignments. List is empty if the best uniquely aligned read present
-			3rd ArWrapper|None: the best aligned read originated from decoy, None if it is not the best among all alignments for the read
+			1st ArWrapper|None: the best uniquely hit, None if the best alignment is nonunique or originated from decoy
+			2nd list: list of nonunique alignments. List is empty if the best uniquely hit present
+			3rd ArWrapper|None: the best hit originated from decoy, None if the decoy hit is not the best among all alignments for the read
 	'''
-	#for arw in arwlist:
-		#print arw.aligned_read
-		#print key_function(arw)
-		#print arw.aligned_read.query_length
-	#print "*"*140	
+
 	real = filter(lambda x: not x.control, arwlist);
 	control = filter(lambda x: x.control, arwlist);
-	best_real, max_real = numerictools.maxes(real, key_function)
-	best_control, max_control = numerictools.maxes(control, key_function)
-	if(max_real > max_control):
+	best_real, max_real = numerictools.maxes(real, lambda x: x.score)
+	best_control, max_control = numerictools.maxes(control, lambda x: x.score)
+	
+	if(max_real):
+		distances = [max_real - x.score for x in arwlist if x.score!=max_real]
+		if(distances):
+			dif_from_best = min(distances);
+		else:
+			dif_from_best = min_difference + 1;	
+	
+	if(max_real > max_control and dif_from_best>min_difference):
 		if(len(best_real) == 1):
 			return best_real[0], [], None
 		else:

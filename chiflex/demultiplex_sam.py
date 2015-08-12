@@ -17,12 +17,13 @@ parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, 
 parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
 parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_pos', 'as_pos_entropy'], type = str, help = "score function for hits");
+parser.add_argument('--bestdistance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique");
 args = parser.parse_args();
 
 
-def _iteration(arwlist):
+def _iteration(arwlist, bestdistance):
 	if(arwlist):
-		unique, nonunique, control = demultiplex_read_hits(arwlist, key_score)
+		unique, nonunique, control = demultiplex_read_hits(arwlist, bestdistance)
 		if(unique):
 			sam_unique.write(unique.aligned_read);
 			stat_unique.increment_basic(unique.aligned_read)
@@ -67,17 +68,17 @@ for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):
 		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, add_nr_tag=True)
+		arw = ArWrapper(aligned_read, rname, score_function=key_score, add_nr_tag=True)
 		
 		if(current_name != arw.qname):
-			_iteration(arwlist)
+			_iteration(arwlist, args.bestdistance)
 			arwlist = [arw];
 			current_name = arw.qname;
 			
 		else:
 			arwlist.append(arw);
 else:
-	_iteration(arwlist);
+	_iteration(arwlist, args.bestdistance);
 			
 			
 # create html reports from statistics			

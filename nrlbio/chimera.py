@@ -115,16 +115,16 @@ def arwlist2chimera(arwlist, gap = 100, overlap = 100, score_function = as_score
 
 
 
-def demultiplex(chimeras, min_difference=10):
-	'''Demultiplex hits derived from the same read (choose the best ones on basis of key_function). Assignes if the read comes from decoy or nonunique.
+def demultiplex(chimeras, min_difference):
+	'''Demultiplex chimeras derived from the same read (choose the best ones on basis of its score). Assignes if the chimera comes from real or decoy refrence, ornonunique.
 	
-		arwlist list: ArWrappers of the aligned reads(hits) derived from the same reads
-		key_function function: only the best hits are selected on basis of key_function 
+		Chimeras list: list of Chimeras derived from the same reads
+		min_difference int: minimal distance allowed between the best and the second best chimera. If the actual distance is less, than hit will be assigned as nonunique
 		
 		Returns tuple: 3-element tuple
-			1st ArWrapper|None: the best uniquely aligned read, if the best alignment is nonunique originated from decoy
-			2nd list: list of nonunique alignments. List is empty if the best uniquely aligned read present
-			3rd ArWrapper|None: the best aligned read originated from decoy, None if it is not the best among all alignments for the read
+			1st Chimera|None: the best unique chimera, if the best chimera is nonunique originated from decoy
+			2nd list: list of nonunique chimeras. List is empty if the best unique chimera present
+			3rd Chimera|None: the best chimera originated from decoy, None if it is not the best among all possible chimeras for the read
 	'''
 	if(not chimeras):
 		return None, [], None
