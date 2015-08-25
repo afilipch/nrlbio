@@ -17,14 +17,27 @@ parser = argparse.ArgumentParser(description='Generates "real" and "fake" chimer
 #parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to bed file to be annotated");
 parser.add_argument('-f', '--fasta', nargs = '?', required = True, type = str, help = "path to a fasta file to generate \"real\" chimeras from");
 parser.add_argument('-g', '--genes', nargs = '?', required = True, type = str, help = "path to a genome system file(refseq genes)");
+
 parser.add_argument('-l', '--length', nargs = '?', default = 100, type = int, help = "length of generated chimeras");
 parser.add_argument('-mfl', '--min_fragment_length', nargs = '?', default = 1, type = int, help = "min length of chimera parts");
-parser.add_argument('-ncr', '--num_chimeric_reads', nargs = 6, default = (10000, 5000, 5000, 10000, 5000, 10000), type = int, help = "number of exonic-exonic, exonic-intronic, exonic-intergenic, intronic-intronic, intronic-intergenic, intergenic-intergenic chimeras");
-parser.add_argument('-nsr', '--num_single_reads', nargs = 3, default = (100000, 50000, 100000), type = int, help = "number of exonic, intronic, intergenic single reads");
-parser.add_argument('-nrr', '--num_random_reads', nargs = 2, default = (20000, 60000), type = int, help = "number of shuffled, random reads");
+
+parser.add_argument('-ncr', '--num_chimeric_reads', nargs = 6, default = (5000, 5000, 5000, 5000, 5000, 5000), type = int, help = "number of exonic-exonic, exonic-intronic, exonic-intergenic, intronic-intronic, intronic-intergenic, intergenic-intergenic chimeras");
+parser.add_argument('-nsr', '--num_single_reads', nargs = 3, default = (100000, 100000, 100000), type = int, help = "number of exonic, intronic, intergenic single reads");
+parser.add_argument('-nrr', '--num_random_reads', nargs = 2, default = (150000, 150000), type = int, help = "number of shuffled, random reads");
+
 parser.add_argument('-lr', '--left_random', nargs = 2, default = (1, 0), type = float, help = "options of 5' random sequence length (Probability of 0, maximum length of the random head)");
 parser.add_argument('-rr', '--right_random', nargs = 2, default = (1, 0), type = float, help = "options of 3' random sequence length (Probability of 0, maximum length of the random tail)");
+
 parser.add_argument('--conv_prob', nargs = '?', default = 0, type = float, help = "probability of conversion");
+
+parser.add_argument('--mir', nargs = '?', type = str, help = "path to a fasta file with miRNAs. If not set miRNA chimeras will not be generated");
+parser.add_argument('-nmr', '--num_mir_reads', nargs = 6, default = (50000, 5000, 5000, 5000, 5000, 5000), type = int, help = "number of miRNAs only, miRNA-exonic chimeras, miRNA-intronic chimeras, miRNA-intergenic chimeras, miRNA-shuffled chimeras, miRNA-random chimeras to be generated");
+parser.add_argument('-mlr', '--mir_left_random', nargs = 2, default = (0.9, 4), type = float, help = "options of 5' random sequence length for miRNAs and miRNA chimeras (Probability of 0, maximum length of the random head)");
+parser.add_argument('-mrr', '--mir_right_random', nargs = 2, default = (0.5, 10), type = float, help = "options of 3' random sequence length for miRNAs and miRNA chimeras (Probability of 0, maximum length of the random tail)");
+parser.add_argument('-mlc', '--mir_left_cut', nargs = 2, default = (0.9, 4), type = float, help = "options of 5' cut length for miRNAs and miRNA chimeras (Probability of 0, maximum length of the random cut)");
+parser.add_argument('-mrc', '--mir_right_cut', nargs = 2, default = (0.1, 8), type = float, help = "options of 3' cut length for miRNAs and miRNA chimeras (Probability of 0, maximum length of the random cut)");
+parser.add_argument('--target_length', nargs = '?', default = 50, type = int, help = "length of mirna target sequences");
+
 args = parser.parse_args();
 
 TOTAL_COUNT=0#count of reads generated	
@@ -332,7 +345,7 @@ for _ in range(args.num_single_reads[1]):
 	right = weighted_choice_fast(ritems, rintervals)
 	length = args.length - left - right
 	while(True):
-		exon = select_intron(genes, length)
+		intron = select_intron(genes, length)
 		entry = interval2read(get_random_interval(intron, length), fasta, "intron", left=left, right=right, conv_prob=args.conv_prob)
 		if(entry):
 			TOTAL_COUNT+=1;
@@ -404,27 +417,169 @@ for _ in range(args.num_random_reads[1]):
 
 
 
+#_______________________________________________________________________________________________________________
+#miRNA chimeras part
+#_______________________________________________________________________________________________________________
+#get mirna dictionary from fasta file
+if(args.mir):
+	mirdict = SeqIO.to_dict(SeqIO.parse(args.mir, 'fasta'));
+else:
+	sys.exit();
+
+# set left and right random sequence length probability
+litems_cut, lintervals_cut = _get_intervals_items(*args.mir_left_cut)
+ritems_cut, rintervals_cut = _get_intervals_items(*args.mir_right_cut)
+litems_mir, lintervals_mir = _get_intervals_items(*args.mir_left_random)
+ritems_mir, rintervals_mir = _get_intervals_items(*args.mir_right_random)
+
+def _get_mir_edges():
+	return weighted_choice_fast(litems_mir, lintervals_mir), weighted_choice_fast(ritems_mir, rintervals_mir), weighted_choice_fast(litems_cut, lintervals_cut), weighted_choice_fast(ritems_cut, rintervals_cut)
+
+def _get_mir_interval(mirname, mirseq, left_cut, right_cut):
+	return Interval(mirname, left_cut, len(mirseq)-right_cut, name=".", score=".", strand='+', otherfields=None)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def get_mir_chimera(m_int, t_int, mirdict, target_dict, type_, gap = 0, left=0, right=0, conv_prob=0):
 	
+	seq1, conv_num1 = get_seq(m_int, mirdict, left, gap, conv_prob)
+	seq2, conv_num2 = get_seq(t_int, target_dict, 0, right, conv_prob)
+	header = "|".join([str(TOTAL_COUNT), 'mirna_chimera', "&".join(['%s:%s:%d:%d' % (x.chrom, x.strand, x.start, x.end) for x in (m_int, t_int)]), type_, '%d:%d:%d' % (left, right, gap), "%d:%d" % (conv_num1, conv_num2)])
+	
+	if(seq1 and seq2):
+		return ">%s\n%s" % (header, "".join((seq1, seq2)))
+	else:
+		return None
+	
+	
+def get_mir_shuffled(m_int, t_int, mirdict, target_dict, type_, left=0, conv_prob=0):	
+	
+	seq1, conv_num1 = get_seq(m_int, mirdict, left, 0, conv_prob)
+	seq2 = shuffle_string(get_seq(t_int, target_dict, 0, 0, 0)[0])
+	header = "|".join([str(TOTAL_COUNT), 'mirna_shuffled', "&".join(['%s:%s:%d:%d' % (x.chrom, x.strand, x.start, x.end) for x in (m_int, t_int)]), type_, '%d:%d:%d' % (left, 0, 0), "%d:%d" % (conv_num1, 0)])
+	
+	if(seq1 and seq2):
+		return ">%s\n%s" % (header, "".join((seq1, seq2)))
+	else:
+		return None
+	
+	
+def get_mir_random(m_int, mirdict, length, type_, left=0, conv_prob=0):	
+	
+	seq1, conv_num1 = get_seq(m_int, mirdict, left, 0, conv_prob)
+	seq2 = random_string(length);
+	header = "|".join([str(TOTAL_COUNT), 'mirna_random', '%s:%s:%d:%d' % (m_int.chrom, m_int.strand, m_int.start, m_int.end), type_, '%d:%d:%d' % (left, 0, 0), "%d:%d" % (conv_num1, 0)])
+	
+	if(seq1 and seq2):
+		return ">%s\n%s" % (header, "".join((seq1, seq2)))
+	else:
+		return None
+	
+	
+	
+	
+	
+
+#miRNA single reads
+for _ in range(args.num_mir_reads[0]):
+	left, right, left_cut, right_cut = _get_mir_edges();
+	
+	mirname = random.choice(mirdict.keys())
+	mirseq = mirdict[mirname]	
+	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
+
+	TOTAL_COUNT+=1;	
+	print interval2read(mir_interval, mirdict, "mirna", left=left, right=right, conv_prob=args.conv_prob)
+
+
+
+
+
+#miRNA chimera exon
+for _ in range(args.num_mir_reads[1]):
+	left, right, left_cut, right_cut = _get_mir_edges();
+	right_target = weighted_choice_fast(ritems, rintervals)
+	
+	mirname = random.choice(mirdict.keys())
+	mirseq = mirdict[mirname]	
+	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
+	
+	while(True):
+		exon = select_exon(genes, args.target_length)
+		entry = get_mir_chimera(mir_interval, get_random_interval(exon, args.target_length), mirdict, fasta, "exon", gap = right, left=left, right=right_target, conv_prob=args.conv_prob)
+		if(entry):
+			TOTAL_COUNT+=1;
+			print entry;
+			break;
+
+
+
+#miRNA chimera intron
+for _ in range(args.num_mir_reads[2]):
+	left, right, left_cut, right_cut = _get_mir_edges();
+	right_target = weighted_choice_fast(ritems, rintervals)
+	
+	mirname = random.choice(mirdict.keys())
+	mirseq = mirdict[mirname]	
+	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
+	
+	while(True):
+		intron = select_intron(genes, args.target_length)
+		entry = get_mir_chimera(mir_interval, get_random_interval(intron, args.target_length), mirdict, fasta, "intron", gap = right, left=left, right=right_target, conv_prob=args.conv_prob)
+		if(entry):
+			TOTAL_COUNT+=1;
+			print entry;
+			break;
+
+
+
+#miRNA chimera intergenic
+for _ in range(args.num_mir_reads[3]):
+	left, right, left_cut, right_cut = _get_mir_edges();
+	right_target = weighted_choice_fast(ritems, rintervals)
+	
+	mirname = random.choice(mirdict.keys())
+	mirseq = mirdict[mirname]	
+	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
+	
+	while(True):
+		chrom = select_chromosome(chromosomes, args.target_length)
+		entry = get_mir_chimera(mir_interval, get_random_interval(chrom, args.target_length), mirdict, fasta, "intergenic", gap = right, left=left, right=right_target, conv_prob=args.conv_prob)
+		if(entry):
+			TOTAL_COUNT+=1;
+			print entry;
+			break;
+
+
+
+#miRNA chimera exon shuffled
+for _ in range(args.num_mir_reads[4]):
+	left, right, left_cut, right_cut = _get_mir_edges();
+	
+	mirname = random.choice(mirdict.keys())
+	mirseq = mirdict[mirname]	
+	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
+	
+	while(True):
+		exon = select_exon(genes, args.target_length)
+		entry = get_mir_shuffled(mir_interval, get_random_interval(exon, args.target_length), mirdict, fasta, "exon", left=left, conv_prob=args.conv_prob)
+		if(entry):
+			TOTAL_COUNT+=1;
+			print entry;
+			break;
+
+
+#miRNA chimera exon shuffled
+for _ in range(args.num_mir_reads[5]):
+	left, right, left_cut, right_cut = _get_mir_edges();
+
+	mirname = random.choice(mirdict.keys())
+	mirseq = mirdict[mirname]	
+	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
+	
+	TOTAL_COUNT+=1;
+	print get_mir_random(mir_interval, mirdict, args.target_length, "random", left=left, conv_prob=args.conv_prob)
+
+
+
 	
 	
