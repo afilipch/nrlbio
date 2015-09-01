@@ -1,0 +1,10 @@
+1. access to the genomic positions and transcrits. Also some tricks with splicing.
+from sequence_data.systems import ce6
+ce6.genome.get_oriented('chrI',1234,1334,'+')
+RG = ce6.get_refGenes()
+tx = RG['C02E11.1a.1']
+tx.spliced_sequence
+tx.UTR3.spliced_sequence
+tx.CDS.spliced_sequence[:10]
+
+

@@ -1,0 +1,12 @@
+1. mutate_site.py - intellectual help to mutate miRNA binding site to disrupt it taking in account creation and disruption of seeds for abundant miRNAs
+python /data/BIO2/andrei/clash/bin/trunk/mutate_sites.py -m sites_K3_120813.tsv --mir ../../../../human_ago/files/mir.fa -t top20_HEK_micro.txt --max_mutations 5 --modes nocreate nodisrupt --show 40
+
+2.  explore_adapters.py produces information which parts of 5' or 3' adapter are present in the reads
+python trunk/explore_adapters.py /data/BIO2/pcp/projects/GLD1/reads/gld1_NR_TK_001.fastq -a ../../Toshiaki/adapters5.fa -b
+
+3. remove_adapter.py chomps provided(raw input or file) sequences from reads with everything downstream, or upstream
+python remove_adapter.py /data/BIO2/pcp/projects/GLD1/reads/gld1_NR_TK_001.fastq -a TCCGACGATC -l 16 -b > test2.fastq
+
+4. exp_find_chipart.py: search for mutated pieces inside the read for further exploration of chimeras features
+python trunk/exp_find_chipart.py ~/work/clash/cel_alg/projects/alg_grosswendt-a/purified_reads_2.qfa -r ~/work/clash/cel_alg/files/mir.fa > exp.tsv
+
