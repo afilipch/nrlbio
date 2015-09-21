@@ -1,9 +1,8 @@
 #! /usr/bin/python
-'''Script tries to find reliable circles by applying following filters to the chimeric reads:
+'''Script tries to de novo annotate chimeras. To achieve it, linear and circular splice junctions are identified by applying following criteria:
 1) No more than 100 kilobase distance between chimeric hits
-2) At least 2 independent reads reads supporing splice junction
-3) GT/AG signal flanking the splice sites
-4) Unambiguous chimeric breakpoint detection
+2) GT/AG signal flanking the splice sites
+3) Unambiguous chimeric breakpoint detection
 ''' 
 import argparse
 import sys;
@@ -18,14 +17,12 @@ from nrlbio.genome_system import seqrecord2seq
 from nrlbio.pybedtools_extension import construct_gff_interval
 
 
-parser = argparse.ArgumentParser(description='Script tries to find reliable circles by applying following filters to the chimeric reads:\n1) No more than 100 kilobase distance between chimeric hits\n2) At least 2 independent reads reads supporing splice junction\n3) GT/AG signal flanking the splice sites\n4) Unambiguous chimeric breakpoint detection');
+parser = argparse.ArgumentParser(description='Script tries to de novo annotate chimeras. To achieve it, linear and circular splice junctions are identified by applying following criteria:\n1) No more than 100 kilobase distance between chimeric hits\n2) GT/AG signal flanking the splice sites\n3) Unambiguous chimeric breakpoint detection', formatter_class = argparse.RawTextHelpFormatter);
 
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the chimeras, double bed/gff file");
 parser.add_argument('--distance', nargs = '?', default = 100000, type = int, help = "max allowed disctance between chimeric hits");
 parser.add_argument('--reference', nargs = '?', required = True, type = str, help = "path to the reference(genome) to extract sequences from");
 args = parser.parse_args();
-
-#ASCONVERSION = {"+": "-", "-": "+"}
 
 def check_distance(i1, i2, distance):
 	return i1.chrom==i2.chrom and i1.strand==i2.strand and find_distance((i1.start, i1.end), (i2.start, i2.end))<distance;
@@ -117,8 +114,8 @@ for i1, i2 in generator_doublebed(args.path):
 		splice_type = 'inter'
 		cs1, cs2 = i1, i2
 		
-	cs1.attrs['interaction'] = splice_type
-	cs2.attrs['interaction'] = splice_type
+	cs1.attrs['ntype'] = splice_type
+	cs2.attrs['ntype'] = splice_type
 	sys.stdout.write("%s%s" % (cs1, cs2));	
 	stypes[splice_type]+=1;
 		
