@@ -4,16 +4,18 @@ import argparse
 import sys;
 from collections import defaultdict, OrderedDict
 
-from pybedtools import BedTool, Interval;
+from pybedtools import BedTool, Interval
 
-from nrlbio.pybedtools_extension import list2interval
+from nrlbio.pybedtools_extension import list2interval, bed2gff
 
 parser = argparse.ArgumentParser(description='assignes the type(linear/circular splice junctions, intra/inter-molecular interaction) to each chimera/interaction');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to bed file");
-parser.add_argument('-e', '--exons', nargs = '?', required = True, type = str, help = "path to the bed file of transcripts\' exons");
-parser.add_argument('-d', '--distance', nargs = '?', default = 2, type = int, help = "maximum distance between region and exons edges allowed");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to bed file");
+parser.add_argument('-e', '--exons', nargs = '?', required = True, type = str, help = "Path to the bed file of transcripts\' exons");
+parser.add_argument('-d', '--distance', nargs = '?', default = 2, type = int, help = "Maximum distance between region and exons edges allowed");
+parser.add_argument('-s', '--stranded', nargs = '?', const=True, default = False, type = bool, help = "Are sequenced reads stranded");
 args = parser.parse_args();
 
+#sys.stderr.write(str(args.stranded))
 
 
 
@@ -23,56 +25,61 @@ class AnnotatedChimera(object):
 		self.intersections = intersections
 		
 		
-	def _intra(self, i1, i2, distance):
-		distances1 = abs(self.intervals[0].start - i1.start), abs(self.intervals[0].stop - i1.stop)
-		distances2 = abs(self.intervals[1].start - i2.start), abs(self.intervals[1].stop - i2.stop)
+	def annotate_intramolecular_chimera(self, i1, i2, distance):
+		distance_start_first = abs(self.intervals[0].start - i1.start)
+		distance_stop_first = abs(self.intervals[0].stop - i1.stop)
+		distance_start_second = abs(self.intervals[1].start - i2.start)
+		distance_stop_second = abs(self.intervals[1].stop - i2.stop)
+		
 		exon_number_difference = int(i2.score) - int(i1.score)
-		#test, if it is a splice junction;
-		if( (distances1[1]<=distance and distances2[0]<=distance) or (distances1[0]<=distance and distances2[1]<=distance) ):
-			
-			#test, if it is a linear splice junction
-			#forward case
-			if(exon_number_difference == 1 and distances1[1]<=distance and distances2[0]<=distance):
-				return 'lsj'
-			#backward case
-			elif(exon_number_difference == -1 and distances1[0]<=distance and distances2[1]<=distance):
-				return "lsj"
-			
-			#test, if it is a circular splice junction
-			#one exon circle
-			if(exon_number_difference == 0):
-				return "csj"
-			#forward case
-			elif(exon_number_difference < 0 and distances1[1]<=distance and distances2[0]<=distance):
-				return 'csj'
-			#backward case
-			elif(exon_number_difference > 0 and distances1[0]<=distance and distances2[1]<=distance):
-				return "csj"			
+		
+		sense_condition = distance_stop_first<=distance and distance_start_second<=distance
+		antisense_condition = distance_start_first<=distance and distance_stop_second<=distance
+		
+		if(sense_condition and exon_number_difference>0):
+			return 'lsj'; 
+		elif(antisense_condition and exon_number_difference < 0):
+			return 'lsj'
+		
+		elif(sense_condition and exon_number_difference<=0):
+			return 'csj'; 
+		elif(antisense_condition and exon_number_difference>=0):
+			return 'csj'
+		
 		else:
 			return "intra";
 					
 				
 	def annotate(self, distance):
-		order = ['csj', 'intra'];
 		types = [];
-		for exon_name, d in self.intersections.items():
+		for transcript_name, d in self.intersections.items():
 			if(len(d) == 2 and all(d.values())):
-				t = self._intra(d[0], d[1], distance)
-				if(t=="lsj"):
-					return t;
+				chimera_type = self.annotate_intramolecular_chimera(d[0], d[1], distance)
+				if(chimera_type=="lsj"):
+					return chimera_type;
 				else:	
-					types.append(self._intra(d[0], d[1], distance));
-		for t in order:
+					types.append(chimera_type);
+				  
+		for t in ['csj', 'intra']:
 			if(t in types):
 				return t;
 				
-		return 'inter'		
+		return 'inter';
 
 	
 	def yield_annotated(self, distance, offset):
 		for k, interval in self.intervals.items():
-			interval.attrs['interaction'] = self.annotate(distance)
-			yield interval[:offset];
+			if(interval.file_type=='bed'):
+				gi = bed2gff(interval, feature='ch')
+				gi.attrs['qstart'] = interval[6]
+				gi.attrs['qend'] = interval[7]
+				gi.attrs['chscore'] = interval[9]
+				gi.attrs['gap'] = interval[10]
+			else:
+				gi = interval;
+				
+			gi.attrs['interaction'] = self.annotate(distance)
+			yield gi[:offset];
 			
 			
 	def __str__(self):
@@ -89,10 +96,13 @@ class AnnotatedChimera(object):
 		return "\n".join(l)	
 
 
+
+
+
 chimeras = BedTool(args.path)
 exons = BedTool(args.exons)
 offset  = chimeras.field_count();
-chimeras_vs_exons = chimeras.intersect(exons, s=True, wao=True)
+chimeras_vs_exons = chimeras.intersect(exons, s=args.stranded, wao=True)
 
 
 first = chimeras_vs_exons[0]
@@ -113,24 +123,16 @@ for i in chimeras_vs_exons[1:]:
 			intervals[int(pair_number)] = i;
 			intersections[i[offset+3]][int(pair_number)] = list2interval(i[offset:])
 	else:
-		#if (True or intervals[0].name == 'sg_01_1|0'):
-			#for nk, nd in intersections.items():
-				#sys.stderr.write(str(intersections.keys()) + "\n");
-				#for nkk, ni in nd.items():
-					#sys.stderr.write(str(nkk) + "\n");
-					#sys.stderr.write(str(ni) + "\n");
-					
 		ac = AnnotatedChimera(intervals, intersections);
 		for ani in ac.yield_annotated(args.distance, offset):
 			print "\t".join(ani)
-
 		curname = name
 		cur_pair_number = pair_number;
 		intersections = defaultdict(dict);
 		intervals = OrderedDict();
 		intervals[int(pair_number)] = i;
-
 		intersections[i[offset+3]][int(pair_number)] = list2interval(i[offset:])
+		
 else:
 	ac = AnnotatedChimera(intervals, intersections);
 	for ani in ac.yield_annotated(args.distance, offset):

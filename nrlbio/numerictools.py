@@ -43,16 +43,29 @@ def maxes(list_, key_function=lambda x: x):
 
 
 def overlap(i1, i2):
-	'''Returns overlap of two intervals, maybe negative
+	'''Calculates overlap of two intervals, maybe negative
 	
 		i1 iterable: 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
 		i2 iterable: another 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
 		
-		Returns iterable: Overlap of two intervals. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive).
+		Returns tuple: Overlap of two intervals, tuple:
+			First element is start of interval(0-based inclusive). 
+			Second element is end of interval(0-based exclusive).
 	'''
 	start = max(i1[0], i2[0])
 	end = min(i1[1], i2[1])
 	return start, end;
+
+
+def distance(i1, i2):
+	'''Calculates the distance between two intervals
+	
+		i1 iterable: 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
+		i2 iterable: another 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
+		
+		Returns tuple:  distance between two intervals
+	'''
+	return max(i1[0], i2[0]) - min(i1[1], i2[1])
 	
 	
 def merge_intervals(intervals, distance=0, assume_sorted=False):
@@ -146,6 +159,15 @@ def counter2array(counter):
 		
 def dict2simple_stat(counter):	
 	return get_simple_stat(counter2array(counter))
+
+
+def isinteger(s):
+	'''Checks if provided string is convertible to integer'''
+	try: 
+		int(s)
+		return True
+	except ValueError:
+		return False
 	
 	
 #testing section

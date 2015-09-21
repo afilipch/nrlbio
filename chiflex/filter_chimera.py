@@ -6,7 +6,7 @@ import os;
 
 import pysam;
 
-from nrlbio.chimera import filter_generator, filter_generator_doublebed, apply_filter, apply_filter_doublebed
+from nrlbio.chimera import filter_generator_doublebed, apply_filter_doublebed
 from nrlbio.LRGFDR import lrg
 
 import logging
@@ -28,7 +28,7 @@ parser.add_argument('--fdr', nargs = '?', default = 0.05, type = float, help = "
 #parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for filtered sam");
 args = parser.parse_args();
 
-features2indices = {'AS1': 4, 'AS2': 10, 'gap': 13, 'qstart1': 14, 'qstart2': 17, 'bias1': 16, 'bias2': 19}
+features2indices = {'AS1': 4, 'AS2': 10, 'gap': 16, 'qstart1': 12, 'qstart2': 17}
 indices = [];
 for f in args.features:
 	indices.append(features2indices[f]);

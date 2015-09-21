@@ -29,6 +29,9 @@ parser.add_argument('--title', nargs = '?', default = 'interactions', type = str
 parser.add_argument('--reassign', nargs = '+', choices = [0, 1], type = int, help = "Has to be set, if sam/bam hits have to be reassigned to genomic coordinates. That is, if nongenomic reference was used for mapping, or if it is desired to report mapping to the given reference. 1 - means reassign, order of provided values should correspond to the order of values for \'--sam\' attribute");
 args = parser.parse_args();
 
+if(not args.reassign):
+	args.reassign = [0]*len(args.sam)
+
 #set jinja2 environment
 environment = jinja2.Environment(loader=jinja2.PackageLoader('nrlbio', 'templates'))
 template = environment.get_template(args.template)

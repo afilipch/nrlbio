@@ -155,6 +155,9 @@ def chunk_entropy(seq, length, step = 2, order = 1):
 	for i in range(step, len(seq)-length+1, step):
 		min_entropy = min(min_entropy, dict2entropy(_get_transitions(seq[i:length+i], order=order)));
 	return	min_entropy
+
+
+	
 		
 		
 if(__name__ == "__main__"):

@@ -4,6 +4,8 @@ import sys
 from copy import copy
 from itertools import combinations;
 
+from Bio.Seq import reverse_complement
+
 
 from nrlbio import numerictools
 
@@ -32,7 +34,6 @@ def as_gap_score(chimera, maxgap=8):
 	
 	return sum(chimera.AS)*(1 - chimera.gap**2/maxgap**2)	
 	
-	
 
 class Chimera(object):
 	'''Chimera represents chimeric read based on two consecutive(with some gap or overlap) mappings for one read.
@@ -53,8 +54,14 @@ class Chimera(object):
 		self.control = [x.rname.split("_")[0] == "random" for x in self.ar_wrappers]
 		
 		self.AS = [x.AS for x in ar_wrappers];
-		self.gap = ar_wrappers[1].qstart - ar_wrappers[0].qend
 		self.score = score_function(self);
+		
+		if(ar_wrappers[0].aligned_read.is_reverse):
+			self.gap_seq = reverse_complement(ar_wrappers[0].aligned_read.query_sequence)[self.ar_wrappers[1].qstart:self.ar_wrappers[0].qend]
+		else:
+			self.gap_seq = ar_wrappers[0].aligned_read.query_sequence[self.ar_wrappers[1].qstart:self.ar_wrappers[0].qend]
+			
+		self.gap = self.ar_wrappers[1].qstart - self.ar_wrappers[0].qend;
 		
 		
 	def __str__(self):
@@ -80,10 +87,14 @@ class Chimera(object):
 		'''Converts chimera in two bed entries with the same identifiers'''
 		l = [];
 		gen_info = "%1.5f\t%d" % (self.score, self.gap);
-
+		
+		if(self.gap_seq):
+			gap_seq = self.gap_seq;
+		else:
+			gap_seq = str(self.gap)
 			
 		for c, arw in enumerate(self.ar_wrappers):
-			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, "|".join((arw.qname, str(c))), arw.AS, strand_conv[arw.aligned_read.is_reverse], arw.qstart, arw.qend, arw.aligned_read.query[-1], gen_info));
+			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, "|".join((arw.qname, str(c))), arw.AS, strand_conv[arw.aligned_read.is_reverse], arw.qstart, arw.qend, gap_seq, gen_info));
 			
 		return "\n".join(l)
 		
@@ -162,7 +173,13 @@ def demultiplex(chimeras, min_difference):
 def get_attributes(a, indices):
 	'''Converts line in chimera file in a list ready to be passed to filtering'''
 	for i in indices:
-		a[i] = float(a[i]);
+		if(isinstance(a[i], int)):
+			pass;
+		elif(isinstance(a[i], str) and numerictools.isinteger(a[i])):
+			a[i] = int(a[i]);
+			#sys.stderr.write("%s\t%s\n" % (i, a[i]))
+		else:
+			a[i] = float(a[i]);
 	return a;
 	
 
@@ -192,7 +209,7 @@ def filter_generator_doublebed(path, indices):
 				a1 = l.strip().split("\t");
 			else:
 				a2 = l.strip().split("\t");
-				a = a1[0:6] + a2[0:6] + a1[6:9] + a2[6:]
+				a = a1[0:6] + a2[0:6] + a1[6:11] + a2[6:]
 				yield get_attributes(a, indices);	
 			i+=1	
 			
@@ -227,8 +244,8 @@ def apply_filter_doublebed(path, indices, filter_):
 	'''	
 	for x in filter_generator_doublebed(path, indices):
 			if(eval(filter_)):
-				s1 = "\t".join([str(e) for e in x[0:6] + x[12:15] + x[18:]]);
-				s2 = "\t".join([str(e) for e in x[6:12] + x[15:]]);
+				s1 = "\t".join([str(e) for e in x[0:6] + x[12:17]]);
+				s2 = "\t".join([str(e) for e in x[6:12] + x[17:]]);
 				yield "\n".join((s1, s2));
 			else:
 				pass;		

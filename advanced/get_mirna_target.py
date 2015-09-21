@@ -23,6 +23,7 @@ parser = argparse.ArgumentParser(description='produces old-fashion interaction.b
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the new-style(double bed/gff file) interaction file");
 parser.add_argument('-m', '--mirna', nargs = '?', required = True, type = str, help = "path to a miRNA fasta file");
 parser.add_argument('-f', '--fasta', nargs = '?', required = True, type = str, help = "path to a reference(genome) fasta file");
+parser.add_argument('--scode', nargs = '?', type = str, help = "Specie miRNA code. For example for \"hsa-mir-1\" code is \"hsa\".temporal solution for unordered files");
 args = parser.parse_args();
 
 #exec("from sequence_data.systems import %s as gsys" % args.system);
@@ -49,6 +50,13 @@ reference = SeqIO.to_dict(SeqIO.parse(args.fasta, "fasta"))
 s = 0;	
 n = 0;
 for i1, i2 in generator_doublebed(args.path):
+	if(args.scode):
+		if(i2.chrom.startswith(args.scode)):
+			print i1
+			print i2
+			i1, i2 = i2, i1
+		
+	
 	mirseq = str(mirna[i1.chrom].seq.upper())
 	
 	

@@ -16,7 +16,7 @@ parser.add_argument('--circle2read', nargs = '?', required = True, type = str, h
 parser.add_argument('--circles', nargs = '?', required = True, type = str, help = "path to circular RNAs. bed/gff custom format");
 args = parser.parse_args();
 
-def compare(circle, segments, diff=5):
+def compare(circle, segments, diff=8):
 	if(not segments):
 		return False
 	

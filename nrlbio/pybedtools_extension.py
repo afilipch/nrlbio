@@ -48,9 +48,14 @@ def doublebed2dict(bed):
 	return d;	
 	
 	
-def construct_gff_interval(chrom, start, stop, feature, score='0', strand='.', source='.', frame='.', attrs=[]):
+def construct_gff_interval(chrom, start, stop, feature, score='0', strand='.', source='un', frame='.', attrs=[]):
 	attrs_str = "; ".join(["%s=%s" % (str(x[0]), str(x[1])) for x in attrs])
 	return create_interval_from_list( [chrom, source, feature, str(start+1), str(stop), score, strand, frame, attrs_str] );
+
+
+def bed2gff(bi, source='.', feature='.'):
+	'''yields gff interval from given bed interval'''
+	return create_interval_from_list( [bi.chrom, source, feature, str(bi.start+1), str(bi.stop), bi.score, bi.strand, '.', "ID=%s;" % bi.name] );
 	
 def list2interval(l):
 	'''creates an interval from the list of strings. items in the list should be in the order: chromosome, start, stop, name, score, strand. In case of dummy bed entry(chromosome is equal ".") returns None
