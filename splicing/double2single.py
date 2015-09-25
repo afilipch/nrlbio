@@ -23,7 +23,11 @@ def linear(i1, i2):
 		#bu+=1;
 		return None
 	score = str(int(i1.score) + int(i2.score));
-	attrs = [('gap', i1.attrs['gap']), ('score1', i1.score), ('score2', i2.score), ('ID', i1.name.split("|")[0])]
+	attrs = [('score1', i1.score), ('score2', i2.score), ('ID', i1.name.split("|")[0])]
+	for k1, v1 in i1.attrs.items():
+		if(v1==i2.attrs.get(k1)):
+			attrs.append((k1,v1));
+		
 	
 	return construct_gff_interval(chrom=i1.chrom, start=start, stop=stop, feature='lsj', score=score, strand=i1.strand, source='.', frame='.', attrs=attrs)
 
@@ -32,7 +36,10 @@ def circular(i1, i2):
 	start = min(i1.start, i2.start)
 	stop = max(i1.stop, i2.stop)
 	score = str(int(i1.score) + int(i2.score));
-	attrs = [('gap', i1.attrs['gap']), ('score1', i1.score), ('score2', i2.score), ('ID', i1.name.split("|")[0])]
+	attrs = [('score1', i1.score), ('score2', i2.score), ('ID', i1.name.split("|")[0])]
+	for k1, v1 in i1.attrs.items():
+		if(v1==i2.attrs.get(k1)):
+			attrs.append((k1,v1));
 	
 	return construct_gff_interval(chrom=i1.chrom, start=start, stop=stop, feature='csj', score=score, strand=i1.strand, source='.', frame='.', attrs=attrs)
 

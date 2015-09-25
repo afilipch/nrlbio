@@ -53,6 +53,7 @@ class Chimera(object):
 		self.ar_wrappers = ar_wrappers;
 		self.control = [x.rname.split("_")[0] == "random" for x in self.ar_wrappers]
 		
+		self.gap = ar_wrappers[1].qstart - ar_wrappers[0].qend;		
 		self.AS = [x.AS for x in ar_wrappers];
 		self.score = score_function(self);
 		
@@ -61,7 +62,6 @@ class Chimera(object):
 		else:
 			self.gap_seq = ar_wrappers[0].aligned_read.query_sequence[self.ar_wrappers[1].qstart:self.ar_wrappers[0].qend]
 			
-		self.gap = self.ar_wrappers[1].qstart - self.ar_wrappers[0].qend;
 		
 		
 	def __str__(self):

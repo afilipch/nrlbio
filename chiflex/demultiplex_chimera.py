@@ -21,8 +21,8 @@ parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, he
 parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_qstart', 'as_qstart_entropy', 'as_qstart_pos', 'as_qstart_pos_entropy'], type = str, help = "score function for hits");
 parser.add_argument('-sh', '--score_chimera', nargs = '?', default = 'as', choices = ['as', 'as_gap', 'as_gap_entropy'], type = str, help = "score function for chimeras");
 parser.add_argument('-mg', '--maxgap', nargs = '?', default = 8, type = int, help = "maxgap is used to calculate chimera score, the more the maxgap, the less important is gap between hits for chimera evaluation");
-parser.add_argument('--s_distance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique");
-parser.add_argument('--ch_distance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best chimera. If the actual distance is less, than chimera will be assigned as nonunique");
+parser.add_argument('--s_distance', nargs = '?', default = 12, type = float, help = "minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique");
+parser.add_argument('--ch_distance', nargs = '?', default = 12, type = float, help = "minimal distance allowed between the best and the second best chimera. If the actual distance is less, than chimera will be assigned as nonunique");
 args = parser.parse_args();
 
 testid = '22462|chimera|chr1:+:108451004:108451037&chr1:-:227677228:227677295|intron:intergenic|0:0:0|0:0'

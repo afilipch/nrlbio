@@ -52,15 +52,16 @@ class Stat(object):
 
 				
 				
-	def generate_plots(self, configuration='samstat', output=''):
+	def generate_plots(self, configuration='bedstat', output=''):
 		from nrlbio import pyplot_extension
 		config_ = load_config(configuration)
 		for attr_name in self._hist_names:
 			kwargs = config_[attr_name];
 			kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
-			kwargs['label'] = self.name;			
+			kwargs['label'] = self.name;
 			attr = getattr(self, attr_name)
 			if(attr):
+				#print attr_name;
 				pyplot_extension.histogram(attr, **kwargs);
 			else:
 				pass;

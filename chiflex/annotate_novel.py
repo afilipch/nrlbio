@@ -14,7 +14,7 @@ from Bio import SeqIO
 from nrlbio.generators import generator_doublebed
 from nrlbio.numerictools import distance as find_distance
 from nrlbio.genome_system import seqrecord2seq
-from nrlbio.pybedtools_extension import construct_gff_interval
+from nrlbio.pybedtools_extension import construct_gff_interval, bed2gff
 
 
 parser = argparse.ArgumentParser(description='Script tries to de novo annotate chimeras. To achieve it, linear and circular splice junctions are identified by applying following criteria:\n1) No more than 100 kilobase distance between chimeric hits\n2) GT/AG signal flanking the splice sites\n3) Unambiguous chimeric breakpoint detection', formatter_class = argparse.RawTextHelpFormatter);
@@ -98,21 +98,30 @@ passed = 0;
 uniqbreakpoints = [];
 stypes = defaultdict(int);
 for i1, i2 in generator_doublebed(args.path):
+	if(i1.file_type=='bed'):
+		attrs1 = (('qstart', i1[6]), ('qend', i1[7]), ('chscore', i1[9]), ('gap', i1[10]))
+		gi1 = bed2gff(i1, feature='ch', attrs=attrs1)
+		attrs2 = (('qstart', i2[6]), ('qend', i2[7]), ('chscore', i2[9]), ('gap', i2[10]))
+		gi2 = bed2gff(i2, feature='ch', attrs=attrs2);
+	else:
+		gi1 = i1;
+		gi2 = i2;	
+
 	total += 1;
-	if(check_distance(i1, i2, args.distance)):
-		seqrecord = reference[i1.chrom];
-		breakpoints, antisense = check_splice_site(i1, i2, seqrecord);
+	if(check_distance(gi1, gi2, args.distance)):
+		seqrecord = reference[gi1.chrom];
+		breakpoints, antisense = check_splice_site(gi1, gi2, seqrecord);
 		uniqbreakpoints.append(len(breakpoints))
 		if(len(breakpoints)==1):
-			cs1, cs2 = clarify(i1, i2, breakpoints[0], antisense)
+			cs1, cs2 = clarify(gi1, gi2, breakpoints[0], antisense)
 			splice_type = assign_splice_type(cs1, cs2)
 			passed += 1;
 		else:
 			splice_type = 'intra'
-			cs1, cs2 = i1, i2
+			cs1, cs2 = gi1, gi2
 	else:
 		splice_type = 'inter'
-		cs1, cs2 = i1, i2
+		cs1, cs2 = gi1, gi2
 		
 	cs1.attrs['ntype'] = splice_type
 	cs2.attrs['ntype'] = splice_type

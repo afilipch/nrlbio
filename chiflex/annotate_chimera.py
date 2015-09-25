@@ -96,11 +96,12 @@ class AnnotatedChimera(object):
 			#else:
 				#gi1.attrs['stranded'] = 't';
 				#gi2.attrs['stranded'] = 't';
-			
+		
 		gi1.attrs['ktype'] = chimera_type;
 		gi2.attrs['ktype'] = chimera_type;
-
-		return gi1[:offset], gi2[:offset]
+		#sys.stderr.write(str(gi1[:9]))
+		
+		return gi1[:9], gi2[:9]
 			
 			
 	def __str__(self):

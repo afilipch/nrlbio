@@ -32,8 +32,9 @@ parser.add_argument('--reference', nargs = '?', type = str, required = True, hel
 parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
 
+parser.add_argument('--genome', nargs = '?', type = str, default = None, help = "path to a reference sequences(genome, transcriptome, etc.) in fasta format. Is required for de novo splice sites search and downstream sequence analysis");
 parser.add_argument('--annotation', nargs = '?', type = str, default = None, help = "path to an annotation file in gff format. If provided, interacting loci will be annotated");
-parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type will be assigned to each interaction");
+parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type(circular or linear splice junction, intra- or intermolecular interaction) will be assigned to each interaction");
 
 parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
 parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
@@ -41,11 +42,12 @@ parser.add_argument('--stratify', nargs = '?', default = False, const = True, ty
 parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "if set, repetitive mapped sequences are removed")
 parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "if set, nonunique mappings with high alignment score are kept")
 parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "if set, hits position on a reference will be reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers has to be in [chrom]|[strand]|[start]|[stop] format")
+parser.add_argument('--splicing', nargs = '?', default = False, const=True, type = bool, help = "if set, then splice junctions will be found, filtered and then compressed into single-bed file format. Can be set only along with \'--genome\' option")
 
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
 args = parser.parse_args();
 
-
+#######################################################################################################################
 #parse bowtie options
 for bo in args.bowtie:
 	try:
@@ -73,11 +75,18 @@ for k, v in bowtie_settings.items():
 		bs_list.append(v[1] + k);
 		bs_list.append(v[0])
 #######################################################################################################################
+#cofigure arguments
+if(args.splicing and not args.genome):
+	sys.stderr.write("WARNING: without setting \'--genome\' option \'--splicing\' option will be ignored\n")
+	
+chiflex_package = os.path.abspath(os.path.join(args.chiflex, 'chiflex'));
+splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))
+
 		
-def get_script(script, arguments={}, inp = '', out = None):
+def get_script(script, arguments={}, inp = '', out = None, package=chiflex_package):
 	'''Example: get_script(something.py, {'--a': ""}) will output: ('python [chiflex folder]/something.py'), '-a')
 	'''
-	l = [" ".join(('python', os.path.join(os.path.abspath(args.chiflex), script) )), inp]
+	l = [" ".join(('python', os.path.join(package, script) )), inp]
 	for k,v in arguments.items():
 		l.append(k)
 		l.append(str(v))
@@ -155,39 +164,88 @@ def makefile():
 		output_files = os.path.join('chimeras', 'assigned.bed') 
 		script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
 		m.append(dependence(input_files, output_files, script))
-
-	#Merge chimeras into interactions.That is, sequenced chimeric reads which have two respectively overlaping parts are merged together
-	input_files = output_files
-	output_files = os.path.join('interactions', 'interactions.gff'), os.path.join('interactions', 'interactions2readid.bed')
-	script = get_script('chimera2interaction.py', arguments={'-oi': output_files[0], '-od': output_files[1], '--name': args.name, '--distance': -16}, inp = input_files)
-	m.append(dependence(input_files, output_files, script))
-	output_files = output_files[0]
-	
-	#Annotate interacting loci
-	if(args.annotation):
-		input_files = output_files, os.path.abspath(args.annotation)
-		output_files = os.path.join('interactions', 'annotated.gff')
-		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
-		m.append(dependence(input_files, output_files, script))
+		
+		
+	if(args.splicing and args.genome):
+		input_files = output_files;
+		output_files = os.path.join('splicing', 'chimeras.annotated.gff')
+		script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files)
+		m.append(dependence(input_files, output_files, script));
 		
 		input_files = output_files
-		output_files = os.path.join('interactions', 'interactions.ordered.bed')
-		script = get_script('order.py', arguments={}, inp = input_files, out=output_files)
-		m.append(dependence(input_files, output_files, script))
-
-
-	#Annotate type of interaction
-	if(args.exons):
-		input_files = output_files, os.path.abspath(args.exons)
-		output_files = os.path.join('interactions', 'interactions.annotated.gff')
-		script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
+		output_files = [os.path.join('splicing', 'chimeras.annotated.%s.gff' % x) for x in interaction_types]
+		script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'splicing'}, inp = input_files)
 		m.append(dependence(input_files, output_files, script));
-	
-		if(args.stratify):
+		
+		
+		input_files = os.path.join('splicing', 'chimeras.annotated.lsj.gff')
+		output_files = os.path.join('splicing', 'single.lsj.gff')
+		script = get_script('double2single.py', arguments={'--jtype': 'lsj'}, inp = input_files, out=output_files, package=splicing_package)
+		m.append(dependence(input_files, output_files, script));
+		
+		input_files = output_files
+		output_files = os.path.join('splicing', 'sorted.lsj.gff')
+		script = ('sort', input_files, '-k 1,1', '-k 7,7', '-k 4,4', '-k 5,5', '>', output_files)
+		m.append(dependence(input_files, output_files, script));		
+			
+		input_files = output_files
+		output_files_lsj = os.path.join('splicing', 'collapsed.lsj.gff'), os.path.join('splicing', 'read2id.lsj.gff')
+		script = get_script('merge_junctions.py', arguments={'--jtype': 'lsj', '--dictionary': output_files_lsj[1]}, inp = input_files, out=output_files_lsj[0], package=splicing_package)
+		m.append(dependence(input_files, output_files_lsj, script));
+				
+				
+		input_files = os.path.join('splicing', 'chimeras.annotated.csj.gff')
+		output_files = os.path.join('splicing', 'single.csj.gff')
+		script = get_script('double2single.py', arguments={'--jtype': 'csj'}, inp = input_files, out=output_files, package=splicing_package)
+		m.append(dependence(input_files, output_files, script));
+		
+		input_files = output_files
+		output_files = os.path.join('splicing', 'sorted.csj.gff')
+		script = ('sort', input_files, '-k 1,1', '-k 7,7', '-k 4,4', '-k 5,5', '>', output_files)
+		m.append(dependence(input_files, output_files, script))		
+			
+		input_files = output_files
+		output_files_csj = os.path.join('splicing', 'collapsed.csj.gff'), os.path.join('splicing', 'read2id.csj.gff')
+		script = get_script('merge_junctions.py', arguments={'--jtype': 'csj', '--dictionary': output_files_csj[1]}, inp = input_files, out=output_files_csj[0], package=splicing_package)
+		m.append(dependence(input_files, output_files_csj, script));
+		
+		output_files = output_files_csj + output_files_lsj
+		
+			
+	else:
+		#Merge chimeras into interactions.That is, sequenced chimeric reads which have two respectively overlaping parts are merged together
+		input_files = output_files
+		output_files = os.path.join('interactions', 'interactions.gff'), os.path.join('interactions', 'interactions2readid.bed')
+		script = get_script('chimera2interaction.py', arguments={'-oi': output_files[0], '-od': output_files[1], '--name': args.name, '--distance': -16}, inp = input_files)
+		m.append(dependence(input_files, output_files, script))
+		output_files = output_files[0]
+		
+		#Annotate interacting loci
+		if(args.annotation):
+			input_files = output_files, os.path.abspath(args.annotation)
+			output_files = os.path.join('interactions', 'annotated.gff')
+			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
+			m.append(dependence(input_files, output_files, script))
+			
 			input_files = output_files
-			output_files = [os.path.join('interactions', 'interactions.annotated.%s.gff' % x) for x in interaction_types]
-			script = get_script('stratify_gff.py', arguments={'--attributes': 'interaction', '--output': 'interactions'}, inp = input_files)
-			m.append(dependence(input_files, output_files, script));			
+			output_files = os.path.join('interactions', 'interactions.ordered.bed')
+			script = get_script('order.py', arguments={}, inp = input_files, out=output_files)
+			m.append(dependence(input_files, output_files, script))
+
+
+		#Annotate type of interaction
+		if(args.exons):
+			input_files = output_files, os.path.abspath(args.exons)
+			output_files = os.path.join('interactions', 'interactions.annotated.gff')
+			script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
+			m.append(dependence(input_files, output_files, script));
+			
+		
+			if(args.stratify):
+				input_files = output_files
+				output_files = [os.path.join('interactions', 'interactions.annotated.%s.gff' % x) for x in interaction_types]
+				script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'interactions'}, inp = input_files)
+				m.append(dependence(input_files, output_files, script));			
 			
 	#makefile header
 	if(isinstance(output_files, str)):
@@ -204,7 +262,7 @@ project_path = os.path.abspath(args.path)
 while (not args.only_makefile):
 	try:
 		os.makedirs(project_path);
-		for folder in ('sam', 'chimeras', 'interactions', 'html', 'bed', 'log'):
+		for folder in ('sam', 'chimeras', 'interactions', 'html', 'bed', 'log', 'splicing'):
 			os.mkdir(os.path.join(project_path, folder));
 		break;	
 	except:
@@ -228,12 +286,14 @@ arguments_report = (
 ('path', ('Project folder', os.path.abspath)),
 ('reads', ('Sequencing reads', os.path.abspath)),
 ('chiflex', ('Chiflex module used in the project', os.path.abspath)), 
-('reference', ('Reference(genome, transcriptome) used for mapping', os.path.abspath)), 
+('reference', ('Mapping reference index(genome, transcriptome) used for mapping', os.path.abspath)), 
+('genome', ('Reference sequences(genome)', os.path.abspath)),
 ('exons', ('Exon system used for interactions annotation', os.path.abspath)), 
 ('annotation', ('Annotation system used for interactions annotation', os.path.abspath)), 
 ('repetitive', ('Repetitive mapped sequences are removed', str)),
 ('nonunique', ('Nonunique mappings with high alignment score are kept', str)),
 ('stratify', ('interactions are stratified according to the interaction type', str)),
+('splicing', ('Detection of splice is done', str)),
 ('reports', ('html reports are produced', str)), 
 ('only_makefile', ('New Makefile was generated', str)),  
 )

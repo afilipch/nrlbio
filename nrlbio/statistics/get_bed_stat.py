@@ -19,7 +19,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path
 parser.add_argument('-o', '--output', nargs = '?', default = None, type = str, help = "path to the output report. If not set, report will be generated in current folder, deriving file name from bed/gff file");
 parser.add_argument('--attributes', nargs = '+', default = [], type = str, help = "set gff attributes to produce statistics of");
 parser.add_argument('--annotation', nargs = '?', default = False, const = True, type = bool, help = "if True, process given files as chiflex/annotate_bed.py annotated file");
-parser.add_argument('--draw', nargs = '?', default = False, const = True, type = bool, help = "if True, scripts also generate plots for html report");
+parser.add_argument('--draw', nargs = '?', default = False, const = True, type = bool, help = "if True, script will also generate plots for html report");
 parser.add_argument('--sparse_coefficient', nargs = '?', default = 1, type = int, help = "If sparse_coefficient set to 3, then only each 3rd record will be analyzed, saves time in a case of large files");
 args = parser.parse_args();
 
