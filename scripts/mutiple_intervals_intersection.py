@@ -51,7 +51,7 @@ if(args.drawdir):
 		sys.stderr.write("directory %s already exists, plots will be (over)written there\n" % os.path.abspath(args.drawdir));
 		
 	def get_plot(result, colors, outdir):
-		subsets = result[2:];
+		subsets = (result[2]-result[4], result[3]-result[4], result[4]);
 		labels = result[:2];
 		title = "_VS_".join(labels);
 		v = venn2(subsets=subsets, set_labels=labels, set_colors=colors)
