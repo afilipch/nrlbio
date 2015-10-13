@@ -67,6 +67,9 @@ class Mirna(object):
 			if(l):
 				dm[mm1] = l;
 		return dm;
+	
+	def __str__(self):
+		return "name=%s, seq=%s, start=%d, stop=%d, seed=%s, match=%s, expr=%1.1f" % (self.name, self.seq, self.seed_start, self.seed_stop, self.seed, self.match, self.expression);
 		
 		
 		
@@ -116,13 +119,14 @@ class Family():
 		
 		self.expression = sum([x.expression for x in mirnas])
 		self.names = [x.name for x in mirnas]
+		self.name = "|".join(self.names)
 		
-	@property	
-	def name():
-		if(self.name):
-			return self.name
-		else:
-			return "|".join(self.names)
+	#@property	
+	#def name(self):
+		#if(self.name):
+			#return self.name
+		#else:
+			#return "|".join(self.names)
 		
 	def set_1mm_matches(self):
 		self.matches_1mm = diverge_with_1mm(self.match);
@@ -142,6 +146,9 @@ class Family():
 			if(l):
 				dm[mm1] = l;
 		return dm;
+	
+	def __str__(self):
+		return "mirnas=%s, start=%d, stop=%d, seed=%s, match=%s, expr=%1.1f" % (self.name, self.seed_start, self.seed_stop, self.seed, self.match, self.expression);	
 		
 		
 if(__name__ == "__main__"):

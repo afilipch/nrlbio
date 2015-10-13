@@ -6,11 +6,10 @@ import os;
 
 import pysam;
 
-from nrlbio.chimera import filter_generator_doublebed, apply_filter_doublebed
+from nrlbio.generators import generator_doublebed
 from nrlbio.LRGFDR import lrg
 
 import logging
-
 # create logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -19,34 +18,66 @@ fh = logging.FileHandler(os.path.join("log", "chimera_filtering.txt"))
 logger.addHandler(sh)
 logger.addHandler(fh)
 
+
+#get configuration
+from nrlbio.config.config import load_config;
+CONFIGURATION = load_config('lrg')
+
+
+
 parser = argparse.ArgumentParser(description='filters mapping results on read features basis');
 parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, help = "path to the sam file to be filtered");
 parser.add_argument('-c', '--control', nargs = '?', required = True, type = str, help = "path to the sam file originated from decoy");
-parser.add_argument('-f', '--features', nargs = '+', default = ['AS1', 'AS2'], type = str, help = "read features to be used for filtering");
+parser.add_argument('-f', '--features', nargs = '+', default = ['AS1', 'AS2'], choices=['AS1', 'AS2', 'gap', 'minqstart'],  type = str, help = "read features to be used for filtering");
 parser.add_argument('--fdr', nargs = '?', default = 0.05, type = float, help = "False Discovery Rate allowed");
 #parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
-#parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for filtered sam");
 args = parser.parse_args();
 
-features2indices = {'AS1': 4, 'AS2': 10, 'gap': 16, 'qstart1': 12, 'qstart2': 17}
-indices = [];
-for f in args.features:
-	indices.append(features2indices[f]);
+
+def as1(i1, i2):
+	return int(i1.score);
+
+def as2(i1, i2):
+	return int(i2.score);
+
+def gap(i1, i2):
+	return int(i1.attrs['gap']);
+
+def minqstart(i1, i2):
+	return min(int(i1.attrs['qstart']), int(i2.attrs['qstart']));
+
+features2indices = {'AS1': as1, 'AS2': as2, 'gap': gap, 'minqstart': minqstart}
+
+def doublebed2list(i1, i2):
+	return [features2indices[x](i1, i2) for x in args.features]
+
+def list_generator(path):
+	for i1, i2 in generator_doublebed(path):
+		yield doublebed2list(i1, i2);
+		
+def apply_filter(path, filter_):
+	for i1, i2 in generator_doublebed(path):
+		x = doublebed2list(i1, i2);
+		if(eval(filter_)):
+			yield i1, i2
+		else:
+			pass; 
+	
 
 
 
-signal = filter_generator_doublebed(args.signal, indices);
-control = filter_generator_doublebed(args.control, indices);
-lrg_filter, rule, log_message = lrg(signal, control, entry='list', attributes = indices, attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=2);
+signal = list_generator(args.signal);
+control = list_generator(args.control);
+lrg_filter, rule, log_message = lrg(signal, control, entry='list', attributes = list(range(len(args.features))), attribute_names=args.features, fdr=args.fdr, **CONFIGURATION);
 
 if(not rule):
 	samfile.close()
 	filtered.close()
 	sys.exit("Nothing passed the filtering\n")
 
-for l in apply_filter_doublebed(args.signal, indices, lrg_filter):
-	print l
-
+for i1, i2 in apply_filter(args.signal, lrg_filter):
+	sys.stdout.write(str(i1))
+	sys.stdout.write(str(i2))
 
 logger.info(log_message)
 

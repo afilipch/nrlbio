@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description='stratifies given gff file on basis
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to gff file");
 parser.add_argument('-a', '--attributes', nargs = '+', required = True, type = str, help = "list of attributes used to stratify given gff entries");
 parser.add_argument('-o', '--output', nargs = '?', default = "", type = str, help = "output directory for stratified gff files");
+parser.add_argument('--rtypes', nargs = '+', default = [], type = str, help = "If a certain attribute value was not found but downstream analysis requires a file corresponding to that vaule, then add the value to --rtypes and empty file will be created");
 args = parser.parse_args();
 attrs = args.attributes;
 
@@ -35,11 +36,19 @@ for interval in BedTool(args.path):
 		stratified[type_]+=1;
 	else:	
 		filename = ".".join([os.path.splitext(os.path.basename(args.path))[0]] + list(type_) + ['gff'])
-		type2filehandler[type_] = open(os.path.join(dirname, filename), 'w');		
+		type2filehandler[type_] = open(os.path.join(dirname, filename), 'w');
 		stratified[type_]=1;
 	type2filehandler[type_].write(str(interval))
+		
 	
-
+found_types = [".".join(x) for x in type2filehandler.keys()]	
+for type_ in args.rtypes:
+	if(type_ not in found_types):
+		filename = ".".join([os.path.splitext(os.path.basename(args.path))[0]] + [type_] + ['gff'])
+		type2filehandler[type_] = open(os.path.join(dirname, filename), 'w');
+		#sys.stderr.write("%s\n" % type2filehandler);
+	else:
+		pass
 	
 for handler in type2filehandler.values():
 	handler.close();

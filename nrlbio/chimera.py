@@ -172,6 +172,8 @@ def demultiplex(chimeras, min_difference):
 
 def get_attributes(a, indices):
 	'''Converts line in chimera file in a list ready to be passed to filtering'''
+	#print indices
+	#print a;
 	for i in indices:
 		if(isinstance(a[i], int)):
 			pass;

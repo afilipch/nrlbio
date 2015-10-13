@@ -1,54 +1,68 @@
-#! /usr/lib/python
+#! /usr/bin/python
 '''Creates makefile and directory structure for chiflex project'''
 import argparse
 import sys
 import os
-#from collections import OrderedDict
 
+from nrlbio.config.config import load_config;
+
+conf = load_config('chiflex')
+
+#Modes order preliminary parsing
+modes_order = conf['modes_order'];
+
+#set possible chimera types
 interaction_types = ['inter', 'intra', 'csj', 'lsj']
 
-bowtie_settings = {'N': ('0','-'),
-'L': ('16','-'),
-'i': ('C,1', '-'),
-'ignore-quals': ('True', '--'),
-'norc': ('True', '--'),
-'local': ('True', '--'), 
-'mp': ('8,8', '--'),
-'rfg': ('18,12', '--'),
-'rdg': ('8,6', '--'),
-'min-score': ('C,40', '--'), 
-'k': ('4', '-'),
-'D': ('30', '-'),
-'R': ('2', '-'),
-'no-unal': ('True', '--'), 
-'f': ('False', '-'), 
-'p': ('8', '-') }
-bs_string = "\n".join(["\t%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_settings.items()])
 
-parser = argparse.ArgumentParser(description='Creates makefile and directory structure for chiflex project');
+#Bowtie options preliminary parsing
+bowtie_configurations = conf['bowtie'];
+bowtie_help_list = [];
+for mode, settings in bowtie_configurations.items():
+	bowtie_help_list.append("\n%s:" % mode)
+	bowtie_help_list.append("[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in settings.items()]))
+bowtie_help_str = " ".join(bowtie_help_list)
+	
+
+parser = argparse.ArgumentParser(description='Creates makefile and directory structure for chiflex project')#, formatter_class = argparse.RawTextHelpFormatter);
+
+#Required options
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the project folder. If folder does not exist, it will be created");
 parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "path to sequencing reads. fastq/fasta file");
 parser.add_argument('--reference', nargs = '?', type = str, required = True, help = "path to the mapping reference");
 parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
+arg_modes = parser.add_argument('--modes', nargs = '+', type = str, required = True, choices = modes_order.keys(),  help = "Mode of the Chiflex. If you are looking for circular or linear splice junctions - choose mode \'splicing\'. If you want to find read clusters(binding sites) - choose mode \'clustering\'. If you explore RNA-RNA intra- or intermolecular interactions - choose mode \'interaction\'. NOTE: it is possible to run more than one mode together. However mapping options will be selected for the mode with a highest(1st is higher than 2nd) priority. Priorities: %s. NOTE: Without setting [--genome] or [--exon] option interaction and splicing modes cannot be used. NOTE: Without setting [--genome_index] option clustering mode cannot be used" % ["%s=%d" % x for x in modes_order.items()])
 
-parser.add_argument('--genome', nargs = '?', type = str, default = None, help = "path to a reference sequences(genome, transcriptome, etc.) in fasta format. Is required for de novo splice sites search and downstream sequence analysis");
-parser.add_argument('--annotation', nargs = '?', type = str, default = None, help = "path to an annotation file in gff format. If provided, interacting loci will be annotated");
-parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type(circular or linear splice junction, intra- or intermolecular interaction) will be assigned to each interaction");
+#Paths to the files for additional annotation;
+parser.add_argument('--genome', nargs = '?', type = str, default = None, help = "path to a reference sequences(genome, transcriptome, etc.) in fasta format. Is required for de novo splice sites search and downstream sequence analysis. NOTE: if [--genome] and [--exons] are provided simultaneously, then splice sites will be de novo annotated based on [--genome]");
+parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type(circular or linear splice junction, intra- or intermolecular interaction) will be assigned to each interaction. That is, only known splice sites will be found. NOTE: if [--genome] and [--exons] are provided simultaneously, then splice sites will be de novo annotated based on [--genome]");
+parser.add_argument('--annotation', nargs = '?', type = str, default = None, help = "path to an annotation file in gff format. If provided, found genomic loci will be annotated");
+parser.add_argument('--genome_index', nargs = '?', type = str, default = None, help = "reference(genome) index file (.fai)");
 
-parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
-parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
-parser.add_argument('--stratify', nargs = '?', default = False, const = True, type = bool, help = "if set, interactions will be stratified according to the interaction type. Ignored if NO '--exons\'");
+#Options for the mapping result postprocessing
 parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "if set, repetitive mapped sequences are removed")
 parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "if set, nonunique mappings with high alignment score are kept")
 parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "if set, hits position on a reference will be reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers has to be in [chrom]|[strand]|[start]|[stop] format")
-parser.add_argument('--splicing', nargs = '?', default = False, const=True, type = bool, help = "if set, then splice junctions will be found, filtered and then compressed into single-bed file format. Can be set only along with \'--genome\' option")
+parser.add_argument('--stranded', nargs = '?', default = False, const=True, type = bool, help = "Should be set if the sequencing data are stranded")
 
-parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones.\nDefault settings are:%s" % bs_string)
+#Options for the output control
+parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
+parser.add_argument('--reports', nargs = '?', default = False, const = True, type = bool, help = "if set, html reports will be produced");
+
+#bowtie2 options
+parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are:%s" % bowtie_help_str)
 args = parser.parse_args();
 
 #######################################################################################################################
-#parse bowtie options
+#Set priotity for the modes
+main_mode = min(args.modes, key= lambda x: modes_order[x]);
+
+
+#######################################################################################################################
+#Parse bowtie options
+bowtie_settings = bowtie_configurations[main_mode];
+
 for bo in args.bowtie:
 	try:
 		name, value = bo.split("=");
@@ -62,7 +76,7 @@ for bo in args.bowtie:
 	
 bowtie_settings['x'] = os.path.abspath(os.path.abspath(args.reference)), '-'
 bowtie_settings['U'] = os.path.abspath(os.path.abspath(args.reads)), '-'
-bowtie_settings['S'] = os.path.join('sam', 'mapped.sam'), '-'
+bowtie_settings['S'] = os.path.join('sam', '%s.mapped.sam' % args.name), '-'
 
 
 bs_list = ['bowtie2'];
@@ -74,18 +88,31 @@ for k, v in bowtie_settings.items():
 	else:
 		bs_list.append(v[1] + k);
 		bs_list.append(v[0])
+		
+
 #######################################################################################################################
-#cofigure arguments
-if(args.splicing and not args.genome):
-	sys.stderr.write("WARNING: without setting \'--genome\' option \'--splicing\' option will be ignored\n")
+#Configure input arguments
+if('interaction' in args.modes or 'splicing' in args.modes):
+	if(args.genome):
+		annotate_with_genome = True;
+	elif(args.exons):
+		annotate_with_genome = False;
+	else:
+		raise argparse.ArgumentError(arg_modes, "Without setting [--genome] or [--exon] option interaction and splicing modes cannot be used\n")
+	
+	
+if(('clustering' in args.modes) and (not args.genome_index)):
+	raise argparse.ArgumentError(arg_modes, "Without setting [--genome_index] option clustering mode cannot be used\n")
+	
 	
 chiflex_package = os.path.abspath(os.path.join(args.chiflex, 'chiflex'));
-splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))
+splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))	
 
 		
+#######################################################################################################################
+#Functions supporting Makefile generation
 def get_script(script, arguments={}, inp = '', out = None, package=chiflex_package):
-	'''Example: get_script(something.py, {'--a': ""}) will output: ('python [chiflex folder]/something.py'), '-a')
-	'''
+	'''Example: get_script(something.py, {'--a': 7}, 'inp.txt', 'out.txt') will output: ('python [chiflex_package]/something.py'), 'inp.txt', '--a', '7', '>', 'out.txt')'''
 	l = [" ".join(('python', os.path.join(package, script) )), inp]
 	for k,v in arguments.items():
 		l.append(k)
@@ -97,7 +124,7 @@ def get_script(script, arguments={}, inp = '', out = None, package=chiflex_packa
 		
 	
 def dependence(input_files, output_files, script):
-	'''creates Makefile dependence'''
+	'''Creates Makefile dependence'''
 	if(hasattr(input_files, '__iter__')):
 		inp = " ".join(input_files);
 	else:
@@ -106,163 +133,353 @@ def dependence(input_files, output_files, script):
 		out = " ".join(output_files);
 	else:
 		out = output_files
-	return "%s: %s\n\t%s" % (out,inp, " ".join([str(x) for x in script]))	
+	return "%s: %s\n\t%s" % (out,inp, " ".join([str(x) for x in script]))
+
+
+def get_header(output_files, phony=False):
+	if(isinstance(output_files, str)):
+		ofs = output_files 
+	else:
+		ofs = " ".join(list(output_files))
 	
-	
-def makefile():
-	m=[];
+	if(phony):
+		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s\n.PHONY: all %s" % (ofs, ofs)
+	else:
+		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % ofs
+
+
+
+#######################################################################################################################
+#Function to create top level Makefile
+def makefile_main():
+	mlist=[];
+	generated_makefiles = [];
 	
 	#Map reads with bowtie2
 	input_files = os.path.abspath(args.reads)
-	output_files = os.path.join('sam', 'mapped.sam')
+	output_files = os.path.join('sam', '%s.mapped.sam' % args.name)
 	script = bs_list
-	m.append(dependence(input_files, output_files, script))
+	mlist.append(dependence(input_files, output_files, script))
 	
 	#Remove repetitive mappings if option 'repetitive' set
 	if(args.repetitive):
 		input_files = output_files
 		output_files = os.path.join('sam', 'nonrep.bam')
 		script = get_script('filter_sam.py', arguments={'--output': output_files, '--filters': 'repetitive', '--arguments': 'min_entropy=1.6'}, inp = input_files)
-		m.append(dependence(input_files, output_files, script))
+		mlist.append(dependence(input_files, output_files, script))
 	
 	#Collapse confident, but nonunique mappings into single sam entry, to protect them from further filtering out
 	if(args.nonunique):
 		input_files = output_files
-		output_files = os.path.join('sam', 'collapsed.bam'), os.path.join('bed', 'collapsed.bed')
+		output_files = os.path.join('sam', 'collapsed.bam'), os.path.join('auxillary', 'collapsed.bed')
 		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 42}, inp = input_files)
-		m.append(dependence(input_files, output_files, script))
+		mlist.append(dependence(input_files, output_files, script))
 		#following reassignment is done for furthe consistency
 		output_files = output_files[0]
 		
-	#Demultiplex sam multiple hits into single hits, control single hits, chimeras and control chimeras
-	input_files = output_files
-	output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'unique_chimera', 'control_chimera', 'control']]
-	script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': args.name, '--score': 'as_qstart', '--score_chimera': 'as_gap', '--maxgap': 8}, inp = input_files)
-	m.append(dependence(input_files, output_files, script))
-
-	#Merge sam hits into chimeras in doublebed format
-	input_files = os.path.join('sam', '%s.unique_chimera.bam' % args.name) 
-	output_files = os.path.join('chimeras', 'unique.bed') 
-	script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
-	m.append(dependence(input_files, output_files, script))
-	
-	#Merge sam hits into chimeras in doublebed format for decoy(control) reference
-	input_files = os.path.join('sam', '%s.control_chimera.bam' % args.name) 
-	output_files = os.path.join('chimeras', 'control.bed') 
-	script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
-	m.append(dependence(input_files, output_files, script))
-	
-	#Filter chimeras on basis of control chimeras. LRG is applied for filtering
-	input_files =  os.path.join('chimeras', 'unique.bed') , os.path.join('chimeras', 'control.bed') 
-	output_files = os.path.join('chimeras', 'filtered.bed') 
-	script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS1 AS2 gap', '--fdr': 0.05}, out = output_files)
-	m.append(dependence(input_files, output_files, script))
-
-	#Reassign chimeras coordinates from positions on genomic features(mapping reference) to genomic ones
-	if(args.reassign):
-		input_files = output_files
-		output_files = os.path.join('chimeras', 'assigned.bed') 
-		script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
-		m.append(dependence(input_files, output_files, script))
 		
 		
-	if(args.splicing and args.genome):
+	#If only the clustering mode has been set, then script switches to the makefile_clustering at this point. For other cases switch happens later
+	if(main_mode=='clustering'):
 		input_files = output_files;
-		output_files = os.path.join('splicing', 'chimeras.annotated.gff')
-		script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files)
-		m.append(dependence(input_files, output_files, script));
+		output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'control']]
+		script = get_script('demultiplex_sam.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_sam']['score'], '--bestdistance': conf['demultiplex_sam']['bestdistance']}, inp = input_files)
+		mlist.append(dependence(input_files, output_files, script));		
 		
-		input_files = output_files
-		output_files = [os.path.join('splicing', 'chimeras.annotated.%s.gff' % x) for x in interaction_types]
-		script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'splicing'}, inp = input_files)
-		m.append(dependence(input_files, output_files, script));
+		input_files = ['makefile_clustering'] + output_files
+		output_files = 'clustering'
+		script = ["$(MAKE)", '-f', '$<']
+		mlist.append(dependence(input_files, output_files, script))		
+		generated_makefiles.append('makefile_clustering');
 		
 		
-		input_files = os.path.join('splicing', 'chimeras.annotated.lsj.gff')
-		output_files = os.path.join('splicing', 'single.lsj.gff')
-		script = get_script('double2single.py', arguments={'--jtype': 'lsj'}, inp = input_files, out=output_files, package=splicing_package)
-		m.append(dependence(input_files, output_files, script));
-		
-		input_files = output_files
-		output_files = os.path.join('splicing', 'sorted.lsj.gff')
-		script = ('sort', input_files, '-k 1,1', '-k 7,7', '-k 4,4', '-k 5,5', '>', output_files)
-		m.append(dependence(input_files, output_files, script));		
-			
-		input_files = output_files
-		output_files_lsj = os.path.join('splicing', 'collapsed.lsj.gff'), os.path.join('splicing', 'read2id.lsj.gff')
-		script = get_script('merge_junctions.py', arguments={'--jtype': 'lsj', '--dictionary': output_files_lsj[1]}, inp = input_files, out=output_files_lsj[0], package=splicing_package)
-		m.append(dependence(input_files, output_files_lsj, script));
-				
-				
-		input_files = os.path.join('splicing', 'chimeras.annotated.csj.gff')
-		output_files = os.path.join('splicing', 'single.csj.gff')
-		script = get_script('double2single.py', arguments={'--jtype': 'csj'}, inp = input_files, out=output_files, package=splicing_package)
-		m.append(dependence(input_files, output_files, script));
-		
-		input_files = output_files
-		output_files = os.path.join('splicing', 'sorted.csj.gff')
-		script = ('sort', input_files, '-k 1,1', '-k 7,7', '-k 4,4', '-k 5,5', '>', output_files)
-		m.append(dependence(input_files, output_files, script))		
-			
-		input_files = output_files
-		output_files_csj = os.path.join('splicing', 'collapsed.csj.gff'), os.path.join('splicing', 'read2id.csj.gff')
-		script = get_script('merge_junctions.py', arguments={'--jtype': 'csj', '--dictionary': output_files_csj[1]}, inp = input_files, out=output_files_csj[0], package=splicing_package)
-		m.append(dependence(input_files, output_files_csj, script));
-		
-		output_files = output_files_csj + output_files_lsj
-		
-			
 	else:
-		#Merge chimeras into interactions.That is, sequenced chimeric reads which have two respectively overlaping parts are merged together
+		#demultiplex mapping hits into single and chimeric reads
 		input_files = output_files
-		output_files = os.path.join('interactions', 'interactions.gff'), os.path.join('interactions', 'interactions2readid.bed')
-		script = get_script('chimera2interaction.py', arguments={'-oi': output_files[0], '-od': output_files[1], '--name': args.name, '--distance': -16}, inp = input_files)
-		m.append(dependence(input_files, output_files, script))
-		output_files = output_files[0]
+		output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'unique_chimera', 'control_chimera', 'control']]
+		script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_chimera']['score'], '--score_chimera': conf['demultiplex_chimera']['score_chimera'], '--maxgap': conf['demultiplex_chimera']['maxgap'], '--s_distance': conf['demultiplex_chimera']['s_distance'], '--ch_distance': conf['demultiplex_chimera']['ch_distance']}, inp = input_files)
+		mlist.append(dependence(input_files, output_files, script))
+			
+		#Merge sam hits into chimeras in doublebed format
+		input_files = os.path.join('sam', '%s.unique_chimera.bam' % args.name) 
+		output_files = os.path.join('chimeras', 'unique.bed') 
+		script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
+		mlist.append(dependence(input_files, output_files, script))
 		
-		#Annotate interacting loci
-		if(args.annotation):
-			input_files = output_files, os.path.abspath(args.annotation)
-			output_files = os.path.join('interactions', 'annotated.gff')
-			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
-			m.append(dependence(input_files, output_files, script))
+		#Merge sam hits into chimeras in doublebed format for decoy(control) reference
+		input_files = os.path.join('sam', '%s.control_chimera.bam' % args.name) 
+		output_files = os.path.join('chimeras', 'control.bed') 
+		script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
+		mlist.append(dependence(input_files, output_files, script))
+		
+		if(args.reassign):
+			input_files = os.path.join('chimeras', 'control.bed') 
+			output_files = os.path.join('chimeras', 'control.assigned.bed') 
+			script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
+			mlist.append(dependence(input_files, output_files, script))
+			
+			input_files = os.path.join('chimeras', 'unique.bed') 
+			output_files = os.path.join('chimeras', 'unique.assigned.bed') 
+			script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
+			mlist.append(dependence(input_files, output_files, script));
+			
+			controlf = os.path.join('chimeras', 'control.assigned.bed')
+			uniquef = os.path.join('chimeras', 'unique.assigned.bed') 
+		else:
+			controlf = os.path.join('chimeras', 'control.bed');
+			uniquef = os.path.join('chimeras', 'unique.bed');
+			
+			
+		if(annotate_with_genome):
+			input_files = uniquef
+			output_files = os.path.join('chimeras', 'unique.annotated.gff')
+			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files)
+			mlist.append(dependence(input_files, output_files, script));
+		
+			input_files = output_files
+			output_files = [os.path.join('chimeras', 'unique.annotated.%s.gff' % x) for x in interaction_types]
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			mlist.append(dependence(input_files, output_files, script));
+			
+			
+			input_files = controlf
+			output_files = os.path.join('chimeras', 'control.annotated.gff')
+			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files)
+			mlist.append(dependence(input_files, output_files, script));
+		
+			input_files = output_files
+			output_files = [os.path.join('chimeras', 'control.annotated.%s.gff' % x) for x in interaction_types]
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			mlist.append(dependence(input_files, output_files, script));
+			
+		else:
+			input_files = uniquef, os.path.abspath(args.exons)
+			output_files = os.path.join('chimeras', 'unique.annotated.gff')
+			script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
+			mlist.append(dependence(input_files, output_files, script));
 			
 			input_files = output_files
-			output_files = os.path.join('interactions', 'interactions.ordered.bed')
-			script = get_script('order.py', arguments={}, inp = input_files, out=output_files)
-			m.append(dependence(input_files, output_files, script))
-
-
-		#Annotate type of interaction
-		if(args.exons):
-			input_files = output_files, os.path.abspath(args.exons)
-			output_files = os.path.join('interactions', 'interactions.annotated.gff')
+			output_files = [os.path.join('chimeras', 'unique.annotated.%s.gff' % x) for x in interaction_types]
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			mlist.append(dependence(input_files, output_files, script));			
+			
+	
+			input_files = controlf, os.path.abspath(args.exons)
+			output_files = os.path.join('chimeras', 'control.annotated.gff')
 			script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
-			m.append(dependence(input_files, output_files, script));
+			mlist.append(dependence(input_files, output_files, script));
 			
+			input_files = output_files
+			output_files = [os.path.join('chimeras', 'control.annotated.%s.gff' % x) for x in interaction_types]
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			mlist.append(dependence(input_files, output_files, script));	
+			
+			
+		modes_makefiles = [];	
 		
-			if(args.stratify):
-				input_files = output_files
-				output_files = [os.path.join('interactions', 'interactions.annotated.%s.gff' % x) for x in interaction_types]
-				script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'interactions'}, inp = input_files)
-				m.append(dependence(input_files, output_files, script));			
+		if('clustering' in args.modes):
+			input_files = ['makefile_clustering'] + [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'control']]
+			modes_makefiles.append('clustering')
+			output_files = 'clustering'
+			script = ["$(MAKE)", '-f', '$<']
+			mlist.append(dependence(input_files, output_files, script))
+			generated_makefiles.append('makefile_clustering');
 			
+		if('interaction' in args.modes):
+			input_files = ['makefile_interaction'] + [os.path.join('chimeras', 'control.annotated.%s.gff' % x) for x in ['inter', 'intra']] + [os.path.join('chimeras', 'unique.annotated.%s.gff' % x) for x in ['inter', 'intra']]
+			modes_makefiles.append('interaction')
+			output_files = 'interaction'
+			script = ["$(MAKE)", '-f', '$<']
+			mlist.append(dependence(input_files, output_files, script))
+			generated_makefiles.append('makefile_interaction');
+			
+		if('splicing' in args.modes):
+			input_files = ['makefile_splicing'] + [os.path.join('chimeras', 'control.annotated.%s.gff' % x) for x in ['lsj', 'csj']] + [os.path.join('chimeras', 'unique.annotated.%s.gff' % x) for x in ['lsj', 'csj']]
+			modes_makefiles.append('splicing');
+			output_files = 'splicing'
+			script = ["$(MAKE)", '-f', '$<']
+			mlist.append(dependence(input_files, output_files, script))
+			generated_makefiles.append('makefile_splicing');		
+		
+		
 	#makefile header
-	if(isinstance(output_files, str)):
-		m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % output_files );
-	else:
-		m.insert(0, "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % " ".join(list(output_files)));
+	mlist.insert(0, get_header(modes_makefiles, phony=True))
 	# makefie cleaner
-	m.append('clean:\n\techo "nothing to clean."\n');
+	mlist.append('clean:%s' %  "\n".join(["\t$(MAKE) -f %s clean" % x for x in generated_makefiles]) );
+
+	return "\n\n".join(mlist)
+
+
+		
+		
+#######################################################################################################################
+#Function to create clustering Makefile
+def makefile_clustering():
+	mlist=[]; 
+	input_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'control']]
+	output_files = os.path.join('sam', '%s.filtered.bam' % args.name)
+	script = get_script('filter_alignment.py', arguments={'--signal': input_files[0], '--control': input_files[1], '--output': output_files, '--features': " ".join(conf['filter_alignment']['features']), '--fdr': conf['filter_alignment']['fdr']} )
+	mlist.append(dependence(input_files, output_files, script));
 	
-	return "\n\n".join(m)
 	
-#create folder structure
+	#sort filtered bam files for following clustering
+	input_files = output_files
+	output_files = os.path.join('sam', '%s.sorted.bam' % args.name)
+	script = ['samtools', 'sort', '-o', output_files, '-T', 'temp', input_files]
+	mlist.append(dependence(input_files, output_files, script));
+	
+	input_files = output_files
+	output_files = os.path.join('sam', '%s.sorted.bam.bai' % args.name)
+	script = ['samtools', 'index', input_files]
+	mlist.append(dependence(input_files, output_files, script));
+	
+	
+	#do preliminary clustering
+	if(args.stranded):
+		input_files = os.path.join('sam', '%s.sorted.bam' % args.name), os.path.join('sam', '%s.sorted.bam.bai' % args.name)
+		output_files = os.path.join('clusters', 'minus.bedgraph')
+		script = ['bedtools', 'genomecov', '-ibam', input_files[0], '-g', args.genome_index, '-bg', '-strand', '-', '>', output_files]
+		mlist.append(dependence(input_files, output_files, script));
+		
+		input_files = os.path.join('clusters', 'minus.bedgraph'), os.path.join('sam', '%s.sorted.bam' % args.name)
+		output_files = os.path.join('clusters', 'clusters.minus.gff')
+		script = get_script('cluster_hits.py', arguments={'-s': '-', '--sbam': input_files[1]}, inp = input_files[0], out=output_files)
+		mlist.append(dependence(input_files, output_files, script))
+
+
+		input_files = os.path.join('sam', '%s.sorted.bam' % args.name), os.path.join('sam', '%s.sorted.bam.bai' % args.name)
+		output_files = os.path.join('clusters', 'plus.bedgraph')
+		script = ['bedtools', 'genomecov', '-ibam', input_files[0], '-g', args.genome_index, '-bg', '-strand', '+', '>', output_files]
+		mlist.append(dependence(input_files, output_files, script));
+		
+		input_files = os.path.join('clusters', 'plus.bedgraph'), os.path.join('sam', '%s.sorted.bam' % args.name)
+		output_files = os.path.join('clusters', 'clusters.plus.gff')
+		script = get_script('cluster_hits.py', arguments={'-s': '+', '--sbam': input_files[1]}, inp = input_files[0], out=output_files)
+		mlist.append(dependence(input_files, output_files, script))	
+
+
+		input_files = os.path.join('clusters', 'clusters.plus.gff'), os.path.join('clusters', 'clusters.minus.gff')
+		output_files = os.path.join('clusters', 'clusters.gff')
+		script = ['cat', input_files[0], input_files[1], '>', output_files]
+		mlist.append(dependence(input_files, output_files, script));
+
+	else:
+		input_files = os.path.join('sam', '%s.sorted.bam' % args.name), os.path.join('sam', '%s.sorted.bam.bai' % args.name)
+		output_files = os.path.join('clusters', 'all.bedgraph')
+		script = ['bedtools', 'genomecov', '-ibam', input_files[0], '-g', args.genome_index, '-bg', '>', output_files]
+		mlist.append(dependence(input_files, output_files, script));
+		
+		input_files = os.path.join('clusters', 'all.bedgraph'), os.path.join('sam', '%s.sorted.bam' % args.name)
+		output_files = os.path.join('clusters', 'clusters.gff')
+		script = get_script('cluster_hits.py', arguments={'-s': '.', '--sbam': input_files[1]}, inp = input_files[0], out=output_files)
+		mlist.append(dependence(input_files, output_files, script))
+		
+		
+	if(args.reassign):
+		input_files = output_files
+		output_files = os.path.join('clusters', 'clusters.assigned.gff') 
+		script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
+		mlist.append(dependence(input_files, output_files, script))
+		
+		
+	if(args.annotation):
+		input_files = output_files, os.path.abspath(args.annotation)
+		output_files = os.path.join('clusters', 'clusters.annotated.gff')
+		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
+		m.append(dependence(input_files, output_files, script))
+		
+	
+	
+	#makefile header
+	mlist.insert(0, get_header(output_files))
+	# makefie cleaner
+	mlist.append('clean:\n\techo "nothing to clean."\n');
+	return "\n\n".join(mlist)
+
+
+
+#######################################################################################################################
+#Function to create interaction Makefile		
+def makefile_interaction():
+	mlist=[];
+	final_files = [];
+	
+	for itype in ['inter', 'intra']:
+		input_files =  [os.path.join('chimeras', '%s.annotated.%s.gff' % (x, itype)) for x in ['unique', 'control']]
+		output_files = os.path.join('interactions', 'filtered.%s.gff' % itype) 
+		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files)
+		mlist.append(dependence(input_files, output_files, script))
+		
+		if(args.annotation):
+			input_files = output_files, os.path.abspath(args.annotation)
+			output_files = os.path.join('clusters', 'clusters.annotated.gff')
+			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
+			mlist.append(dependence(input_files, output_files, script));
+			
+		final_files.append(output_files)
+	
+	#makefile header
+	mlist.insert(0, get_header(final_files))
+	# makefie cleaner
+	mlist.append('clean:\n\techo "nothing to clean."\n');	
+	return "\n\n".join(mlist)
+
+
+
+#######################################################################################################################
+#Function to create splicing Makefile	
+def makefile_splicing():
+	mlist=[];
+	final_files = [];
+	
+	for itype in ['lsj', 'csj']:
+		input_files =  [os.path.join('chimeras', '%s.annotated.%s.gff' % (x, itype)) for x in ['unique', 'control']]
+		output_files = os.path.join('splicing', 'filtered.%s.gff' % itype) 
+		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files)
+		mlist.append(dependence(input_files, output_files, script))
+		
+		input_files = output_files
+		output_files = os.path.join('splicing', 'single.%s.gff' % itype)
+		script = get_script('double2single.py', arguments={'--jtype': itype}, inp = input_files, out=output_files, package=splicing_package)
+		mlist.append(dependence(input_files, output_files, script));
+		
+		input_files = output_files
+		output_files = os.path.join('splicing', 'sorted.%s.gff' % itype)
+		script = ('sort', input_files, '-k 1,1', '-k 7,7', '-k 4,4', '-k 5,5', '>', output_files)
+		mlist.append(dependence(input_files, output_files, script));		
+			
+		input_files = output_files
+		output_files = os.path.join('splicing', 'collapsed.%s.gff' % itype), os.path.join('splicing', 'read2id.%s.gff' % itype)
+		script = get_script('merge_junctions.py', arguments={'--jtype': itype, '--dictionary': output_files[1]}, inp = input_files, out=output_files[0], package=splicing_package)
+		mlist.append(dependence(input_files, output_files, script));
+		final_files.extend(output_files);
+
+	#makefile header
+	mlist.insert(0, get_header(final_files))
+	# makefie cleaner
+	mlist.append('clean:\n\techo "nothing to clean."\n');	
+	return "\n\n".join(mlist)
+
+
+
+#######################################################################################################################
+#Create folder structure
 project_path = os.path.abspath(args.path)
+folders = ['sam', 'reports', 'auxillary', 'log']
+if('clustering' in args.modes):
+	folders.append('clusters')
+if('interaction' in args.modes):
+	folders.append('interactions');
+if('splicing' in args.modes):
+	folders.append('splicing')
+if('splicing' in args.modes or 'interaction' in args.modes):
+	folders.append('chimeras');	
+
+
 while (not args.only_makefile):
 	try:
 		os.makedirs(project_path);
-		for folder in ('sam', 'chimeras', 'interactions', 'html', 'bed', 'log', 'splicing'):
+		for folder in folders:
 			os.mkdir(os.path.join(project_path, folder));
 		break;	
 	except:
@@ -275,14 +492,25 @@ while (not args.only_makefile):
 		else:
 			project_path = os.path.abspath(answer)
 
-	
+
+#######################################################################################################################
+#Create Makefiles
 with open(os.path.join(project_path, 'Makefile'), 'w') as mf:
-	mf.write(makefile())
+	mf.write(makefile_main());
+	
+modes2functions = {'clustering': (makefile_clustering, 'makefile_clustering'), 'interaction': (makefile_interaction, 'makefile_interaction'), 'splicing': (makefile_splicing, 'makefile_splicing')}
+for mode in args.modes:
+	with open(os.path.join(project_path, modes2functions[mode][1]), 'w') as mf:
+		mf.write(modes2functions[mode][0]());
+	
+	
+	
 	
 	
 #report project call:
 arguments_report = (
 ('name', ('Project name, assigned to the generated interactions', str)),
+('modes', ('Modes of the project', str)),
 ('path', ('Project folder', os.path.abspath)),
 ('reads', ('Sequencing reads', os.path.abspath)),
 ('chiflex', ('Chiflex module used in the project', os.path.abspath)), 
@@ -292,10 +520,10 @@ arguments_report = (
 ('annotation', ('Annotation system used for interactions annotation', os.path.abspath)), 
 ('repetitive', ('Repetitive mapped sequences are removed', str)),
 ('nonunique', ('Nonunique mappings with high alignment score are kept', str)),
-('stratify', ('interactions are stratified according to the interaction type', str)),
-('splicing', ('Detection of splice is done', str)),
 ('reports', ('html reports are produced', str)), 
 ('only_makefile', ('New Makefile was generated', str)),  
+('reassign', ('Positions were reassigned to the genomic ones', str)),
+('stranded', ('Sequencing data are implied to be stranded', str)), 
 )
 
 with open(os.path.join(project_path, 'log/project.txt'), 'w') as rf:
@@ -311,5 +539,6 @@ with open(os.path.join(project_path, 'log/project.txt'), 'w') as rf:
 	rf.write("bowtie2 settings:\n")
 	for arg, (value, dashes) in bowtie_settings.items():
 		rf.write("\t%s%s:\t%s\n" % (dashes, arg, value))
-		
-	
+
+
+

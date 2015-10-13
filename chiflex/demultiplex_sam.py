@@ -16,9 +16,10 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path
 parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, help = "path to the output folder");
 parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
-parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_pos', 'as_pos_entropy'], type = str, help = "score function for hits");
+parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_qstart', 'as_qstart_entropy', 'as_qstart_rstart', 'as_qstart_rstart_entropy'], type = str, help = "score function for hits");
 parser.add_argument('--bestdistance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique");
 args = parser.parse_args();
+
 
 
 def _iteration(arwlist, bestdistance):
@@ -41,7 +42,7 @@ def _iteration(arwlist, bestdistance):
 
 			
 # parse input parameters
-score2function = {'as': 'as_score', 'as_pos': 'as_pos_score', 'as_pos_entropy': 'as_pos_entropy_score'}
+score2function = {'as': 'as_score', 'as_qstart': 'as_qstart_score', 'as_qstart_entropy': 'as_qstart_entropy_score', 'as_qstart_rstart': 'as_qstart_rstart_score', 'as_qstart_rstart_entropy': 'as_qstart_rstart_entropy_score'}
 exec("from nrlbio.samlib import %s as key_score" % score2function[args.score]);
 
 

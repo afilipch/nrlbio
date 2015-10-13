@@ -18,19 +18,23 @@ fh = logging.FileHandler(os.path.join("log", "alignment_filtering.txt"))
 logger.addHandler(sh)
 logger.addHandler(fh)
 
-parser = argparse.ArgumentParser(description='filters mapping results on read features basis');
+#get configuration
+from nrlbio.config.config import load_config;
+CONFIGURATION = load_config('lrg')
+
+parser = argparse.ArgumentParser(description='Filters mapping results on read features basis');
 parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, help = "path to the sam file to be filtered");
 parser.add_argument('-c', '--control', nargs = '?', required = True, type = str, help = "path to the sam file originated from decoy");
 parser.add_argument('-f', '--features', nargs = '+', default = ['AS'], type = str, help = "read features to be used for filtering");
 parser.add_argument('--fdr', nargs = '?', default = 0.05, type = float, help = "False Discovery Rate allowed");
 parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
-parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for filtered sam");
+parser.add_argument('-n', '--output', nargs = '?', required = True, type = str, help = "Path for the filtered sam/bam file");
 args = parser.parse_args();
 
 
 ss = pysam.Samfile(args.signal)
 sc = pysam.Samfile(args.control)
-filtered = pysam.Samfile(args.name, "wb", template=ss)
+filtered = pysam.Samfile(args.output, "wb", template=ss)
 
 
 try: 
@@ -50,7 +54,7 @@ except:
 
 signal = filter_generator(ss, args.features, ga=get_attributes_masked);
 control = filter_generator(sc, args.features, ga=get_attributes_masked);
-lrg_filter, rule, log_message = lrg(signal, control, entry='list', attribute_names=args.features, support = 0.02, maxiter = 20,  fdr=args.fdr, lookforward=10, ncsupport=0.1, nciter=1)
+lrg_filter, rule, log_message = lrg(signal, control, entry='list', attribute_names=args.features, fdr=args.fdr, **CONFIGURATION)
 
 ss.close();
 sc.close();

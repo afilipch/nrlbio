@@ -16,21 +16,22 @@ class Cluster(object):
 		segments list of pysam.AlignedSegment: mapping hits supporting a cluster
 		support int: number of mapping hits supporting the cluster;
 	'''
-	def __init__(self, name, chrom, start, end, strand="."):
+	def __init__(self, name, chrom, start, end, peak, strand="."):
 		self.name = name
 		self.chrom = chrom
 		self.start = start
 		self.end = end
-		self.strand = strand
-		self.support = 0;
+		self.strand = strand;
+		self.peak = peak;
+		self.segments = [];
 		
-	def add_segments(self, segments):
-		self.segments = segments;
-		self.support = len(segments);
+	def get_support(self):
+		self.support = len(self.segments);
+		self.unique = len(list(set([(x.reference_start, x.reference_end, x.query_alignment_sequence) for x in self.segments])));
 		
 	def __len__(self):
 		return self.end-self.start
 	
 	def gff(self):
-		return construct_gff_interval(self.chrom, self.start, self.end, 'mc', score=str(self.support), strand=self.strand, source='mc', frame='.', attrs=[('ID', self.name)])
+		return construct_gff_interval(self.chrom, self.start, self.end, self.name, score=str(self.support), strand=self.strand, source='mc', frame='.', attrs=[('ID', self.name), ('peak', str(self.peak)), ('n_uniq', self.unique)])
 

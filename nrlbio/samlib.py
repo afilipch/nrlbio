@@ -43,12 +43,12 @@ def as_qstart_entropy_score(arw):
 		e = e*5
 	return arw.AS*(1+qs+e)		
 	
-def as_qstart_pos_score(arw):
+def as_qstart_rstart_score(arw):
 	qs = 2-log(arw.qstart+1);
 	rs = 1-log(arw.aligned_read.pos+1);
 	return arw.AS*(1+qs+rs)
 	
-def as_qstart_pos_entropy_score(arw):
+def as_qstart_rstart_entropy_score(arw):
 	qs = 2-log(arw.qstart+1);
 	rs = 1-log(arw.aligned_read.pos+1);
 	e = (entropy(arw.aligned_read.query) - 1.5)
