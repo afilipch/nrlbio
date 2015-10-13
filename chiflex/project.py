@@ -106,7 +106,8 @@ if(('clustering' in args.modes) and (not args.genome_index)):
 	
 	
 chiflex_package = os.path.abspath(os.path.join(args.chiflex, 'chiflex'));
-splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))	
+splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))
+intercation_package = os.path.abspath(os.path.join(args.chiflex, 'interaction'))
 
 		
 #######################################################################################################################
@@ -410,9 +411,20 @@ def makefile_interaction():
 		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files)
 		mlist.append(dependence(input_files, output_files, script))
 		
+		input_files =  output_files
+		output_files = os.path.join('interactions', 'sorted.%s.gff' % itype) 
+		script = get_script('sort.py', inp=input_files, out = output_files)
+		mlist.append(dependence(input_files, output_files, script));
+		
+		input_files =  output_files
+		output_files = os.path.join('interactions', 'interactions.%s.gff' % itype),  os.path.join('interactions', 'rid2iid.%s.gff' % itype)
+		script = get_script('collapse2interaction.py', arguments={'-od': output_files[1], '--name': "%s_%s" % (args.name, itype), '--distance': conf['collapse2interaction']['distance']}, inp=input_files, out = output_files[0])
+		mlist.append(dependence(input_files, output_files, script));
+		output_files = os.path.join('interactions', 'interactions.%s.gff' % itype)
+		
 		if(args.annotation):
 			input_files = output_files, os.path.abspath(args.annotation)
-			output_files = os.path.join('clusters', 'clusters.annotated.gff')
+			output_files = os.path.join('interactions', 'annotated.%s.gff' % itype)
 			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
 			mlist.append(dependence(input_files, output_files, script));
 			
@@ -427,7 +439,7 @@ def makefile_interaction():
 
 
 #######################################################################################################################
-#Function to create splicing Makefile	
+#Function to create splicing Makefile
 def makefile_splicing():
 	mlist=[];
 	final_files = [];
@@ -445,7 +457,7 @@ def makefile_splicing():
 		
 		input_files = output_files
 		output_files = os.path.join('splicing', 'sorted.%s.gff' % itype)
-		script = ('sort', input_files, '-k 1,1', '-k 7,7', '-k 4,4', '-k 5,5', '>', output_files)
+		script = get_script('sort.py', inp=input_files, out = output_files)
 		mlist.append(dependence(input_files, output_files, script));		
 			
 		input_files = output_files

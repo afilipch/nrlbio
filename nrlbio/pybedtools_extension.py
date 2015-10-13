@@ -9,6 +9,7 @@ from nrlbio.numerictools import overlap
 
 def generate_overlaping_intervals(bed, distance):
 	'''applicable only for sorted(with strandness) bed files'''
+	#sys.stderr.write("%s\n" % bed);
 	
 	first = bed[0];
 		
@@ -32,6 +33,7 @@ def generate_overlaping_intervals(bed, distance):
 			merged = [i];
 			rname = (i.chrom, i.strand);
 	yield merged
+	
 	
 	
 def doublebed2dict(bed):

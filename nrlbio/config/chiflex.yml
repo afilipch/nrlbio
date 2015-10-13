@@ -75,5 +75,8 @@ filter_chimera:
     fdr: 0.05
     features: ['AS1', 'AS2', 'gap']    
     
+collapse2interaction: 
+    distance: -10    
+    
     
     

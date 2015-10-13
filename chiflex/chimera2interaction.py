@@ -55,6 +55,7 @@ name2interaction = defaultdict(list);
 interaction2name = defaultdict(list);
 
 for c, i in enumerate(bed.sort().merge(s=True, d=args.distance, c='4,6', o='distinct', delim=';')):
+	print i.name
 	for name in i.name.split(";"):
 		 n = "|".join(name.split("|")[:-1])
 		 name2interaction[n].append(c);
@@ -68,6 +69,10 @@ number_chimeras = len(name2intervals);
 number_interactions = 0
 number_self_intersection = 0;
 	
+	
+#print name2interaction.keys()
+#print
+#print name2interaction.values()
 	
 with open(args.dictionary, 'w') as od:
 	with open(args.interactions, 'w') as oi:
