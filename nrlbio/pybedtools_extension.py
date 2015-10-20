@@ -77,7 +77,19 @@ def interval2seq(interval, reference):
 		return str(reference[interval.chrom][interval.start:interval.stop].seq.reverse_complement().upper())
 	else:
 		sys.stderr.write("Strand is not defined. Plus strand sequence will be returned\n")
-		return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())		
+		return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())
+	
+	
+	
+def get_distance(i1, i2):
+	'''Calculates the distance between two intervals
+	
+		i1 pybedtools.Interval: first interval
+		i2 pybedtools.Interval: second interval
+		
+		Returns int:  distance between two intervals
+	'''
+	return max(i1.start, i2.start) - min(i1.end, i2.end)	
 	
 	
 #testing section

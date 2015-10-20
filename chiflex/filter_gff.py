@@ -1,13 +1,13 @@
 #! /usr/lib/python
-'''filters gff intervals on basis of their attributes values'''
+'''Filters gff intervals on basis of their attributes values'''
 import argparse;
 import sys;
 import operator
 
 from pybedtools import BedTool
 
-parser = argparse.ArgumentParser(description='filters gff intervals on basis of their attributes values');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to interactions/chimeras file");
+parser = argparse.ArgumentParser(description='Filters gff intervals on basis of their attributes values');
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the gff file to be filtered");
 parser.add_argument('-a', '--attributes', nargs = '+', default=[], type = str, help = "list of the attributes to filter with");
 parser.add_argument('-c', '--cutoffs', nargs = '+', default=[], type = str, help = "list of the cutoffs to be applied for each attribute correspondingly. The order of cutoffs has to be consistent with \'--attributes\'");
 parser.add_argument('-m', '--modes', nargs = '+', default=[], choices=['less', 'equalless', 'greater', 'equalgreater', 'equal', 'nonequal'], type = str, help = "list of the filtering modes to be applied for each attribute and cutoff correspondingly. The order of cutoffs has to be consistent with \'--attributes\'");

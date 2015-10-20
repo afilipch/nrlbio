@@ -107,7 +107,7 @@ if(('clustering' in args.modes) and (not args.genome_index)):
 	
 chiflex_package = os.path.abspath(os.path.join(args.chiflex, 'chiflex'));
 splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))
-intercation_package = os.path.abspath(os.path.join(args.chiflex, 'interaction'))
+interaction_package = os.path.abspath(os.path.join(args.chiflex, 'interaction'))
 
 		
 #######################################################################################################################
@@ -155,6 +155,7 @@ def get_header(output_files, phony=False):
 def makefile_main():
 	mlist=[];
 	generated_makefiles = [];
+	modes_makefiles = [];	
 	
 	#Map reads with bowtie2
 	input_files = os.path.abspath(args.reads)
@@ -189,6 +190,7 @@ def makefile_main():
 		
 		input_files = ['makefile_clustering'] + output_files
 		output_files = 'clustering'
+		modes_makefiles.append('clustering')
 		script = ["$(MAKE)", '-f', '$<']
 		mlist.append(dependence(input_files, output_files, script))		
 		generated_makefiles.append('makefile_clustering');
@@ -256,7 +258,11 @@ def makefile_main():
 		else:
 			input_files = uniquef, os.path.abspath(args.exons)
 			output_files = os.path.join('chimeras', 'unique.annotated.gff')
-			script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
+			if(args.stranded):
+				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
+			else:
+				cargs = arguments={'--exons': input_files[1]}
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
 			mlist.append(dependence(input_files, output_files, script));
 			
 			input_files = output_files
@@ -267,7 +273,11 @@ def makefile_main():
 	
 			input_files = controlf, os.path.abspath(args.exons)
 			output_files = os.path.join('chimeras', 'control.annotated.gff')
-			script = get_script('annotate_chimera.py', arguments={'--exons': input_files[1]}, inp = input_files[0], out=output_files)
+			if(args.stranded):
+				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
+			else:
+				cargs = arguments={'--exons': input_files[1]}
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
 			mlist.append(dependence(input_files, output_files, script));
 			
 			input_files = output_files
@@ -276,7 +286,6 @@ def makefile_main():
 			mlist.append(dependence(input_files, output_files, script));	
 			
 			
-		modes_makefiles = [];	
 		
 		if('clustering' in args.modes):
 			input_files = ['makefile_clustering'] + [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'control']]
@@ -422,6 +431,21 @@ def makefile_interaction():
 		mlist.append(dependence(input_files, output_files, script));
 		output_files = os.path.join('interactions', 'interactions.%s.gff' % itype)
 		
+		input_files = output_files
+		output_files = os.path.join('interactions', 'interactions.%s.itype.gff' % itype)
+		script = get_script('spilt2subtypes.py', inp = input_files, out = output_files, package=interaction_package)
+		mlist.append(dependence(input_files, output_files, script));
+				
+		if(args.exons):
+			input_files = output_files, os.path.abspath(args.exons)
+			output_files = os.path.join('interactions', 'interactions.%s.itype.ktype.gff' % itype)
+			if(args.stranded):
+				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
+			else:
+				cargs = arguments={'--exons': input_files[1]}
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
+			mlist.append(dependence(input_files, output_files, script));
+		
 		if(args.annotation):
 			input_files = output_files, os.path.abspath(args.annotation)
 			output_files = os.path.join('interactions', 'annotated.%s.gff' % itype)
@@ -450,6 +474,16 @@ def makefile_splicing():
 		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files)
 		mlist.append(dependence(input_files, output_files, script))
 		
+		if(args.exons):
+			input_files = output_files, os.path.abspath(args.exons)
+			output_files = os.path.join('interactions', 'filtered.%s.ktype.gff' % itype)
+			if(args.stranded):
+				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
+			else:
+				cargs = arguments={'--exons': input_files[1]}
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
+			mlist.append(dependence(input_files, output_files, script));		
+		
 		input_files = output_files
 		output_files = os.path.join('splicing', 'single.%s.gff' % itype)
 		script = get_script('double2single.py', arguments={'--jtype': itype}, inp = input_files, out=output_files, package=splicing_package)
@@ -464,7 +498,12 @@ def makefile_splicing():
 		output_files = os.path.join('splicing', 'collapsed.%s.gff' % itype), os.path.join('splicing', 'read2id.%s.gff' % itype)
 		script = get_script('merge_junctions.py', arguments={'--jtype': itype, '--dictionary': output_files[1]}, inp = input_files, out=output_files[0], package=splicing_package)
 		mlist.append(dependence(input_files, output_files, script));
+		
+		#output_files = os.path.join('splicing', 'collapsed.%s.gff' % itype)
+		#final_files.append(os.path.join('splicing', 'read2id.%s.gff' % itype));
+				
 		final_files.extend(output_files);
+		
 
 	#makefile header
 	mlist.insert(0, get_header(final_files))

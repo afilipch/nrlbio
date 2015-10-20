@@ -46,7 +46,7 @@ try:
 	sc.next()
 	sc.reset()
 except:	
-	sys.stderr.write("Warning: bam/sam signal file is empty\nAll entries of signal file will pass the filter\n");
+	sys.stderr.write("Warning: bam/sam control file is empty\nAll entries of signal file will pass the filter\n");
 	for ar in ss:
 		filtered.write(ar)
 	sys.exit();	

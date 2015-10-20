@@ -24,6 +24,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path
 parser.add_argument('-m', '--mirna', nargs = '?', required = True, type = str, help = "path to a miRNA fasta file");
 parser.add_argument('-f', '--fasta', nargs = '?', required = True, type = str, help = "path to a reference(genome) fasta file");
 parser.add_argument('--scode', nargs = '?', type = str, help = "Specie miRNA code. For example for \"hsa-mir-1\" code is \"hsa\".temporal solution for unordered files");
+parser.add_argument('--reassign', nargs = '?', default=False, const=True, type = bool, help = "If set, coordinates will be reassigned to the genomic ones");
 args = parser.parse_args();
 
 #exec("from sequence_data.systems import %s as gsys" % args.system);
@@ -43,6 +44,7 @@ def reassign_coordinates(interval):
 	return chrom, start, stop, interval.name, interval.score, strand
 
 
+
 #interactions = BedTool(args.path)
 mirna = SeqIO.to_dict(SeqIO.parse(args.mirna, "fasta"))
 reference = SeqIO.to_dict(SeqIO.parse(args.fasta, "fasta"))
@@ -52,19 +54,22 @@ n = 0;
 for i1, i2 in generator_doublebed(args.path):
 	if(args.scode):
 		if(i2.chrom.startswith(args.scode)):
-			print i1
-			print i2
+			#print i1
+			#print i2
 			i1, i2 = i2, i1
 		
 	
 	mirseq = str(mirna[i1.chrom].seq.upper())
 	
+	if(args.reassign):
+		chrom, start, stop, name, score, strand = reassign_coordinates(i2)
+		interval = Interval(chrom, start, stop, name=name, score=score, strand=strand)
+		tseq = interval2seq(interval, reference)
+		print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i2.name[:-2], i2.score, strand, i1.chrom, mirseq, tseq)
+	else:	
+		tseq = interval2seq(i2, reference)
+		print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (i2.chrom, i2.start, i2.stop, i2.name, i2.score, i2.strand, i1.chrom, mirseq, tseq)
 	
-	chrom, start, stop, name, score, strand = reassign_coordinates(i2)
-	interval = Interval(chrom, start, stop, name=name, score=score, strand=strand)
-	tseq = interval2seq(interval, reference)
-	
-	print "%s\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s" % (chrom, start, stop, i2.name[:-2], i2.score, strand, i1.chrom, mirseq, tseq)
 	
 	if(reverse_complement(mirseq[1:7]) in tseq):
 		s+=1;

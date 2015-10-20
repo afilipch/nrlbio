@@ -74,14 +74,14 @@ for interval in bedfile:
 with open(args.dictionary, 'w') as odf:
 	for c, intervals in enumerate(iid2intervals.values()):
 		name = "%s%d" % (args.name, c)
-		#name_left = "%s%d|0" % (args.name, c)
-		#name_right = "%s%d|1" % (args.name, c)
+		name_left = "%s|0" % name
+		name_right = "%s|1" % name
 		
 		intervals_left = intervals[:len(intervals)/2]
-		sys.stdout.write(str(merge(intervals_left, name)));
+		sys.stdout.write(str(merge(intervals_left, name_left)));
 		
 		intervals_right = intervals[len(intervals)/2:]
-		sys.stdout.write(str(merge(intervals_right, name)));
+		sys.stdout.write(str(merge(intervals_right, name_right)));
 		
 		for li in intervals_left:		
 			odf.write("%s\t%s\n" % (li.name.split("|")[0], name))

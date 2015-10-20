@@ -16,6 +16,7 @@ length:
     title:  'Length'
     xlabel: 'length, nts'
     ylabel: 'num of intervals'
+    range: [0,300]    
     #step: 1
     color: 'lightgreen'
 gap:

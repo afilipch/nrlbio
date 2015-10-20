@@ -63,7 +63,7 @@ def distance(i1, i2):
 		i1 iterable: 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
 		i2 iterable: another 1d interval. 2-element iterable. First element is start of interval(0-based inclusive). Second element is end of interval(0-based exclusive)
 		
-		Returns tuple:  distance between two intervals
+		Returns int:  distance between two intervals
 	'''
 	return max(i1[0], i2[0]) - min(i1[1], i2[1])
 	

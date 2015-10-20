@@ -134,6 +134,10 @@ class ArWrapper(object):
 				self.strand = '-'
 			else:
 				self.strand = '+'
+				
+				
+	def __str__(self):
+		return "\t".join([str(x) for x in (self.qname, self.rname, self.qstart, self.qend, self.aligned_read.is_reverse, self.score)]);
 		
 		
 		

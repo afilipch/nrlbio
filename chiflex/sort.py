@@ -10,7 +10,7 @@ from pybedtools import BedTool;
 
 
 parser = argparse.ArgumentParser(description='Sorts bed/gff file with a respect to strandness');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to chimeras bed-like file");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the bed/gff file to be sorted");
 args = parser.parse_args();
 
 

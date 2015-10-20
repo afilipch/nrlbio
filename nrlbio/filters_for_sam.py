@@ -12,7 +12,7 @@ def repetitive(ar, min_entropy=1.4):
 	me = float(min_entropy)
 	return entropy(ar.query) > me
 	
-def contain_repetitive(ar, min_entropy=1.5):
+def contain_repetitive(ar, min_entropy=1.5, length=18):
 	me = float(min_entropy)
-	return chunk_entropy(ar.query, length=18, step = 2, order = 1) > me	
+	return chunk_entropy(ar.query, length, step = 2, order = 1) > me	
 	
