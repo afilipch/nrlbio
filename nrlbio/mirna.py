@@ -50,6 +50,11 @@ class Mirna(object):
 		self.seed = seq[seed_start: seed_stop];
 		self.match = get_seed_match(seq, seed_start, seed_stop);
 		
+		self.m27 = get_seed_match(seq, 1, 7)
+		self.m8 = reverse_complement(seq[7])
+		self.m9 = reverse_complement(seq[8])
+		self.first = 'A';		
+		
 	def set_1mm_matches(self):
 		self.matches_1mm = diverge_with_1mm(self.match);
 		
@@ -68,12 +73,36 @@ class Mirna(object):
 				dm[mm1] = l;
 		return dm;
 	
+	def find_fixed_types(self, seq):
+		a = multifind(seq, self.m27, overlap = False)
+		mt = {'m27': len(a), 'm28': 0, 'm29': 0, 'm27a': 0, 'm28a': 0, 'm29a': 0}
+		
+		for pos in a:
+			if(len(seq)>pos+6 and seq[pos+6] == self.first):
+				mt['m27a']+=1;
+				first = True;
+			else:
+				first = False;
+				
+			if(pos>0 and seq[pos-1] == self.m8):
+				mt['m28'] += 1;
+				if(first):
+					mt['m28a'] += 1;	
+				if(pos>1 and seq[pos-2] == self.m9):
+					mt['m29'] += 1;
+					if(first):
+						mt['m29a'] += 1;
+						
+		return mt;
+				
+				
+					
 	def __str__(self):
 		return "name=%s, seq=%s, start=%d, stop=%d, seed=%s, match=%s, expr=%1.1f" % (self.name, self.seq, self.seed_start, self.seed_stop, self.seed, self.match, self.expression);
 		
 		
 		
-def fasta2mirnas(fasta, seed_start, seed_stop):
+def fasta2mirnas(fasta, seed_start=1, seed_stop=7):
 	mirdict = {};
 	for seqrecord in SeqIO.parse(fasta, "fasta"):
 		mirdict[seqrecord.id] = Mirna(seqrecord.id, str(seqrecord.seq.upper()), seed_start, seed_stop)
@@ -152,38 +181,11 @@ class Family():
 		
 		
 if(__name__ == "__main__"):
-	#mir = Mirna('hsa-miR-30a', 'TGTAAACATCCTCGACTGGAAG', seed_start=1, seed_stop=7);
-	#mir.set_1mm_matches();
-	#print 'GTTTAC'
-	#print mir.match;
-	#print
-	#print mir.find_1mm_matches('GTTTACAGCTGTATACAAGTTTAA')
+	mir = Mirna('hsa-miR-30a', 'TGTACTAGATCCTCGACTGGAAG', seed_start=1, seed_stop=7);
+	fullmatch = 'TCTAGTACA'
+	match = 'CTAGTACA'
+	seq = match + "GTCACACGTG" + fullmatch + "GTCATCCCTTAAG" + match
+	print mir.find_fixed_types(seq);
 	
-	#for mirid, mirna in fasta2mirnas(sys.argv[1], seed_start=1, seed_stop=8).items():
-		#print mirid
-		#print mirna.seq;
-		#print mirna.seed;
-		#print mirna.match;
-		#print "_"*160	
-		
-	#mirdict = fasta2mirnas(sys.argv[1], seed_start=1, seed_stop=7);
-	#assign_expression(sys.argv[2], mirdict, sep="\t");
 	
-	#conv = mirbase_conversion(sys.argv[1], sys.argv[2])
-	
-	mirdict = fasta2mirnas(sys.argv[1], seed_start=1, seed_stop=7);
-	assign_expression(sys.argv[2], mirdict, sep="\t");	
-	families = mirnas2families(mirdict.values())
-	for fam in families:
-		print fam.name
-		print fam.seed
-		print "_"*160
-	
-	#print mirdict['hsa-miR-326'].props
-	
-	#for v in mirdict.values():
-		#print v.props
-	
-	#for kv in conv.items():
-		#print "%s\t%s" % kv
 		

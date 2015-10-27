@@ -1,4 +1,4 @@
-#! /usr/lib/python
+#! /usr/bin/python
 '''assignes genomic features to intervals they overlap with''' 
 import argparse
 import sys;

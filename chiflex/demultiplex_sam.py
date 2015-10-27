@@ -2,6 +2,7 @@
 '''Assignes to each read, if it comes from mapping to real or control reference. Convolutes backward converted reads. Filters out non-unique and not the best hits'''
 import argparse
 import os;
+import sys
 
 import pysam;
 
@@ -21,22 +22,26 @@ parser.add_argument('--bestdistance', nargs = '?', default = 10, type = float, h
 args = parser.parse_args();
 
 
-
+counts = [0]*3
 def _iteration(arwlist, bestdistance):
 	if(arwlist):
 		unique, nonunique, control = demultiplex_read_hits(arwlist, bestdistance)
 		if(unique):
+			counts[0]+=1
 			sam_unique.write(unique.aligned_read);
 			stat_unique.increment_basic(unique.aligned_read)
 			stat_unique.increment_short(unique.aligned_read)
 		elif(control):
+			counts[1]+=1
 			sam_control.write(control.aligned_read)
 			stat_control.increment_basic(control.aligned_read)
 			stat_control.increment_short(control.aligned_read)
-		for nu in nonunique:
-			sam_nonunique.write(nu.aligned_read);
-			stat_nonunique.increment_basic(nu.aligned_read)
-			stat_nonunique.increment_short(nu.aligned_read)
+		if(nonunique):
+			counts[2]+=1
+			for nu in nonunique:
+				sam_nonunique.write(nu.aligned_read);
+				stat_nonunique.increment_basic(nu.aligned_read)
+				stat_nonunique.increment_short(nu.aligned_read)
 
 
 
@@ -87,4 +92,4 @@ stat_unique.tohtml(os.path.join(args.report, "%s.unique.html" % args.name))
 stat_control.tohtml(os.path.join(args.report, "%s.control.html" % args.name))
 stat_nonunique.tohtml(os.path.join(args.report, "%s.nonunique.html" % args.name))
 			
-			
+sys.stderr.write("number of unique hits: %d\nnumber of control hits: %d\nnumber of nonunique hits: %d\n\n" % tuple(counts));			

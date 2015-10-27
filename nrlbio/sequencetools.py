@@ -138,7 +138,7 @@ def entropy(seq, order=1):
 	return dict2entropy(_get_transitions(seq, order))
 	
 	
-def chunk_entropy(seq, length, step = 2, order = 1):	
+def chunk_entropy(seq, length, step = 1, order = 1):	
 	'''Returns minimum Shannon entropy of chunks from provided sequence on basis of Markov Model transition probabilities
 	
 		seq str: sequence to calculate entropy of
@@ -151,7 +151,7 @@ def chunk_entropy(seq, length, step = 2, order = 1):
 	if(len(seq) < length):
 		return 0;
 		
-	min_entropy = dict2entropy(_get_transitions(seq[:length], order=order));	
+	min_entropy = dict2entropy(_get_transitions(seq[:length], order=order));
 	for i in range(step, len(seq)-length+1, step):
 		min_entropy = min(min_entropy, dict2entropy(_get_transitions(seq[i:length+i], order=order)));
 	return	min_entropy

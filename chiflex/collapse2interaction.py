@@ -10,7 +10,7 @@ from pybedtools import BedTool
 from nrlbio.pybedtools_extension import construct_gff_interval
 
 parser = argparse.ArgumentParser(description='converts bed-like file of chimeric reads into interactions. That is merging chimeras with intersecting regions');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to chimeras, double bed/gff format. Intervals are assumed to be sorted with sort.py, which is crucial");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to chimeras, double bed/gff format. NOTE: Intervals are assumed to be sorted with sort.py, which is crucial");
 parser.add_argument('-d', '--distance', nargs = '?', default = -10, type = int, help = "Minimum overlap(negative number)/maximum distance(positive number) of any pair of intervals in nucleotides to merge them");
 parser.add_argument('-n', '--name', nargs = '?', default = 'i', type = str, help = "Base name for interactions")
 parser.add_argument('-od', '--dictionary', nargs = '?', required = True, type = str, help = "Path to the output \"interaction id to read id\" file")
