@@ -5,6 +5,7 @@ import sys
 import os
 
 from nrlbio.config.config import load_config;
+from nrlbio.makefiles import dependence, get_header, get_bowtie_call, get_script
 
 conf = load_config('chiflex')
 
@@ -60,35 +61,10 @@ main_mode = min(args.modes, key= lambda x: modes_order[x]);
 
 
 #######################################################################################################################
-#Parse bowtie options
+##Parse bowtie options
 bowtie_settings = bowtie_configurations[main_mode];
+bs_list = get_bowtie_call(bowtie_settings, args.bowtie, args.reference, args.reads, args.name)
 
-for bo in args.bowtie:
-	try:
-		name, value = bo.split("=");
-	except(ValueError):
-		sys.exit("Bowtie options are provided in a malformatted way. Please see help for example\n") 
-		
-	if(name in bowtie_settings):
-		bowtie_settings[name] = (value, bowtie_settings[name][1])
-	else:
-		sys.stderr.write("provided option \'%s\' is currently not supported by Chiflex and will be ignored\n" % name) 
-	
-bowtie_settings['x'] = os.path.abspath(os.path.abspath(args.reference)), '-'
-bowtie_settings['U'] = os.path.abspath(os.path.abspath(args.reads)), '-'
-bowtie_settings['S'] = os.path.join('sam', '%s.mapped.sam' % args.name), '-'
-
-
-bs_list = ['bowtie2'];
-for k, v in bowtie_settings.items():
-	if(v[0]=='True'):
-		bs_list.append(v[1] + k);
-	elif(v[0]=='False'):
-		pass;
-	else:
-		bs_list.append(v[1] + k);
-		bs_list.append(v[0])
-		
 
 #######################################################################################################################
 #Configure input arguments
@@ -99,8 +75,7 @@ if('interaction' in args.modes or 'splicing' in args.modes):
 		annotate_with_genome = False;
 	else:
 		raise argparse.ArgumentError(arg_modes, "Without setting [--genome] or [--exon] option interaction and splicing modes cannot be used\n")
-	
-	
+		
 if(('clustering' in args.modes) and (not args.genome_index)):
 	raise argparse.ArgumentError(arg_modes, "Without setting [--genome_index] option clustering mode cannot be used\n")
 	
@@ -108,45 +83,6 @@ if(('clustering' in args.modes) and (not args.genome_index)):
 chiflex_package = os.path.abspath(os.path.join(args.chiflex, 'chiflex'));
 splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))
 interaction_package = os.path.abspath(os.path.join(args.chiflex, 'interaction'))
-
-		
-#######################################################################################################################
-#Functions supporting Makefile generation
-def get_script(script, arguments={}, inp = '', out = None, package=chiflex_package):
-	'''Example: get_script(something.py, {'--a': 7}, 'inp.txt', 'out.txt') will output: ('python [chiflex_package]/something.py'), 'inp.txt', '--a', '7', '>', 'out.txt')'''
-	l = [" ".join(('python', os.path.join(package, script) )), inp]
-	for k,v in arguments.items():
-		l.append(k)
-		l.append(str(v))
-	if(out):
-		l.append(">")
-		l.append(out)
-	return l;	
-		
-	
-def dependence(input_files, output_files, script):
-	'''Creates Makefile dependence'''
-	if(hasattr(input_files, '__iter__')):
-		inp = " ".join(input_files);
-	else:
-		inp = input_files
-	if(hasattr(output_files, '__iter__')):
-		out = " ".join(output_files);
-	else:
-		out = output_files
-	return "%s: %s\n\t%s" % (out,inp, " ".join([str(x) for x in script]))
-
-
-def get_header(output_files, phony=False):
-	if(isinstance(output_files, str)):
-		ofs = output_files 
-	else:
-		ofs = " ".join(list(output_files))
-	
-	if(phony):
-		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s\n.PHONY: all %s" % (ofs, ofs)
-	else:
-		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % ofs
 
 
 

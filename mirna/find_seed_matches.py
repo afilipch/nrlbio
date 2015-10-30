@@ -9,7 +9,7 @@ from Bio import SeqIO
 from collections import defaultdict, Counter
 
 from nrlbio.mirna import fasta2mirnas, assign_expression, mirnas2families, find_family
-from nrlbio.pyplot_extension import histogram
+#from nrlbio.pyplot_extension import histogram
 
 parser = argparse.ArgumentParser(description='Finds seed matches for provided miRNAs. If expression of miRNAS is provided, than only seeds for top expressed miRNA families may be detected');	
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sequence to look for seed matches, fasta format");

@@ -51,6 +51,7 @@ class Mirna(object):
 		self.match = get_seed_match(seq, seed_start, seed_stop);
 		
 		self.m27 = get_seed_match(seq, 1, 7)
+		self.m38 = get_seed_match(seq, 2, 8)
 		self.m8 = reverse_complement(seq[7])
 		self.m9 = reverse_complement(seq[8])
 		self.first = 'A';		
@@ -65,7 +66,7 @@ class Mirna(object):
 	
 	def find_1mm_matches(self, seq, overlap=False):
 		if (not hasattr(self, 'matches_1mm')):
-			self.set_1mm_matches();		
+			self.set_1mm_matches();
 		dm = {};
 		for mm1 in self.matches_1mm:
 			l = multifind(seq, mm1, overlap = overlap);
@@ -74,10 +75,16 @@ class Mirna(object):
 		return dm;
 	
 	def find_fixed_types(self, seq):
-		a = multifind(seq, self.m27, overlap = False)
-		mt = {'m27': len(a), 'm28': 0, 'm29': 0, 'm27a': 0, 'm28a': 0, 'm29a': 0}
+		mm28_count = 0
+		for mm1 in diverge_with_1mm(get_seed_match(self.seq, 1, 8)):
+			mm28_count += len(multifind(seq, mm1, overlap = False));
+			
 		
-		for pos in a:
+		m27_positions = multifind(seq, self.m27, overlap = False)
+		m38_positions = multifind(seq, self.m38, overlap = False)
+		mt = {'mm28': mm28_count, 'm38': len(m38_positions), 'm27': len(m27_positions), 'm28': 0, 'm29': 0, 'm27a': 0, 'm28a': 0, 'm29a': 0}
+		
+		for pos in m27_positions:
 			if(len(seq)>pos+6 and seq[pos+6] == self.first):
 				mt['m27a']+=1;
 				first = True;
