@@ -15,6 +15,10 @@ args = parser.parse_args();
 
 
 sortedbed = BedTool(args.path).sort();
+if(len(sortedbed) == 0):
+	sys.stderr.write("input file is empty\n");
+	sys.exit();
+	
 
 container = defaultdict(list)
 container[sortedbed[0].strand].append(sortedbed[0])

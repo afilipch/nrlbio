@@ -122,6 +122,10 @@ class AnnotatedChimera(object):
 
 
 chimeras = BedTool(args.path)
+if(len(chimeras) == 0):
+	sys.stderr.write("input file \'%s\' is empty\n" % args.path);
+	sys.exit();
+
 exons = BedTool(args.exons)
 offset  = chimeras.field_count();
 chimeras_vs_exons = chimeras.intersect(exons, s=args.stranded, wao=True)

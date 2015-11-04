@@ -580,7 +580,7 @@ def lrg(signal, control, entry='list', attributes=[], attribute_names=[], suppor
 	clusters = generate_clusters(grid, support = support, maxiter = maxiter,  fdr=fdr, lookforward=lookforward, fit_function=fit_function, ncsupport=ncsupport, nciter=nciter, ncfunction=ncfunction);
 	
 	if(not clusters):
-		return None, None
+		return None, None, None
 	
 	rule = get_rule(clusters)
 	if(entry == 'list'):

@@ -70,14 +70,13 @@ signal = list_generator(args.signal);
 control = list_generator(args.control);
 lrg_filter, rule, log_message = lrg(signal, control, entry='list', attributes = list(range(len(args.features))), attribute_names=args.features, fdr=args.fdr, **CONFIGURATION);
 
-if(not rule):
-	samfile.close()
-	filtered.close()
-	sys.exit("Nothing passed the filtering\n")
-
-for i1, i2 in apply_filter(args.signal, lrg_filter):
-	sys.stdout.write(str(i1))
-	sys.stdout.write(str(i2))
+if(rule):
+	for i1, i2 in apply_filter(args.signal, lrg_filter):
+		sys.stdout.write(str(i1))
+		sys.stdout.write(str(i2))	
+	log_message = "Nothing passed the filtering\n"
+else:
+	log_message = "Nothing passed the filtering\n"
 
 logger.info(log_message)
 

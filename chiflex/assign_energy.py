@@ -16,7 +16,7 @@ args = parser.parse_args();
 
 
 for i1, i2 in generator_doublebed(args.path):
-	energy, pattern = get_rnahybrid(i1.attrs['seq'], i2.attrs['seq']);
+	energy, pattern = get_rnahybrid(i2.attrs['seq'], i1.attrs['seq']);
 	i1.attrs['energy'] = str(energy);
 	i2.attrs['energy'] = str(energy);
 	if(args.pattern):
@@ -24,7 +24,7 @@ for i1, i2 in generator_doublebed(args.path):
 		i2.attrs['pattern'] = ",".join([str(x) for x in pattern]);
 	
 	if(args.shuffle_trials):
-		energy_shuffled, pattern_shuffled = get_shuffled_rnahybrid(i1.attrs['seq'], i2.attrs['seq'], trials=args.shuffle_trials);
+		energy_shuffled, pattern_shuffled = get_shuffled_rnahybrid(i2.attrs['seq'], i1.attrs['seq'], trials=args.shuffle_trials);
 		i1.attrs['energy_shuffled'] = str(energy_shuffled);
 		i2.attrs['energy_shuffled'] = str(energy_shuffled);
 		if(args.pattern):

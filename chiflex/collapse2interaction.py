@@ -59,6 +59,11 @@ def generate_overlaping_intervals(intervals, overlap):
 	
 
 bedfile = BedTool(args.path)
+
+if(len(bedfile) == 0):
+	sys.stderr.write("input file is empty\n");
+	sys.exit();
+
 cid2iid = defaultdict(list);
 for iid, merged_intervals in enumerate(generate_overlaping_intervals(bedfile, -1*args.distance)):
 	for mi in merged_intervals:

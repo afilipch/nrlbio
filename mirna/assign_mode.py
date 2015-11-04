@@ -29,12 +29,12 @@ def get_mode(modes):
 mirdict = fasta2mirnas(args.mir);
 
 for i1, i2 in generator_doublebed(args.path):
-	mode = get_mode(mirdict[i2.chrom].find_fixed_types(i1.attrs['seq']))
+	mode = get_mode(mirdict[i1.chrom].find_fixed_types(i2.attrs['seq']))
 	i1.attrs['mode'] = mode;
 	i2.attrs['mode'] = mode;
 	
 	if(args.set_control):
-		mode_shuffled = get_mode(mirdict[i2.chrom].find_fixed_types(shuffle_string(i1.attrs['seq'])))
+		mode_shuffled = get_mode(mirdict[i1.chrom].find_fixed_types(shuffle_string(i2.attrs['seq'])))
 		i1.attrs['mode_shuffled'] = mode_shuffled;
 		i2.attrs['mode_shuffled'] = mode_shuffled;
 		

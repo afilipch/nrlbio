@@ -1,66 +1,66 @@
-modes_order:
-    interaction: 1
-    splicing: 2
-    clustering: 3
-
-bowtie:
-    first:
+first:
+    bowtie:
         N: ['0', '-']
-        L: ['16','-']
+        L: ['12','-']
         i: ['C,1', '-']
         ignore-quals: ['True', '--']
-        norc: ['False', '--']
+        norc: ['True', '--']
         local: ['True', '--'] 
-        mp: ['8,8', '--']
-        rfg: ['18,12', '--']
+        mp: ['5,5', '--']
+        rfg: ['14,8', '--']
         rdg: ['8,6', '--']
-        min-score: ['C,40', '--'] 
+        min-score: ['C,26', '--'] 
         k: ['8', '-']
-        D: ['35', '-']
-        R: ['3', '-']
-        no-unal: ['True', '--'] 
-        f: ['False', '-']
-        p: ['8', '-']
-    second:
-        N: ['0', '-']
-        L: ['16','-']
-        i: ['C,1', '-']
-        ignore-quals: ['True', '--']
-        norc: ['False', '--']
-        local: ['True', '--'] 
-        mp: ['8,8', '--']
-        rfg: ['18,12', '--']
-        rdg: ['10,7', '--']
-        min-score: ['C,42', '--'] 
-        k: ['10', '-']
-        D: ['50', '-']
+        D: ['40', '-']
         R: ['4', '-']
         no-unal: ['True', '--'] 
         f: ['False', '-']
-        p: ['8', '-']    
- 
+        p: ['4', '-']
         
-demultiplex_sam:
-    score: 'as_qstart'
-    bestdistance: 12
-       
-demultiplex_chimera:
-    score: 'as_qstart'
-    score_chimera: 'as_gap'
-    maxgap: 8
-    s_distance: 12
-    ch_distance: 14 
+    demultiplex_sam:
+        score: 'as_qstart_rstart'
+        bestdistance: 2
+        
+    filter_alignment:
+        fdr: 0.05
+        features: ['AS', 'qstart', 'pos']
     
-filter_alignment:
-    fdr: 0.05
-    features: ['AS', 'qstart']
+second:
+    bowtie:
+        N: ['0', '-']
+        L: ['14','-']
+        i: ['C,1', '-']
+        ignore-quals: ['True', '--']
+        norc: ['False', '--']
+        local: ['True', '--'] 
+        mp: ['5,5', '--']
+        rfg: ['18,12', '--']
+        rdg: ['8,6', '--']
+        min-score: ['C,32', '--'] 
+        k: ['6', '-']
+        D: ['35', '-']
+        R: ['4', '-']
+        no-unal: ['True', '--'] 
+        f: ['False', '-']
+        p: ['4', '-']    
+
+    demultiplex_sam:
+        score: 'as_qstart'
+        bestdistance: 8
+        
+    filter_alignment:
+        fdr: 0.05
+        features: ['AS', 'qstart']
  
-filter_chimera: 
-    fdr: 0.05
-    features: ['AS1', 'AS2', 'gap']    
-    
+shuffle_trials: 10 
+ 
+min_right_length: 16
+
 collapse2interaction: 
-    distance: -10    
+    distance: -10  
+ 
+ 
+
     
     
     

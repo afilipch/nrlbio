@@ -7,10 +7,16 @@ import sys
 #interaction_package = os.path.abspath(os.path.join(args.chiflex, 'interaction'))
 #mirna_package = os.path.abspath(os.path.join(args.chiflex, 'mirna'))
 
+chiflex_package = r'~/nrlbio/chiflex'
 
 def get_script(script, arguments={}, inp = '', out = None, package=chiflex_package):
 	'''Example: get_script(something.py, {'--a': 7}, 'inp.txt', 'out.txt') will output: ('python [chiflex_package]/something.py'), 'inp.txt', '--a', '7', '>', 'out.txt')'''
-	l = [" ".join(('python', os.path.join(package, script) )), inp]
+	if(hasattr(inp, '__iter__')):
+		input_files = " ".join(inp);
+	else:
+		input_files = inp
+	
+	l = [" ".join(('python', os.path.join(package, script) )), input_files]
 	for k,v in arguments.items():
 		l.append(k)
 		l.append(str(v))
@@ -45,7 +51,7 @@ def get_header(output_files, phony=False):
 		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % ofs
 	
 
-def get_bowtie_call(settings, arguments, reference, reads, name):
+def get_bowtie_call(settings, arguments, reference, reads, project_name):
 	for bo in arguments:
 		try:
 			name, value = bo.split("=");
@@ -59,7 +65,7 @@ def get_bowtie_call(settings, arguments, reference, reads, name):
 		
 	settings['x'] = os.path.abspath(os.path.abspath(reference)), '-'
 	settings['U'] = os.path.abspath(os.path.abspath(reads)), '-'
-	settings['S'] = os.path.join('sam', '%s.mapped.sam' % name), '-'
+	settings['S'] = os.path.join('sam', '%s.mapped.sam' % project_name), '-'
 
 
 	bs_list = ['bowtie2'];
@@ -73,3 +79,12 @@ def get_bowtie_call(settings, arguments, reference, reads, name):
 			bs_list.append(v[0])
 			
 	return bs_list;
+
+
+def get_bowtie_help(bowtie_configurations):
+	bowtie_help_list = [];
+	for mode, settings in bowtie_configurations.items():
+		bowtie_help_list.append("\n%s:" % mode)
+		bowtie_help_list.append("[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in settings.items()]))
+	return " ".join(bowtie_help_list)	
+

@@ -98,10 +98,11 @@ passed = 0;
 uniqbreakpoints = [];
 stypes = defaultdict(int);
 for i1, i2 in generator_doublebed(args.path):
+	#sys.stderr.write(str(i1))
 	if(i1.file_type=='bed'):
-		attrs1 = (('qstart', i1[6]), ('qend', i1[7]), ('chscore', i1[9]), ('gap', i1[10]))
+		attrs1 = (('qstart', i1[6]), ('qend', i1[7]), ('chscore', i1[8]), ('gap', i1[9]))
 		gi1 = bed2gff(i1, feature='ch', attrs=attrs1)
-		attrs2 = (('qstart', i2[6]), ('qend', i2[7]), ('chscore', i2[9]), ('gap', i2[10]))
+		attrs2 = (('qstart', i2[6]), ('qend', i2[7]), ('chscore', i2[8]), ('gap', i2[9]))
 		gi2 = bed2gff(i2, feature='ch', attrs=attrs2);
 	else:
 		gi1 = i1;

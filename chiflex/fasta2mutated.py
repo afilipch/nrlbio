@@ -19,25 +19,24 @@ args = parser.parse_args();
 
 nucleotides = set('ACTG')
 
-l = [];	
 for seqrecord in SeqIO.parse(args.path, 'fasta'):
+	l = [];
 	print ">random_%s" % seqrecord.name
 	
 	for n in seqrecord.seq.upper():
 		if(n=="N"):
 			l.append(n);
-		elif(random.random()>args.rate):
-			l.append(n);
-		else:
-			m = random.choice(list(nucleotides-set(n)));
-			l.append(m);
+		else:	
+			if(random.random()>args.rate):
+				l.append(n);
+			else:
+				m = random.choice(list(nucleotides-set(n)));
+				l.append(m);
 			
 		if(len(l) == args.line_length):
 			print "".join(l)
 			l[:] = []
 
-			
-	else:
-		if(l):
-			print "".join(l);
+	if(l):
+		print "".join(l);
 		

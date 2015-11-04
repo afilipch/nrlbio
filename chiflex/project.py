@@ -5,7 +5,7 @@ import sys
 import os
 
 from nrlbio.config.config import load_config;
-from nrlbio.makefiles import dependence, get_header, get_bowtie_call, get_script
+from nrlbio.makefiles import dependence, get_header, get_bowtie_call, get_script, get_bowtie_help
 
 conf = load_config('chiflex')
 
@@ -18,11 +18,7 @@ interaction_types = ['inter', 'intra', 'csj', 'lsj']
 
 #Bowtie options preliminary parsing
 bowtie_configurations = conf['bowtie'];
-bowtie_help_list = [];
-for mode, settings in bowtie_configurations.items():
-	bowtie_help_list.append("\n%s:" % mode)
-	bowtie_help_list.append("[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in settings.items()]))
-bowtie_help_str = " ".join(bowtie_help_list)
+bowtie_help_str = get_bowtie_help(bowtie_configurations)
 	
 
 parser = argparse.ArgumentParser(description='Creates makefile and directory structure for chiflex project')#, formatter_class = argparse.RawTextHelpFormatter);
@@ -103,14 +99,14 @@ def makefile_main():
 	if(args.repetitive):
 		input_files = output_files
 		output_files = os.path.join('sam', 'nonrep.bam')
-		script = get_script('filter_sam.py', arguments={'--output': output_files, '--filters': 'repetitive', '--arguments': 'min_entropy=1.6'}, inp = input_files)
+		script = get_script('filter_sam.py', arguments={'--output': output_files, '--filters': 'repetitive', '--arguments': 'min_entropy=1.6'}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 	
 	#Collapse confident, but nonunique mappings into single sam entry, to protect them from further filtering out
 	if(args.nonunique):
 		input_files = output_files
 		output_files = os.path.join('sam', 'collapsed.bam'), os.path.join('auxillary', 'collapsed.bed')
-		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 42}, inp = input_files)
+		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 42}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		#following reassignment is done for furthe consistency
 		output_files = output_files[0]
@@ -121,7 +117,7 @@ def makefile_main():
 	if(main_mode=='clustering'):
 		input_files = output_files;
 		output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'control']]
-		script = get_script('demultiplex_sam.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_sam']['score'], '--bestdistance': conf['demultiplex_sam']['bestdistance']}, inp = input_files)
+		script = get_script('demultiplex_sam.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_sam']['score'], '--bestdistance': conf['demultiplex_sam']['bestdistance']}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script));		
 		
 		input_files = ['makefile_clustering'] + output_files
@@ -136,30 +132,30 @@ def makefile_main():
 		#demultiplex mapping hits into single and chimeric reads
 		input_files = output_files
 		output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'unique_chimera', 'control_chimera', 'control']]
-		script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_chimera']['score'], '--score_chimera': conf['demultiplex_chimera']['score_chimera'], '--maxgap': conf['demultiplex_chimera']['maxgap'], '--s_distance': conf['demultiplex_chimera']['s_distance'], '--ch_distance': conf['demultiplex_chimera']['ch_distance']}, inp = input_files)
+		script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_chimera']['score'], '--score_chimera': conf['demultiplex_chimera']['score_chimera'], '--maxgap': conf['demultiplex_chimera']['maxgap'], '--s_distance': conf['demultiplex_chimera']['s_distance'], '--ch_distance': conf['demultiplex_chimera']['ch_distance']}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 			
 		#Merge sam hits into chimeras in doublebed format
 		input_files = os.path.join('sam', '%s.unique_chimera.bam' % args.name) 
 		output_files = os.path.join('chimeras', 'unique.bed') 
-		script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
+		script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
 		#Merge sam hits into chimeras in doublebed format for decoy(control) reference
 		input_files = os.path.join('sam', '%s.control_chimera.bam' % args.name) 
 		output_files = os.path.join('chimeras', 'control.bed') 
-		script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
+		script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
 		if(args.reassign):
 			input_files = os.path.join('chimeras', 'control.bed') 
 			output_files = os.path.join('chimeras', 'control.assigned.bed') 
-			script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
+			script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script))
 			
 			input_files = os.path.join('chimeras', 'unique.bed') 
 			output_files = os.path.join('chimeras', 'unique.assigned.bed') 
-			script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
+			script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 			
 			controlf = os.path.join('chimeras', 'control.assigned.bed')
@@ -172,23 +168,23 @@ def makefile_main():
 		if(annotate_with_genome):
 			input_files = uniquef
 			output_files = os.path.join('chimeras', 'unique.annotated.gff')
-			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files)
+			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 		
 			input_files = output_files
 			output_files = [os.path.join('chimeras', 'unique.annotated.%s.gff' % x) for x in interaction_types]
-			script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 			
 			
 			input_files = controlf
 			output_files = os.path.join('chimeras', 'control.annotated.gff')
-			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files)
+			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 		
 			input_files = output_files
 			output_files = [os.path.join('chimeras', 'control.annotated.%s.gff' % x) for x in interaction_types]
-			script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 			
 		else:
@@ -198,12 +194,12 @@ def makefile_main():
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
 			else:
 				cargs = arguments={'--exons': input_files[1]}
-			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 			
 			input_files = output_files
 			output_files = [os.path.join('chimeras', 'unique.annotated.%s.gff' % x) for x in interaction_types]
-			script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));			
 			
 	
@@ -213,12 +209,12 @@ def makefile_main():
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
 			else:
 				cargs = arguments={'--exons': input_files[1]}
-			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 			
 			input_files = output_files
 			output_files = [os.path.join('chimeras', 'control.annotated.%s.gff' % x) for x in interaction_types]
-			script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files)
+			script = get_script('stratify_gff.py', arguments={'--attributes': 'ktype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));	
 			
 			
@@ -264,7 +260,7 @@ def makefile_clustering():
 	mlist=[]; 
 	input_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'control']]
 	output_files = os.path.join('sam', '%s.filtered.bam' % args.name)
-	script = get_script('filter_alignment.py', arguments={'--signal': input_files[0], '--control': input_files[1], '--output': output_files, '--features': " ".join(conf['filter_alignment']['features']), '--fdr': conf['filter_alignment']['fdr']} )
+	script = get_script('filter_alignment.py', arguments={'--signal': input_files[0], '--control': input_files[1], '--output': output_files, '--features': " ".join(conf['filter_alignment']['features']), '--fdr': conf['filter_alignment']['fdr']}, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 	
 	
@@ -289,7 +285,7 @@ def makefile_clustering():
 		
 		input_files = os.path.join('clusters', 'minus.bedgraph'), os.path.join('sam', '%s.sorted.bam' % args.name)
 		output_files = os.path.join('clusters', 'clusters.minus.gff')
-		script = get_script('cluster_hits.py', arguments={'-s': '-', '--sbam': input_files[1]}, inp = input_files[0], out=output_files)
+		script = get_script('cluster_hits.py', arguments={'-s': '-', '--sbam': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 
 
@@ -300,7 +296,7 @@ def makefile_clustering():
 		
 		input_files = os.path.join('clusters', 'plus.bedgraph'), os.path.join('sam', '%s.sorted.bam' % args.name)
 		output_files = os.path.join('clusters', 'clusters.plus.gff')
-		script = get_script('cluster_hits.py', arguments={'-s': '+', '--sbam': input_files[1]}, inp = input_files[0], out=output_files)
+		script = get_script('cluster_hits.py', arguments={'-s': '+', '--sbam': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))	
 
 
@@ -317,21 +313,21 @@ def makefile_clustering():
 		
 		input_files = os.path.join('clusters', 'all.bedgraph'), os.path.join('sam', '%s.sorted.bam' % args.name)
 		output_files = os.path.join('clusters', 'clusters.gff')
-		script = get_script('cluster_hits.py', arguments={'-s': '.', '--sbam': input_files[1]}, inp = input_files[0], out=output_files)
+		script = get_script('cluster_hits.py', arguments={'-s': '.', '--sbam': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
 		
 	if(args.reassign):
 		input_files = output_files
 		output_files = os.path.join('clusters', 'clusters.assigned.gff') 
-		script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files)
+		script = get_script('assign_coordinates.py', arguments={}, inp = input_files, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
 		
 	if(args.annotation):
 		input_files = output_files, os.path.abspath(args.annotation)
 		output_files = os.path.join('clusters', 'clusters.annotated.gff')
-		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
+		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 		m.append(dependence(input_files, output_files, script))
 		
 	
@@ -353,17 +349,17 @@ def makefile_interaction():
 	for itype in ['inter', 'intra']:
 		input_files =  [os.path.join('chimeras', '%s.annotated.%s.gff' % (x, itype)) for x in ['unique', 'control']]
 		output_files = os.path.join('interactions', 'filtered.%s.gff' % itype) 
-		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files)
+		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
 		input_files =  output_files
 		output_files = os.path.join('interactions', 'sorted.%s.gff' % itype) 
-		script = get_script('sort.py', inp=input_files, out = output_files)
+		script = get_script('sort.py', inp=input_files, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script));
 		
 		input_files =  output_files
-		output_files = os.path.join('interactions', 'interactions.%s.gff' % itype),  os.path.join('interactions', 'rid2iid.%s.gff' % itype)
-		script = get_script('collapse2interaction.py', arguments={'-od': output_files[1], '--name': "%s_%s" % (args.name, itype), '--distance': conf['collapse2interaction']['distance']}, inp=input_files, out = output_files[0])
+		output_files = os.path.join('interactions', 'interactions.%s.gff' % itype),  os.path.join('interactions', 'rid2iid.%s.bed' % itype)
+		script = get_script('collapse2interaction.py', arguments={'-od': output_files[1], '--name': "%s_%s" % (args.name, itype), '--distance': conf['collapse2interaction']['distance']}, inp=input_files, out = output_files[0], package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script));
 		output_files = os.path.join('interactions', 'interactions.%s.gff' % itype)
 		
@@ -379,13 +375,13 @@ def makefile_interaction():
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
 			else:
 				cargs = arguments={'--exons': input_files[1]}
-			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 		
 		if(args.annotation):
 			input_files = output_files, os.path.abspath(args.annotation)
 			output_files = os.path.join('interactions', 'annotated.%s.gff' % itype)
-			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files)
+			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 			
 		final_files.append(output_files)
@@ -407,7 +403,7 @@ def makefile_splicing():
 	for itype in ['lsj', 'csj']:
 		input_files =  [os.path.join('chimeras', '%s.annotated.%s.gff' % (x, itype)) for x in ['unique', 'control']]
 		output_files = os.path.join('splicing', 'filtered.%s.gff' % itype) 
-		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files)
+		script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
 		if(args.exons):
@@ -417,7 +413,7 @@ def makefile_splicing():
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
 			else:
 				cargs = arguments={'--exons': input_files[1]}
-			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files)
+			script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));		
 		
 		input_files = output_files
@@ -427,11 +423,11 @@ def makefile_splicing():
 		
 		input_files = output_files
 		output_files = os.path.join('splicing', 'sorted.%s.gff' % itype)
-		script = get_script('sort.py', inp=input_files, out = output_files)
+		script = get_script('sort.py', inp=input_files, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script));		
 			
 		input_files = output_files
-		output_files = os.path.join('splicing', 'collapsed.%s.gff' % itype), os.path.join('splicing', 'read2id.%s.gff' % itype)
+		output_files = os.path.join('splicing', 'collapsed.%s.gff' % itype), os.path.join('splicing', 'read2id.%s.bed' % itype)
 		script = get_script('merge_junctions.py', arguments={'--jtype': itype, '--dictionary': output_files[1]}, inp = input_files, out=output_files[0], package=splicing_package)
 		mlist.append(dependence(input_files, output_files, script));
 		
