@@ -40,8 +40,8 @@ parser.add_argument('--reassign', nargs = '?', default = False, const=True, type
 parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
 
 #bowtie2 options
-parser.add_argument('--bowtie1', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str1)
-parser.add_argument('--bowtie2', nargs = '+', default = [], type = str, help = "Bowtie settings for the second round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str2)
+parser.add_argument('--bowtie_args1', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str1)
+parser.add_argument('--bowtie_args2', nargs = '+', default = [], type = str, help = "Bowtie settings for the second round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str2)
 args = parser.parse_args();
 
 #######################################################################################################################
@@ -65,7 +65,7 @@ def makefile_main():
 	mlist=[];
 	
 	#processing of the right chimeric part
-	bs_list1 = get_bowtie_call(bowtie_settings1, args.bowtie1, args.indices[0], args.reads, firstname)
+	bs_list1 = get_bowtie_call(bowtie_settings1, args.bowtie_args1, args.indices[0], args.reads, firstname)
 	#Map reads with bowtie2
 	input_files = os.path.abspath(args.reads)
 	output_files = os.path.join('sam', '%s.mapped.sam' % firstname)
@@ -111,7 +111,7 @@ def makefile_main():
 	
 	
 	#processing of the right chimeric part
-	bs_list2 = get_bowtie_call(bowtie_settings2, args.bowtie2, args.indices[1], os.path.join(args.path, output_files), secondname)#reads will come further	
+	bs_list2 = get_bowtie_call(bowtie_settings2, args.bowtie_args2, args.indices[1], os.path.join(args.path, output_files), secondname)#reads will come further	
 	#Map reads with bowtie2
 	input_files = output_files
 	output_files = os.path.join('sam', '%s.mapped.sam' % secondname)

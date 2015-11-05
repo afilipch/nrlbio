@@ -10,10 +10,16 @@ import numpy as np
 
 from nrlbio.itertools_extension import flatten
 
-try:
-	plt.style.use('ggplot')
-except:
-	pass;
+#try:
+	#plt.style.use('ggplot')
+#except:
+	#pass;
+
+def remove_top_left_boundaries(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
 
 def _set_bins(values, step = None, range_=None):
 	if(step):
@@ -86,7 +92,7 @@ def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabe
 	if(output):
 		plt.savefig(output, bbox_inches='tight')
 	else:
-		plt.show(bbox_inches='tight')
+		plt.show()
 		
 	plt.close();
 	return yvals, xvals, npathes
@@ -183,7 +189,7 @@ def _set_wedge_label(w, min_fraction=0.04):
 	
 _num_others = 5;	
 	
-def pie(data, top=10, min_fraction=0.04, title=None, labelsize='smaller', labelva='top', output=None, explode=None, labels=None, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), autopct=_set_wedge_label, pctdistance=0.8, shadow=False, labeldistance=1.15, startangle=0, radius=None, counterclock=True, wedgeprops=None, textprops={'fontsize': 'smaller'}):
+def pie(data, top=10, min_fraction=0.04, title=None, labelsize='medium', labelva='top', output=None, explode=None, labels=None, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), autopct=_set_wedge_label, pctdistance=0.8, shadow=False, labeldistance=1.15, startangle=0, radius=None, counterclock=True, wedgeprops=None, textprops={'fontsize': 'medium'}, frame=(0.12, 0.12, 0.76, 0.76)):
       
 	slices, labels, others= _set_pie_slices(data, labels, top=top, min_fraction=min_fraction);
 	
@@ -194,7 +200,7 @@ def pie(data, top=10, min_fraction=0.04, title=None, labelsize='smaller', labelv
 		labels[-1] = "\n".join(['%s(n=%d)' % x for x in others[:_num_others]])
 	 
 	plt.figure(1, figsize=(8,8))
-	ax = plt.axes([0.2, 0.2, 0.6, 0.6])
+	ax = plt.axes(frame)
 	patches, texts, autotexts = plt.pie(slices, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, shadow=shadow, labeldistance=labeldistance, startangle=startangle, radius=radius, counterclock=counterclock, wedgeprops=wedgeprops, textprops=textprops)
 	
 	#plt.axis('equal')

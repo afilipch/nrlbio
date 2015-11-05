@@ -23,6 +23,9 @@ parser.add_argument('--single_stat', nargs = '?', required = True, type = str, h
 parser.add_argument('--control_stat', nargs = '?', required = True, type = str, help = "Path to the control mapping statistics in yaml format");
 args = parser.parse_args();
 
+def fix_labeled_data(data):
+	return dict([(x[0].replace("(", "\n("), x[1]) for x in data.items()])
+
 mapped2real_dir =  os.path.join(args.outdir, "mapped2real")
 real2mapped_dir =  os.path.join(args.outdir, "real2mapped")
 fc_dir = os.path.join(args.outdir, "filtered_chimeras")
@@ -79,11 +82,11 @@ for (read_type, mapped_type, is_exact, ttype), counts in mapping_stat.iteritems(
 	
 	
 for title, data in real2mapped.items():
-	output = os.path.join(real2mapped_dir, title)
+	output = os.path.join(real2mapped_dir, title.replace("(", "_").replace(")", "").replace("|", "_"))
 	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
 	
 for title, data in mapped2real.items():
-	output = os.path.join(mapped2real_dir, title)
+	output = os.path.join(mapped2real_dir, title.replace("(", "_").replace(")", "").replace("|", "_"))
 	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
 	
 	
@@ -118,7 +121,7 @@ for title, data in fc.items():
 	
 for title, data in fc_incorrect.items():
 	output = os.path.join(fc_dir, title)
-	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
+	pie(fix_labeled_data(data), top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.25, frame=(0.2, 0.2, 0.6, 0.6))	
 
 
 #________________________________________________________________________________________________________________
@@ -150,7 +153,7 @@ for title, data in fs.items():
 
 for title, data in fs_incorrect.items():
 	output = os.path.join(fs_dir, title)
-	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
+	pie(fix_labeled_data(data), top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.25, frame=(0.2, 0.2, 0.6, 0.6))
 
 	
 	
@@ -218,52 +221,52 @@ for (mapped_type, is_exact, length1, length2, conv1, conv2), counts in chimera_s
 for title, data in real2mapped_minlength.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(minlength)" % "->".join(title)
-		output = os.path.join(real2mapped_detailed_dir, title)
+		output = os.path.join(real2mapped_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="length, nt", ylabel='num of reads', output=output, step = 1, range=minlength_range, align='mid', color=color)
 
 for title, data in real2mapped_maxlength.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(maxlength)" % "->".join(title)
-		output = os.path.join(real2mapped_detailed_dir, title)
+		output = os.path.join(real2mapped_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="length, nt", ylabel='num of reads', output=output, step = 1, range=maxlength_range, align='mid', color=color)
 	
 	
 for title, data in mapped2real_minlength.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(minlength)" % "->".join(title)
-		output = os.path.join(mapped2real_detailed_dir, title)
+		output = os.path.join(mapped2real_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="length, nt", ylabel='num of reads', output=output, step = 1, range=minlength_range, align='mid', color=color)
 
 for title, data in mapped2real_maxlength.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(maxlength)" % "->".join(title);
-		output = os.path.join(mapped2real_detailed_dir, title)
+		output = os.path.join(mapped2real_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="length, nt", ylabel='num of reads', output=output, step = 1, range=maxlength_range, align='mid', color=color)
 		
 		
 for title, data in real2mapped_minconv.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(minconv)" % "->".join(title)
-		output = os.path.join(real2mapped_detailed_dir, title)
+		output = os.path.join(real2mapped_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="num of conversions", ylabel='num of reads', output=output, step = 1, align='mid', color=color)
 
 for title, data in real2mapped_maxconv.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(maxconv)" % "->".join(title);
-		output = os.path.join(real2mapped_detailed_dir, title)
+		output = os.path.join(real2mapped_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="num of conversions", ylabel='num of reads', output=output, step = 1, align='mid', color=color)	
 		
 		
 for title, data in mapped2real_minconv.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(minconv)" % "->".join(title)
-		output = os.path.join(mapped2real_detailed_dir, title)
+		output = os.path.join(mapped2real_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="num of conversions", ylabel='num of reads', output=output, step = 1, align='mid', color=color)
 
 for title, data in mapped2real_maxconv.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(maxconv)" % "->".join(title);
-		output = os.path.join(mapped2real_detailed_dir, title)
+		output = os.path.join(mapped2real_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="num of conversions", ylabel='num of reads', output=output, step = 1, align='mid', color=color)
 
 		
@@ -305,26 +308,26 @@ for (mapped_type, is_exact, length, conv), counts in single_stat.iteritems():
 for title, data in real2mapped_length.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(length)" % "->".join(title)
-		output = os.path.join(real2mapped_detailed_dir, title)
+		output = os.path.join(real2mapped_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="length, nt", ylabel='num of reads', output=output, step = 1, range=length_range, align='mid', color=color)	
 	
 for title, data in mapped2real_length.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(length)" % "->".join(title)
-		output = os.path.join(mapped2real_detailed_dir, title)
+		output = os.path.join(mapped2real_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="length, nt", ylabel='num of reads', output=output, step = 1, range=length_range, align='mid', color=color)		
 	
 	
 for title, data in real2mapped_conv.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(conversions)" % "->".join(title)
-		output = os.path.join(real2mapped_detailed_dir, title)
+		output = os.path.join(real2mapped_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="num of conversions", ylabel='num of reads', output=output, step = 1, align='mid', color=color)
 	
 for title, data in mapped2real_length.items():
 	if(sum(data.values())>=min_support):
 		title = "%s(conversions)" % "->".join(title)
-		output = os.path.join(mapped2real_detailed_dir, title)
+		output = os.path.join(mapped2real_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="num of conversions", ylabel='num of reads', output=output, step = 1, align='mid', color=color)
 		
 		
@@ -353,7 +356,7 @@ for title, data in real2mapped_as.items():
 	#print 
 	if(sum(data.values())>=min_support):
 		title = "%s(AS)" % "->".join(title)
-		output = os.path.join(real2mapped_detailed_dir, title)
+		output = os.path.join(real2mapped_detailed_dir, title.replace("(", "_").replace(")", "_").replace("->", "_"))
 		histogram(data, title=title, xlabel="alignment score", ylabel='num of reads', output=output, step = 1, range = as_range, align='mid', color=color)			
 		
 		
