@@ -5,7 +5,7 @@ import argparse
 import os
 import sys
 
-from nrlbio.mirna import fasta2mirnas
+from nrlbio.mirna import fasta2mirnas, MODES_ORDER
 from nrlbio.generators import generator_doublebed
 from nrlbio.sequencetools import shuffle_string
 
@@ -16,10 +16,10 @@ parser.add_argument('--mir', nargs = '?', required=True, type = str, help = "pat
 parser.add_argument('-sc', '--set_control', nargs = '?', default = False, const=True, type = int, help = "If set, background(shuffled target sequence) seed match mode will be assigned");
 args = parser.parse_args();
 
-modes_order = ('m29a', 'm28a', 'm27a', 'm29', 'm28', 'm27', 'm38', 'mm28')
+
 
 def get_mode(modes):
-	for mode in modes_order:
+	for mode in MODES_ORDER:
 		if(modes[mode]):
 			return mode
 	else:

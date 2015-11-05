@@ -8,6 +8,10 @@ from Bio import SeqIO
 
 from nrlbio.sequencetools import diverge_with_1mm, multifind
 
+#constants
+MODES_ORDER = ('m29a', 'm28a', 'm27a', 'm29', 'm28', 'm27', 'm38', 'mm28')
+
+
 def mirbase_conversion(vers1, vers2):
 	conv = {};
 	d1 = {};

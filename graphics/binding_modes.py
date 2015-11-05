@@ -3,13 +3,14 @@
 import sys
 import argparse
 from collections import defaultdict
+import math
 
 from pybedtools import BedTool
 import matplotlib.pyplot as plt
 import numpy as np
 
 from nrlbio.pyplot_extension import remove_top_left_boundaries
-
+from nrlbio.mirna import fasta2mirnas, MODES_ORDER
 
 parser = argparse.ArgumentParser(description='Draws a plot of binding modes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the interactiong RNA, double gff file with mode and mode_shuffled assigned");
@@ -18,30 +19,27 @@ parser.add_argument('--output', nargs = '?', default='pattern.png', type = str, 
 parser.add_argument('--title', nargs = '?', type = str, help = "Title for a plot");
 args = parser.parse_args();
 
-pattern = defaultdict(float)
-pattern_shuffled = defaultdict(float)
+mode = defaultdict(int)
+mode_shuffled = defaultdict(int)
 
 bedtool = BedTool(args.path);
 total = len(bedtool);
 
 for interval in bedtool:
-	for c,p in enumerate(interval.attrs['pattern'].split(",")):
-		pattern[c] += float(p);
-	for c,p in enumerate(interval.attrs['pattern_shuffled'].split(",")):
-		pattern_shuffled[c] += float(p);
+	mode[interval.attrs['mode']] += 1;
+	mode_shuffled[interval.attrs['mode_shuffled']] += 1;
 		
-pattern = np.array([pattern[x] for x in sorted(pattern.keys())])
-pattern_shuffled = np.array([pattern_shuffled[x] for x in sorted(pattern_shuffled.keys())])
+mode = np.array([mode[x] for x in MODES_ORDER])
+mode_shuffled = np.array([mode_shuffled[x] for x in MODES_ORDER])
 
 if(args.norm):
-	pattern = pattern/total;
-	pattern_shuffled = pattern_shuffled/total;
+	coefs  = (float(total) + mode[0] - mode.cumsum())/(total + mode_shuffled[0] - mode_shuffled.cumsum())
+	mode_shuffled = np.array([int(math.ceil(x[0]*x[1])) for x in zip(coefs, mode_shuffled)]);
+
 	
-if(args.length):
-	pattern = pattern[:args.length]
-	pattern_shuffled = pattern_shuffled[:args.length]
 
 
+#stop here
 
 #plot section
 
@@ -49,10 +47,7 @@ if(args.length):
 plt.figure(1, figsize=(8,5))
 ax = plt.subplot(111)
 ax = remove_top_left_boundaries(ax)
-if(args.norm):
-	plt.axis((0,len(pattern),0, 1))
-else:
-	plt.axis((0, len(pattern), 0, max(pattern)*1.2))
+plt.axis((0, len(pattern), 0, max(pattern)*1.2))
 	
 #plot real and control binding pattern
 plt.plot(pattern, '0.2',  linewidth=2, label='interactions')
