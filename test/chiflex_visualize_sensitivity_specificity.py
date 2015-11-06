@@ -38,8 +38,8 @@ for path, name in zip(args.path, args.names):
 #sys.exit();
 	
 
-
-
+##############################################################################
+#Plotting
 
 def hist(data1, data2, output, labels, xticklabels, title):
 	#prepare an appropriate layout
@@ -74,8 +74,9 @@ def hist(data1, data2, output, labels, xticklabels, title):
 	plt.close();
 	
 	
-#plot sensitivity
+
 for name, table in tables.items():
+	#plot sensitivity
 	sens_chimera_mapping = table['sensitivity_chimera_(mapping)']
 	sens_chimera_total = table['total_sensitivity_chimera']	
 	hist(sens_chimera_mapping, sens_chimera_total, os.path.join(args.output, "sens_chimera_%s.png" % name), labels=('mapping', 'filtering'), xticklabels=mmrate, title="sensitivity of chimera recovery")
@@ -83,3 +84,31 @@ for name, table in tables.items():
 	sens_single_mapping = table['sensitivity_single_(mapping)']
 	sens_single_total = table['total_sensitivity_single']
 	hist(sens_single_mapping, sens_single_total, os.path.join(args.output, "sens_single_%s.png" % name), labels=('mapping', 'filtering'), xticklabels=mmrate, title="sensitivity of single reads recovery")
+	
+	
+	#plot specificity
+	spec_chimera_mapping = table['specificity_chimera_(mapping)']
+	spec_chimera_total = table['specificity_chimera']	
+	hist(spec_chimera_mapping, spec_chimera_total, os.path.join(args.output, "spec_chimera_%s.png" % name), labels=('mapping', 'filtering'), xticklabels=mmrate, title="specificity of chimera recovery")
+	
+	spec_single_mapping = table['specificity_single_(mapping)']
+	spec_single_total = table['specificity_single']
+	hist(spec_single_mapping, spec_single_total, os.path.join(args.output, "spec_single_%s.png" % name), labels=('mapping', 'filtering'), xticklabels=mmrate, title="specificity of single reads recovery")
+	
+	
+	#plot fdr
+	fdr_single_real = 100 - table['specificity_single']
+	fdr_single_estimated = table['estimated_fdr_single']
+	hist(fdr_single_real, fdr_single_estimated, os.path.join(args.output, "fdr_single_%s.png" % name), labels=('real', 'estimated'), xticklabels=mmrate, title="FDR of single reads recovery")
+	
+	fdr_chimera_real = 100 - table['specificity_chimera']
+	fdr_chimera_estimated = table['estimated_fdr_chimera']
+	hist(fdr_chimera_real, fdr_chimera_estimated, os.path.join(args.output, "fdr_chimera_%s.png" % name), labels=('real', 'estimated'), xticklabels=mmrate, title="FDR of chimera recovery")	
+	
+	
+	
+	
+	
+	
+	
+	
