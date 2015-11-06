@@ -55,7 +55,7 @@ plt.figure(1, figsize=(8,5))
 ax = plt.subplot(111)
 remove_top_left_boundaries(ax)
 if(args.norm):
-	plt.axis((0,len(pattern),0, 1))
+	plt.axis((0,len(pattern),0, 100))
 else:
 	plt.axis((0, len(pattern), 0, max(pattern)*1.2))
 	
