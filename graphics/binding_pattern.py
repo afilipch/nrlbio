@@ -35,8 +35,12 @@ pattern = np.array([pattern[x] for x in sorted(pattern.keys())])
 pattern_shuffled = np.array([pattern_shuffled[x] for x in sorted(pattern_shuffled.keys())])
 
 if(args.norm):
-	pattern = pattern/total;
-	pattern_shuffled = pattern_shuffled/total;
+	pattern = pattern/total*100;
+	pattern_shuffled = pattern_shuffled/total*100;
+else:
+	pattern = pattern/2
+	pattern_shuffled = pattern_shuffled/2
+	
 	
 if(args.length):
 	pattern = pattern[:args.length]
@@ -49,14 +53,14 @@ if(args.length):
 #prepare an appropriate layout
 plt.figure(1, figsize=(8,5))
 ax = plt.subplot(111)
-ax = remove_top_left_boundaries(ax)
+remove_top_left_boundaries(ax)
 if(args.norm):
 	plt.axis((0,len(pattern),0, 1))
 else:
 	plt.axis((0, len(pattern), 0, max(pattern)*1.2))
 	
 #plot real and control binding pattern
-plt.plot(pattern, '0.2',  linewidth=2, label='interactions')
+plt.plot(pattern, '0.2',  linewidth=2, label='interactions(%d)' % (total/2))
 plt.plot(pattern_shuffled, '0.8',  linewidth=2, label='shuffled sequences')
 
 #set labels and title

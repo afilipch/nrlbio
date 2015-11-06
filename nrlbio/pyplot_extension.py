@@ -99,7 +99,7 @@ def histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabe
 
 
 	
-def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, xlabels=None, xticksrotation = 0, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=None, label=None, stacked=False, hold=None):
+def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, xlabels=None, xticksrotation = 0, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), label=None, stacked=False, hold=None):
 	'''Draws many histograms in one figure with predifined style on basis of provided data
 		
 		data list|numpy.ndarray|dict: list or array of values to plot as histogram. Counter-like dict may be also provided.
@@ -116,11 +116,12 @@ def multihistogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xtic
 	if(not range):
 		range = _set_range(merged_values, bins, step=step);
 		
-	
+	if(not label):
+		label=[str(x) for x in range(1, 1 + len(vw))];
 	
 	fig = plt.figure()
 	ax = plt.subplot(111)
-	#ax.patch.set_facecolor('white')
+	
 	yxp = [];
 	for (values, weights), c, l in zip(vw, color, label):
 		yxp.append(plt.hist(values, bins=bins, range=range, normed=normed, weights=weights, cumulative=cumulative, bottom=bottom, histtype=histtype, align=align, orientation=orientation, rwidth=rwidth, log=log, color=c, label=l, stacked=stacked, hold=hold, alpha=0.5));
