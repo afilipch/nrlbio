@@ -66,7 +66,7 @@ elif(bed.file_type =='gff'):
 			interval.attrs[k]=v;
 		sys.stdout.write(str(interval))
 else:
-	sys.exit('Only bed or gff files can be annotated yet:(');
+	sys.exit('Only bed or gff files can be annotated yet:(\n');
 
 
 

@@ -59,6 +59,11 @@ def bed2gff(bi, source='.', feature='.', attrs=[]):
 	'''yields gff interval from given bed interval'''
 	attrs_str = "; ".join(["%s=%s" % (str(x[0]), str(x[1])) for x in attrs])
 	return create_interval_from_list( [bi.chrom, source, feature, str(bi.start+1), str(bi.stop), bi.score, bi.strand, '.', "ID=%s;%s" % (bi.name, attrs_str)] );
+
+def gff2bed(gi):
+	'''yields bed interval from given gff interval'''
+	return Interval(gi.chrom, gi.start, gi.stop, name=gi.name, score=gi.score, strand=gi.strand)	
+
 	
 def list2interval(l):
 	'''creates an interval from the list of strings. items in the list should be in the order: chromosome, start, stop, name, score, strand. In case of dummy bed entry(chromosome is equal ".") returns None

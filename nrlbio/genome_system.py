@@ -1,11 +1,22 @@
 '''Collection of classes and functions to work with gene models'''
 
 import sys
-from collections import namedtuple, defaultdict
+from collections import namedtuple, defaultdict, Counter
 import bisect
 
 from pybedtools import Interval, BedTool
 
+from nrlbio.pybedtools_extension import get_distance
+
+
+def exons2introns(exons):
+	'''Returns list of introns on basis of given exons'''
+	introns = [];
+	if(exons and len(exons)>1):
+		for i, (left,right) in enumerate(zip(exons[:-1], exons[1:])):
+			introns.append(Interval(exons[0].chrom, left.end, right.start, '.', str(i), exons[0].strand));
+	return introns
+	
 
 
 def seqrecord2seq(seqrecord, start, end, strand=None):
@@ -48,6 +59,23 @@ def intervals2dict(intervals):
 	
 	
 def find_closest(chrom, strand, start, stop, interval_dict, max_distance=4, lookforward = 10):
+	'''Finds all interavls witthin a certain distance for given chrom, strand, start and stop positions:
+	
+	chrom str: chromosome of interval of interest
+	strand str: strand of interval of interest
+	start int: start(0-based inclusive) of interval of interest
+	stop int: end(0-based exclusive) of interval of interest
+	interval_dict dict:
+		keys: tuple of chromosome strand
+		values: list of intervals on corresponding chromosome and strand, supposed to be sorted;
+	max_distance int: max allowed distance between interval of interest and others
+	lookforward int: num of trials to look further for intersecting intervals
+	
+	Returns:
+		start_intervals list of pybedtools.Interval: all interval within a max_distance to a start
+		stop_intervals list of pybedtools.Interval: all interval within a max_distance to a stop
+	'''	
+	
 	l = interval_dict[(chrom, strand)]
 	index =  bisect.bisect([x.start for x in l], start)
 	
@@ -80,14 +108,24 @@ def find_closest(chrom, strand, start, stop, interval_dict, max_distance=4, look
 	return start_intervals, stop_intervals
 		
 		
+
+
+class Transcript(object):
+	'''Class wraps description and functionality for unprocessed RNA transcripts.
 	
-			
-
-
-
-
-class Gene(object):
-	def __init__(self, name, transcript, exons=[], introns=[], cds=None, utr5=None, utr3=None, type_='', gene_name='', otherfields={}):
+	Attributes:
+		name str: name of the transcript
+		transcript pybedtools.Interval: interval of the transcript itself
+		exons list of pybedtools.Interval: exons of the transcript, supposed to be sorted
+		introns list of pybedtools.Interval: introns of the transcript, supposed to be sorted
+		cds pybedtools.Interval: interval of the transcript coding sequence
+		utr5 pybedtools.Interval: interval of the transcript 5'UTR 
+		utr3 pybedtools.Interval: interval of the transcript 3'UTR
+		biotype str: type of the transcript;
+		gene_name str: name of the parent gene
+		otherfields dict: additonal miscellanious annotation of hte transcript
+	'''
+	def __init__(self, name, transcript, exons=[], introns=[], cds=None, utr5=None, utr3=None, biotype='', gene_name='', otherfields={}):
 		self.name = name
 		self.transcript = transcript;
 		self.exons = exons;
@@ -95,7 +133,7 @@ class Gene(object):
 		self.cds = cds 
 		self.utr5 = utr5 
 		self.utr3 = utr3 
-		self.type = type_
+		self.biotype = biotype
 		self.gene_name = gene_name
 		self.otherfields = otherfields
 		
@@ -131,12 +169,34 @@ class Gene(object):
 			if(s and e):
 				exons.append(Interval(chrom, int(s), int(e), name, str(i), strand));
 			
-		introns = [];
-		for i, (left,right) in enumerate(zip(exons[:-1], exons[1:])):
-			introns.append(Interval(chrom, left.end, right.start, name, str(i), strand));
+		introns = exons2introns(exons)
 			
-		return cls(name, transcript, exons=exons, introns=introns, cds=cds, utr5=utr5, utr3=utr3, type_='refseq', gene_name=gene_name, otherfields=otherfields);
+		return cls(name, transcript, exons=exons, introns=introns, cds=cds, utr5=utr5, utr3=utr3, biotype='refseq', gene_name=gene_name, otherfields=otherfields);
+	
+	
+	
+	def annotate_regulation(self, interval):
+		'''annotates given interval according to its position on UTR5 or CDS or UTR3'''
+		l = (interval.start - interval.end)/2
+		if(self.utr3 and get_distance(self.utr3, interval)<l):
+			return 'utr3'
+		if(self.cds and get_distance(self.cds, interval)<l):
+			return 'cds'
+		if(self.utr5 and get_distance(self.utr5, interval)<l):
+			return 'utr5'
 		
+		return None
+		
+
+	def annotate_transcription(self, interval):
+		'''annotates given interval according to its position on UTR5 or CDS or UTR3'''
+		l = (interval.start - interval.end)/2
+		for exon in self.exons:
+			if(exon and get_distance(exon, interval)<l):
+				return 'exon'
+		return 'intron'
+	
+	
 	
 	def to_refseq(self):
 		exon_starts = ",".join([str(x.start) for x in self.exons]) + ","
@@ -145,24 +205,163 @@ class Gene(object):
 		return "\t".join((  str(self.otherfields['bin']), self.name, self.transcript.chrom, self.transcript.strand, str(self.transcript.start), str(self.transcript.end),
 				   str(self.cds.start), str(self.cds.end), str(self.otherfields['exons_count']),
 				   exon_starts, exon_stops, self.transcript.score, str(self.gene_name)  ))
+	
+	def to_yaml(self):
+		obj= {'name': self.name,
+		'transcript': (self.transcript.chrom, self.transcript.start, self.transcript.stop, self.transcript.name, self.transcript.score, self.transcript.strand),
+		'exons' : [(x.chrom, x.start, x.stop, '.', x.score, x.strand) for x in self.exons],
+		'introns' : [(x.chrom, x.start, x.stop, '.', x.score, x.strand) for x in self.introns],
+		'biotype' : self.biotype,
+		'gene_name' : self.gene_name,
+		'otherfields' : self.otherfields}
+		
+		if(self.cds):
+			obj['cds'] = (self.cds.chrom, self.cds.start, self.cds.stop, '.', self.cds.score, self.cds.strand)
+		if(self.utr5):
+			obj['utr5'] = (self.utr5.chrom, self.utr5.start, self.utr5.stop, '.', self.utr5.score, self.utr5.strand)
+		if(self.utr3):
+			obj['utr3'] = (self.utr3.chrom, self.utr3.start, self.utr3.stop, '.', self.utr3.score, self.utr3.strand)
+		
+		return obj;
+	
+	@classmethod
+	def from_yaml(cls, obj):
+		exons = [Interval(*x) for x in obj['exons']]
+		introns = [Interval(*x) for x in obj['introns']]
+		
+		utr3 = obj.get('utr3')
+		if(utr3):
+			utr3 = Interval(*utr3)
+		utr5 = obj.get('utr5')
+		if(utr5):
+			utr5 = Interval(*utr5)
+		cds = obj.get('cds')
+		if(cds):
+			cds = Interval(*cds)
+			
+		return cls(obj['name'], Interval(*obj['transcript']), exons=exons, introns=introns, cds=cds, utr5=utr5, utr3=utr3, biotype=obj['biotype'], gene_name=obj['gene_name'], otherfields=obj['otherfields']);	
+		
 		
 		
 	def __str__(self):
-		return self.to_refseq()
+		return "Region: %s\nName: %s\nGene name: %s\n\nTranscript: %s\n5\'UTR: %s\nCDS: %s\n3\'UTR: %s\nexons:\n%sintrons:\n%s" % ("\t".join([ str(x) for x in (self.transcript.chrom, self.transcript.start, self.transcript.end, self.transcript.strand)]), self.name, self.gene_name, self.transcript, self.utr5, self.cds, self.utr3, "".join([str(x) for x in self.exons]), "".join([str(x) for x in self.introns]))
 		
 		
-def generate_genes_from_refseq(refseq):
-	'''Yields Gene instances from given refseq(bed12 format) file'''
+def generate_transcripts_from_refseq(refseq):
+	'''Yields Transcript instances from given refseq(bed12 format) file'''
 	with open(refseq) as f:
 		for l in f:
 			if(l.startswith('#')):
 				pass;
 			else:
-				yield Gene.from_refseq(l.strip().split("\t"));
+				yield Transcript.from_refseq(l.strip().split("\t"));
 
 		
 	
+class Gene(object):
+	def __init__(self, name, gene, gene_symbol=None, transcripts=[]):
+		self.name=name
+		self.gene_symbol = gene_symbol;
+		self.gene = gene
+		self.transcripts=transcripts
+		
+	def annotate_interval(self, interval):
+		
+		l = (interval.start - interval.end)/2	
+		regulation = [];
+		transcription = [];
+		biotypes = [];
+		for transcript in self.transcripts:
+			if(get_distance(transcript.transcript, interval)<l):
+				regulation.append(transcript.annotate_regulation(interval))
+				transcription.append(transcript.annotate_transcription(interval))
+				biotypes.append(transcript.biotype)
+		return tuple(set(filter(bool, regulation))), tuple(set(filter(bool, transcription))), tuple(set(filter(bool, biotypes)))
+		
+		
+	def to_yaml(self):
+		return {'name': self.name, 'gene_symbol': self.gene_symbol, 'gene': (self.gene.chrom, self.gene.start, self.gene.stop, self.gene.name, self.gene.score, self.gene.strand), 'transcripts': [x.to_yaml() for x in self.transcripts]}
 	
+	@classmethod
+	def from_yaml(cls, obj):
+		return cls(obj['name'], Interval(*obj['gene']),  gene_symbol = obj['gene_symbol'], transcripts = [Transcript.from_yaml(x) for x in obj['transcripts']])
+		
+	def __str__(self):
+		l = ['Region: %s\nName: %s\nGene_symbol: %s\n' % ("\t".join([ str(x) for x in (self.gene.chrom, self.gene.start, self.gene.end, self.gene.strand)]), self.name, self.gene_symbol), "Gene: %s" % str(self.gene)]
+		for transcript in self.transcripts:
+			l.append("%s\n%s" % ("_"*140, str(transcript)))
+		return "\n".join(l)
+	
+	
+		
+		
+
+def _gff3_to_transcript(transcript_interval, transcription_blocks):
+	'''creates Transcript object on basis of gff3 specific transcript_interval and transcription_blocks entries. Is used internally in gff3_to_genes'''
+
+	exons = [Interval(x.chrom, x.start, x.stop, x.name, x.attrs['rank'], x.strand) for x in transcription_blocks.get('exon')]
+	introns = exons2introns(exons)
+	
+	utr3_intervals = transcription_blocks.get('three_prime_UTR');
+	cds_intervals = transcription_blocks.get('CDS');
+	utr5_intervals = transcription_blocks.get('five_prime_UTR');
+	if(utr3_intervals):
+		utr3=Interval(transcript_interval.chrom, min([x.start for x in utr3_intervals]), max([x.end for x in utr3_intervals]), '.', '0', transcript_interval.strand)
+	else:
+		utr3=None;
+	if(cds_intervals):
+		cds=Interval(transcript_interval.chrom, min([x.start for x in cds_intervals]), max([x.end for x in cds_intervals]), '.', '0', transcript_interval.strand)
+	else:
+		cds=None
+	if(utr5_intervals):
+		utr5=Interval(transcript_interval.chrom, min([x.start for x in utr5_intervals]), max([x.end for x in utr5_intervals]), '.', '0', transcript_interval.strand)
+	else:
+		utr5=None
+		
+	return Transcript(transcript_interval.name.split(":")[1], transcript_interval, exons=exons, introns=introns, cds=cds, utr5=utr5, utr3=utr3, biotype=transcript_interval.attrs['biotype'], gene_name=transcript_interval.attrs['Parent'].split(":")[1])
+				
+				
+def gff3_to_genes(gff3):
+	'''Yields genes from given iterable of gff3 intervals'''
+	genes = [];
+	gene_interval = None
+	transcript_interval=None
+	transcripts = [];
+	transcription_blocks = defaultdict(list);
+	#gt = []
+	
+	for interval in gff3:
+		if(interval.attrs.get('ID', 'stub').startswith('gene')):
+			if(transcript_interval):
+				transcripts.append(_gff3_to_transcript(transcript_interval, transcription_blocks));
+			if(gene_interval):
+				gene = Gene(gene_interval.name.split(":")[1], gene_interval, gene_interval.attrs.get('Name'), transcripts);
+				genes.append(gene);
+			gene_interval = interval
+			transcript_interval = None;
+			transcripts = [];
+			
+		elif(interval.attrs.get('ID', 'stub').startswith('transcript')):
+			if(transcript_interval):
+				transcripts.append(_gff3_to_transcript(transcript_interval, transcription_blocks))
+			transcript_interval = interval;
+			transcription_blocks = defaultdict(list);
+		else:
+			transcription_blocks[interval[2]].append(interval);
+			
+	else:
+		if(transcript_interval):
+			transcripts.append(_gff3_to_transcript(transcript_interval, transcription_blocks));
+		if(gene_interval):
+			gene = Gene(gene_interval.name.split(":")[1], gene_interval, gene_interval.attrs.get('Name'), transcripts);
+			genes.append(gene);
+		
+	return genes
+
+def yaml2genes(path):
+	import yaml
+	with open(path, 'r') as f:
+		return [Gene.from_yaml(x) for x in yaml.load(f)]
 	
 	
 #testing section
@@ -182,5 +381,22 @@ if(__name__ == "__main__"):
 	#for i in stop_intervals:
 		#print i;
 		
-	for gene in generate_genes_from_refseq(sys.argv[1]):
-		pass
+	#for gene in generate_genes_from_refseq(sys.argv[1]):
+		#pass
+		
+	import yaml	
+	#with open('todel.yaml', 'w') as f:
+		#f.write(yaml.dump(gff3_to_genes(BedTool(sys.argv[1])), default_flow_style=False))	
+		
+	with open('todel.yml', 'w') as f:
+		for c, gene in enumerate(gff3_to_genes(BedTool(sys.argv[1]))):
+			print "*"*140
+			print gene
+			print
+			if(c==1):
+				f.write(yaml.dump(gene.to_yaml(), default_flow_style=False))
+				break;
+				
+	#with open(sys.argv[2], 'r') as f:
+		#d = yaml.load(f)
+		#print Gene.from_yaml(d);

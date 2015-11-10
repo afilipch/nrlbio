@@ -8,7 +8,7 @@ from collections import defaultdict, namedtuple
 from pybedtools import Interval
 from Bio import SeqIO
 
-from nrlbio.genome_system import generate_genes_from_refseq;
+from nrlbio.genome_system import generate_transcripts_from_refseq;
 from nrlbio.sequencetools import random_string, shuffle_string, introduce_conversions
 from nrlbio.random_extension import weighted2interval, weighted_choice_fast
 
@@ -169,8 +169,8 @@ for k, v in fasta.iteritems():
 	for strand in "+-":
 		chromosomes.append(  Interval(k, 0, len(v), name=".", score=".", strand=strand, otherfields=None) )
 
-genes = list(generate_genes_from_refseq(args.genes));
-#for c, gene in enumerate(generate_genes_from_refseq(args.genes)):
+genes = list(generate_transcripts_from_refseq(args.genes));
+#for c, gene in enumerate(generate_transcripts_from_refseq(args.genes)):
 	#genes[c, len(gene.transcript)] = gene;
 	
 	
