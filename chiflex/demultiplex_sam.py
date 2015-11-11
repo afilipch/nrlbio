@@ -21,6 +21,11 @@ parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as
 parser.add_argument('--bestdistance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique");
 args = parser.parse_args();
 
+# parse [score] argument
+score2function = {'as': 'as_score', 'as_qstart': 'as_qstart_score', 'as_qstart_entropy': 'as_qstart_entropy_score', 'as_qstart_rstart': 'as_qstart_rstart_score', 'as_qstart_rstart_entropy': 'as_qstart_rstart_entropy_score'}
+exec("from nrlbio.samlib import %s as key_score" % score2function[args.score]);
+
+
 
 counts = [0]*3
 def _iteration(arwlist, bestdistance):
@@ -43,12 +48,6 @@ def _iteration(arwlist, bestdistance):
 				stat_nonunique.increment_basic(nu.aligned_read)
 				stat_nonunique.increment_short(nu.aligned_read)
 
-
-
-			
-# parse input parameters
-score2function = {'as': 'as_score', 'as_qstart': 'as_qstart_score', 'as_qstart_entropy': 'as_qstart_entropy_score', 'as_qstart_rstart': 'as_qstart_rstart_score', 'as_qstart_rstart_entropy': 'as_qstart_rstart_entropy_score'}
-exec("from nrlbio.samlib import %s as key_score" % score2function[args.score]);
 
 
 
