@@ -1,5 +1,5 @@
 #! /usr/lib/python
-'''filters mapping results on read features basis'''
+'''Filters chimeras on feature basis'''
 import argparse
 import sys;
 import os;
@@ -25,10 +25,10 @@ CONFIGURATION = load_config('lrg')
 
 
 
-parser = argparse.ArgumentParser(description='filters mapping results on read features basis');
-parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, help = "path to the sam file to be filtered");
-parser.add_argument('-c', '--control', nargs = '?', required = True, type = str, help = "path to the sam file originated from decoy");
-parser.add_argument('-f', '--features', nargs = '+', default = ['AS1', 'AS2'], choices=['AS1', 'AS2', 'gap', 'minqstart'],  type = str, help = "read features to be used for filtering");
+parser = argparse.ArgumentParser(description='Filters chimeras on feature basis');
+parser.add_argument('-s', '--signal', nargs = '?', required = True, type = str, help = "path to the chimeras to be filtered, double gff format");
+parser.add_argument('-c', '--control', nargs = '?', required = True, type = str, help = "path to the chimeras originated from decoy, double gff format");
+parser.add_argument('-f', '--features', nargs = '+', default = ['AS1', 'AS2'], choices=['AS1', 'AS2', 'gap', 'minqstart'],  type = str, help = "Features to be used for filtering");
 parser.add_argument('--fdr', nargs = '?', default = 0.05, type = float, help = "False Discovery Rate allowed");
 #parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 args = parser.parse_args();
@@ -74,7 +74,7 @@ if(rule):
 	for i1, i2 in apply_filter(args.signal, lrg_filter):
 		sys.stdout.write(str(i1))
 		sys.stdout.write(str(i2))	
-	log_message = "Nothing passed the filtering\n"
+	log_message = log_message
 else:
 	log_message = "Nothing passed the filtering\n"
 

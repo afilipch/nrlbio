@@ -73,7 +73,7 @@ for aligned_read in samfile.fetch(until_eof=True):
 	if(not aligned_read.is_unmapped):
 		
 		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, score_function=key_score, add_nr_tag=True)
+		arw = ArWrapper(aligned_read, rname, score_function=key_score, add_nr_tag=False)
 		
 		if(current_name != arw.qname):
 			_iteration(arwlist, args.bestdistance)

@@ -67,6 +67,7 @@ bs_list = get_bowtie_call(bowtie_settings, args.bowtie, args.reference, args.rea
 if('interaction' in args.modes or 'splicing' in args.modes):
 	if(args.genome):
 		annotate_with_genome = True;
+		genome_path = os.path.abspath(args.genome)
 	elif(args.exons):
 		annotate_with_genome = False;
 	else:
@@ -168,7 +169,7 @@ def makefile_main():
 		if(annotate_with_genome):
 			input_files = uniquef
 			output_files = os.path.join('chimeras', 'unique.annotated.gff')
-			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files, package=chiflex_package)
+			script = get_script('annotate_novel.py', arguments={'--reference': genome_path}, inp = input_files, out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 		
 			input_files = output_files
@@ -179,7 +180,7 @@ def makefile_main():
 			
 			input_files = controlf
 			output_files = os.path.join('chimeras', 'control.annotated.gff')
-			script = get_script('annotate_novel.py', arguments={'--reference': args.genome}, inp = input_files, out=output_files, package=chiflex_package)
+			script = get_script('annotate_novel.py', arguments={'--reference': genome_path}, inp = input_files, out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 		
 			input_files = output_files
