@@ -21,7 +21,7 @@ bowtie_settings = {'N': ('0','-'),
 'R': ('2', '-'),
 'no-unal': ('True', '--'), 
 'f': ('False', '-'), 
-'p': ('8', '-') }
+'p': ('2', '-') }
 bs_string = "\n".join(["\t%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_settings.items()])
 
 parser = argparse.ArgumentParser(description='Creates makefile and directory structure for testing chiflex projec');
@@ -140,31 +140,31 @@ def makefile():
 
 	#Merge sam hits into chimeras in doublebed format
 	input_files = os.path.join('sam', '%s.unique_chimera.bam' % args.name) 
-	output_files = os.path.join('chimeras', 'unique.bed') 
-	script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
+	output_files = os.path.join('chimeras', 'unique.gff') 
+	script = get_script('merged2chimeras.py', arguments={'--oformat': 'gff'}, inp = input_files, out = output_files)
 	m.append(dependence(input_files, output_files, script))
 	
 	#Merge sam hits into chimeras in doublebed format for decoy(control) reference
 	input_files = os.path.join('sam', '%s.control_chimera.bam' % args.name) 
-	output_files = os.path.join('chimeras', 'control.bed') 
-	script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files)
+	output_files = os.path.join('chimeras', 'control.gff') 
+	script = get_script('merged2chimeras.py', arguments={'--oformat': 'gff'}, inp = input_files, out = output_files)
 	m.append(dependence(input_files, output_files, script))
 	
 	#Filter chimeras on basis of control chimeras. LRG is applied for filtering
-	input_files =  os.path.join('chimeras', 'unique.bed') , os.path.join('chimeras', 'control.bed') 
-	output_files = os.path.join('chimeras', 'filtered.bed') 
+	input_files =  os.path.join('chimeras', 'unique.gff') , os.path.join('chimeras', 'control.gff') 
+	output_files = os.path.join('chimeras', 'filtered.gff') 
 	script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS1 AS2 gap', '--fdr': 0.05}, out = output_files)
 	m.append(dependence(input_files, output_files, script))
 	
 	#Filter single hits on basis of control single hits. LRG is applied for filtering
 	input_files =  os.path.join('sam', '%s.unique.bam' % args.name) , os.path.join('sam', '%s.control.bam' % args.name) 
 	output_files = os.path.join('sam', '%s.single_filtered.bam' % args.name) 
-	script = get_script('filter_alignment.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS qstart', '--fdr': 0.05, '--name': output_files})
+	script = get_script('filter_alignment.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': 'AS qstart', '--fdr': 0.05, '--output': output_files})
 	m.append(dependence(input_files, output_files, script))
 	
 	
 	#Evalute mapping statistics
-	input_files =  os.path.abspath(args.reads), os.path.join('sam', '%s.unique.bam' % args.name), os.path.join('sam', '%s.control.bam' % args.name), os.path.join('sam', '%s.unique_chimera.bam' % args.name) , os.path.join('sam', '%s.control_chimera.bam' % args.name), os.path.join('sam', '%s.nonunique.bam' % args.name), os.path.join('sam', '%s.nonunique_chimera.bam' % args.name), os.path.join('chimeras', 'filtered.bed'), os.path.join('sam', '%s.single_filtered.bam' % args.name)
+	input_files =  os.path.abspath(args.reads), os.path.join('sam', '%s.unique.bam' % args.name), os.path.join('sam', '%s.control.bam' % args.name), os.path.join('sam', '%s.unique_chimera.bam' % args.name) , os.path.join('sam', '%s.control_chimera.bam' % args.name), os.path.join('sam', '%s.nonunique.bam' % args.name), os.path.join('sam', '%s.nonunique_chimera.bam' % args.name), os.path.join('chimeras', 'filtered.gff'), os.path.join('sam', '%s.single_filtered.bam' % args.name)
 	
 	output_files = [os.path.join('evaluation_data', x)  for x in ['mapping_stat.yml', 'chimera_stat.yml', 'single_stat.yml', 'control_stat.yml', 'cf_stat.yml',  'sf_stat.yml']] 
 	
