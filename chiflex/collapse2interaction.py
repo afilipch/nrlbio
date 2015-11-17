@@ -11,7 +11,7 @@ from nrlbio.pybedtools_extension import construct_gff_interval
 
 parser = argparse.ArgumentParser(description='converts bed-like file of chimeric reads into interactions. That is merging chimeras with intersecting regions');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to chimeras, double bed/gff format. NOTE: Intervals are assumed to be sorted with sort.py, which is crucial");
-parser.add_argument('-d', '--distance', nargs = '?', default = -10, type = int, help = "Minimum overlap(negative number)/maximum distance(positive number) of any pair of intervals in nucleotides to merge them");
+parser.add_argument('-d', '--distance', nargs = '?', default = -1, type = int, help = "Minimum overlap(negative number)/maximum distance(positive number) of any pair of intervals in nucleotides to merge them");
 parser.add_argument('-n', '--name', nargs = '?', default = 'i', type = str, help = "Base name for interactions")
 parser.add_argument('-od', '--dictionary', nargs = '?', required = True, type = str, help = "Path to the output \"interaction id to read id\" file")
 args = parser.parse_args();
@@ -45,7 +45,7 @@ def generate_overlaping_intervals(intervals, overlap):
 		if(ref == cref):
 			if(min(interval.stop, stop) - max(interval.start, start) >= overlap):
 				merged.append(interval);
-				stop = min(interval.stop, stop)
+				stop = max(interval.stop, stop)
 			else:
 				yield merged;
 				start, stop = interval.start, interval.stop;
@@ -82,10 +82,10 @@ with open(args.dictionary, 'w') as odf:
 		name_left = "%s|0" % name
 		name_right = "%s|1" % name
 		
-		intervals_left = intervals[:len(intervals)/2]
+		intervals_left = [x for x in intervals if x.name.split("|")[-1] == '0']
 		sys.stdout.write(str(merge(intervals_left, name_left)));
 		
-		intervals_right = intervals[len(intervals)/2:]
+		intervals_right = [x for x in intervals if x.name.split("|")[-1] == '1']
 		sys.stdout.write(str(merge(intervals_right, name_right)));
 		
 		for li in intervals_left:		

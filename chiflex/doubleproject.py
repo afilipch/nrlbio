@@ -152,9 +152,14 @@ def makefile_main():
 	
 	if(args.reassign):
 		input_files = output_files 
-		output_files = os.path.join('chimeras', '%s.coord_assigned.bam' % args.name)
+		output_files = os.path.join('chimeras', '%s.coord_assigned.gff' % args.name)
 		script = get_script('assign_coordinates.py', arguments={'--quite': ''}, inp = input_files, out = output_files, package=chiflex_package)
-		mlist.append(dependence(input_files, output_files, script))	
+		mlist.append(dependence(input_files, output_files, script))
+		
+	input_files =  output_files
+	output_files = os.path.join('interactions', '%s.sorted.gff' % args.name) 
+	script = get_script('sort.py', inp=input_files, out = output_files, package=chiflex_package)
+	mlist.append(dependence(input_files, output_files, script));
 
 	input_files =  output_files
 	output_files = os.path.join('interactions', '%s.interactions.gff' % args.name),  os.path.join('interactions', '%s.rid2iid.tsv' % args.name)
@@ -217,3 +222,40 @@ with open(os.path.join(project_path, 'Makefile'), 'w') as mf:
 	mf.write(makefile_main());
 
 
+
+def multipath(l):
+	return "\t".join([os.path.abspath(x) for x in l])
+
+#report project call:
+arguments_report = (
+('name', ('Project name, assigned to the generated interactions', str)),
+('path', ('Project folder', os.path.abspath)),
+('reads', ('Sequencing reads', os.path.abspath)),
+('chiflex', ('Chiflex module used in the project', os.path.abspath)), 
+('indices', ('Mapping reference indices (genome, transcriptome) used for mapping', multipath)), 
+('references', ('Mapping reference sequences (genome, transcriptome) used for mapping', multipath)), 
+('mirna', ('Path to miRNAs used for downstream analysis', os.path.abspath)), 
+
+('annotation', ('Annotation system used for interactions annotation', os.path.abspath)), 
+('repetitive', ('Repetitive mapped sequences are removed', str)),
+('nonunique', ('Nonunique mappings with high alignment score are kept', str)),
+('only_makefile', ('New Makefile was generated', str)),  
+)
+
+with open(os.path.join(project_path, 'log/project.txt'), 'w') as rf:
+	rf.write("Project call:\npython %s\n\n" % " ".join(sys.argv))
+	
+	for arg, (description, fun) in arguments_report: 
+		av = getattr(args, arg);
+		if(av):
+			rf.write("%s:\t%s\n" % (description, fun(av)))
+		else:
+			rf.write("%s:\tnot set\n" % description)
+			
+	rf.write("bowtie2 settings for first round of mapping:\n")
+	for arg, (value, dashes) in bowtie_settings1.items():
+		rf.write("\t%s%s:\t%s\n" % (dashes, arg, value))
+
+	rf.write("bowtie2 settings for second round of mapping:\n")
+	for arg, (value, dashes) in bowtie_settings2.items():
+		rf.write("\t%s%s:\t%s\n" % (dashes, arg, value))
