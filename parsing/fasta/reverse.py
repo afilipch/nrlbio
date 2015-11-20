@@ -18,7 +18,7 @@ def reverse_fast(seqrecord, line_length):
 		if(len(line) == line_length):
 			yield "".join(line);
 			line[:] = [];
-	else:
+	if(line):
 		yield "".join(line);
 
 

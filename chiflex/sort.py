@@ -30,7 +30,7 @@ for interval in sortedbed[1:]:
 		
 	else:
 		for strand, intervals in container.iteritems():
-			for si in intervals:
+			for si in sorted(intervals, key = lambda x: x.end):
 				sys.stdout.write(str(si))
 		chrom = interval.chrom;
 		container = defaultdict(list)
@@ -38,5 +38,5 @@ for interval in sortedbed[1:]:
 		
 else:		
 	for strand, intervals in container.iteritems():
-		for si in intervals:
-			sys.stdout.write(str(si))		
+		for si in sorted(intervals, key = lambda x: x.end):
+			sys.stdout.write(str(si))

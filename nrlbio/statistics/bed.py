@@ -57,7 +57,7 @@ class Stat(object):
 		config_ = load_config(configuration)
 		for attr_name in self._hist_names:
 			kwargs = config_[attr_name];
-			kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
+			kwargs['output'] = os.path.join(output, "%s.png" % attr_name);
 			kwargs['label'] = self.name;
 			attr = getattr(self, attr_name)
 			if(attr):
@@ -67,7 +67,7 @@ class Stat(object):
 				pass;
 		for attr_name, attr in self.attrs.iteritems():
 			kwargs = config_[attr_name];
-			kwargs['output'] = os.path.join(output, "%s.pdf" % attr_name);
+			kwargs['output'] = os.path.join(output, "%s.png" % attr_name);
 			if(attr):
 				try:
 					ncounter = dict([ (float(x[0]), x[1]) for x in attr.items() ])
