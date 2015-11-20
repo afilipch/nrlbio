@@ -14,29 +14,54 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 args = parser.parse_args();
 
 
+def clear_dict(d):
+	for v in d.values():
+		v[:]=[];
+		
+		
+def flush(chrom_container, start_container):
+	for strand, intervals in start_container.iteritems():
+		chrom_container[strand].extend(list(sorted(intervals, key = lambda x: x.end)));
+		
+
 sortedbed = BedTool(args.path).sort();
 if(len(sortedbed) == 0):
 	sys.stderr.write("input file is empty\n");
 	sys.exit();
 	
+	
+	
+chrom_container = defaultdict(list)
+start_container = defaultdict(list)
 
-container = defaultdict(list)
-container[sortedbed[0].strand].append(sortedbed[0])
+start_container[sortedbed[0].strand].append(sortedbed[0])
 chrom = sortedbed[0].chrom;
+start = sortedbed[0].start
 
 for interval in sortedbed[1:]:
 	if(chrom == interval.chrom):
-		container[interval.strand].append(interval)
+		if(start == interval.start):
+			start_container[interval.strand].append(interval);
+		else:
+			flush(chrom_container, start_container);
+			clear_dict(start_container)
+			start = interval.start;
+			start_container[interval.strand].append(interval);
 		
 	else:
-		for strand, intervals in container.iteritems():
-			for si in sorted(intervals, key = lambda x: x.end):
+		flush(chrom_container, start_container);
+		for strand, intervals in chrom_container.iteritems():
+			for si in intervals:
 				sys.stdout.write(str(si))
+				
 		chrom = interval.chrom;
-		container = defaultdict(list)
-		container[interval.strand].append(interval)
+		start = interval.start;
+		clear_dict(start_container);
+		clear_dict(chrom_container);
+		start_container[interval.strand].append(interval);
 		
 else:		
-	for strand, intervals in container.iteritems():
-		for si in sorted(intervals, key = lambda x: x.end):
+	flush(chrom_container, start_container);
+	for strand, intervals in chrom_container.iteritems():
+		for si in intervals:
 			sys.stdout.write(str(si))
