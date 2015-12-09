@@ -26,8 +26,10 @@ args = parser.parse_args();
 mirdict = fasta2mirnas(args.mir);
 
 
-print "%s\t%s\t%s" % ('seq_id', 'mirna_id', "\t".join(MODES_ORDER));
+print "%s\t%s\t%s\t%s" % ('#seq_id', 'length', 'mirna_id', "\t".join(MODES_ORDER));
 for seqrecord in SeqIO.parse(args.path, "fasta"):
+	print "%s\t%d\t%s\t%s" % (seqrecord.name, len(seqrecord), 'miR-proxy', "\t".join(['0' for x in MODES_ORDER]));
+	
 	if(args.shuffle):
 		tseq = shuffle_string(str(seqrecord.seq.upper()));
 	else:
@@ -40,9 +42,3 @@ for seqrecord in SeqIO.parse(args.path, "fasta"):
 
 
 
-	
-	
-	
-
-
-	

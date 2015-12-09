@@ -105,6 +105,38 @@ class Mirna(object):
 						mt['m29a'] += 1;
 						
 		return mt;
+	
+	def find_fixed_positions(self, seq):
+		mm28_positions = set();
+		for mm1 in diverge_with_1mm(get_seed_match(self.seq, 1, 8)):
+			mm28_positions.update(multifind(seq, mm1, overlap = False))
+			
+		
+		m27_positions = multifind(seq, self.m27, overlap = False)
+		m38_positions = multifind(seq, self.m38, overlap = False)
+		mt = defaultdict(set)
+		mt['mm28']= mm28_positions 
+		mt['m27']= set(m27_positions)
+		mt['m38']= set(m38_positions)
+		
+		
+		for pos in m27_positions:
+			if(len(seq)>pos+6 and seq[pos+6] == self.first):
+				mt['m27a'].add(pos);
+				first = True;
+			else:
+				first = False;
+				
+			if(pos>0 and seq[pos-1] == self.m8):
+				mt['m28'].add(pos+1);
+				if(first):
+					mt['m28a'].add(pos+1);	
+				if(pos>1 and seq[pos-2] == self.m9):
+					mt['m29'].add(pos+1);
+					if(first):
+						mt['m29a'].add(pos+1);
+						
+		return dict([(x[0], list(sorted(list(x[1])))) for x in mt.items()] )
 				
 				
 					
