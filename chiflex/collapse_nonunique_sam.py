@@ -42,34 +42,34 @@ def _iteration(arwlist):
 
 samfile = pysam.Samfile(args.path)
 output_sam = pysam.Samfile(args.output_sam, "wb", template=samfile)
-output_bed = open(args.output_bed, 'w')
 
-noncollapsed, collapsed = 0,0		
+
+noncollapsed, collapsed = 0,0
 		
 		
 arwlist = [];
 current_name = '';
-for aligned_read in samfile.fetch(until_eof=True):
-	if(not aligned_read.is_unmapped):
-		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, add_nr_tag=False)
-		
-		if(current_name != arw.qname):
-			r = _iteration(arwlist);
-			noncollapsed+=r[0] 
-			collapsed+=r[1] 
-			arwlist = [arw];
-			current_name = arw.qname;
+with open(args.output_bed, 'w') as output_bed:
+	for aligned_read in samfile.fetch(until_eof=True):
+		if(not aligned_read.is_unmapped):
+			rname = samfile.getrname(aligned_read.tid)
+			arw = ArWrapper(aligned_read, rname, add_nr_tag=False)
 			
-		else:
-			arwlist.append(arw);
-else:
-	r = _iteration(arwlist);
-	noncollapsed+=r[0] 
-	collapsed+=r[1] 
+			if(current_name != arw.qname):
+				r = _iteration(arwlist);
+				noncollapsed+=r[0] 
+				collapsed+=r[1] 
+				arwlist = [arw];
+				current_name = arw.qname;
+				
+			else:
+				arwlist.append(arw);
+	else:
+		r = _iteration(arwlist);
+		noncollapsed+=r[0] 
+		collapsed+=r[1] 
 	
 	
-output_bed.close();	
 sys.stderr.write("total hits: %d\ncollapsed nonunique hits: %d\n" % (noncollapsed + collapsed, collapsed))
 
 

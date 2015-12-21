@@ -1,0 +1,11 @@
+coverage = read.table('~/work/boudreau/projects/brain_junctions/coverage.signal.tsv')
+#coverage = read.table('~/work/darnell_clash/projects/brain_junctions/coverage.signal.tsv')
+b = barplot(coverage[,2], axes=FALSE, cex.names=1, space=0, ylab = 'Coverage by seed matches in interactions', xlab='Postion in junction, nt')
+axis(1, at=b-0.5, labels=b+0.5)
+axis(2)
+yarrow = max(coverage[,2])-5
+abline(v=mean(b)-1, lwd=2, col='red')
+arrows(mean(b)+4, yarrow+2, mean(b)+1, yarrow, col='blue')
+text(mean(b)+8, yarrow+3, 'junction')
+#dev.copy2pdf(file='~/mailbox/junctions_seed_match_coverage_mouse.pdf', width = 12, height = 8)
+dev.copy2pdf(file='~/mailbox/junctions_seed_match_coverage_human.pdf', width = 12, height = 8)

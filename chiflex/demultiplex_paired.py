@@ -208,7 +208,7 @@ with open(fnames[0], 'w') as hsignal, open(fnames[1], 'w') as hcontrol, open(fna
 				current_name = basename;
 			paired_segments[mate].append(arw);
 			
-		if(not vcount % args.verbose):
+		if(args.verbose and (not vcount % args.verbose)):
 			print "%d sam entries have been processed" % vcount
 			
 	else:

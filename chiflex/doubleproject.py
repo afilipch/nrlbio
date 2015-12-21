@@ -83,7 +83,7 @@ def makefile_main():
 	if(args.nonunique):
 		input_files = output_files
 		output_files = os.path.join('sam', 'collapsed.first.bam'), os.path.join('auxillary', 'collapsed.first.bed')
-		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 36}, inp = input_files, package=chiflex_package)
+		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 26}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		#following reassignment is done for furthe consistency
 		output_files = output_files[0]
@@ -129,7 +129,7 @@ def makefile_main():
 	if(args.nonunique):
 		input_files = output_files
 		output_files = os.path.join('sam', 'collapsed.second.bam'), os.path.join('auxillary', 'collapsed.second.bed')
-		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 30}, inp = input_files, package=chiflex_package)
+		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 36}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		#following reassignment is done for furthe consistency
 		output_files = output_files[0]
