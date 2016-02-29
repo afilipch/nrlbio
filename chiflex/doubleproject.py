@@ -7,6 +7,7 @@ import os
 from nrlbio.config.config import load_config;
 from nrlbio.makefiles import dependence, get_header, get_bowtie_call, get_script, get_bowtie_help
 
+#Load default parameters for bowtie2
 conf = load_config('doublechiflex')
 
 #Bowtie options preliminary parsing
@@ -17,27 +18,29 @@ bowtie_help_str1 = "[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x
 bowtie_help_str2 = "[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_settings2.items()])
 
 
-parser = argparse.ArgumentParser(description='Creates makefile and directory structure for chiflex project')#, formatter_class = argparse.RawTextHelpFormatter);
+parser = argparse.ArgumentParser(description='Creates makefile and directories for chiflex project')#, formatter_class = argparse.RawTextHelpFormatter);
 #Required options
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the project folder. If folder does not exist, it will be created");
-parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "path to sequencing reads. fastq/fasta file");
-parser.add_argument('--indices', nargs = 2, type = str, required = True, help = "path to the mapping reference bowtie2 indices. NOTE: At the first step, mapping will be done for the first index provided");
-parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
-parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the project folder. If folder does not exist, it will be created");
+parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "Path to sequencing reads. fastq/fasta file");
+parser.add_argument('--indices', nargs = 2, type = str, required = True, help = "Path to the mapping reference bowtie2 indices. NOTE: At the first step, mapping will be done for the first index provided");
+parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "Path to the Chiflex folder")
+parser.add_argument('--name', nargs = '?', type = str, required = True, help = "Name of the project, will be used as a name for interactions ids")
 
 
 #Paths to the files for additional annotation;
-parser.add_argument('--references', nargs = '+', type = str, help = "path to the references in fasta format. If set, sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
-parser.add_argument('--annotation', nargs = '?', type = str, help = "path to an annotation file in gff format. If provided, found genomic loci will be annotated");
-parser.add_argument('--mirna', nargs = '?', type = str, help = "path miRNA sequences in fasta format. If set interactions will be further analized as miRNA:target chimeras. NOTE: This mode is applicable for any small RNA");
+parser.add_argument('--references', nargs = '+', type = str, help = "Path to the mapping references in fasta format. If set, the sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
+parser.add_argument('--annotation', nargs = '?', type = str, help = "Path to an annotation file in gff format. If provided, found genomic loci will be annotated");
+parser.add_argument('--mirna', nargs = '?', type = str, help = "Path to the miRNA sequences in fasta format. If set, interactions will be further analized as miRNA:target chimeras. NOTE: This mode is applicable for any small RNA");
 
 #Options for the mapping result postprocessing
-parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "if set, repetitive mapped sequences are removed")
-parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "if set, nonunique mappings with high alignment score are kept")
-parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "if set, hits position on a reference will be reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers has to be in [chrom]|[strand]|[start]|[stop] format")
+parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed collpsed with collpse.pl script. Read count appendix of the read id will be used to calculate read support of the interactions")
+parser.add_argument('--backward', nargs = '?', default = False, const=True, type = bool, help = "If set, backward C to T conversion will be done in silico. Highly recommended for PAR-CLIP samples")
+parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "If set, repetitive mapped sequences are removed")
+parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "If set, nonunique mappings with high alignment score are kept")
+parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "iIf set, hits position on a reference are reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers have to be in [chrom]|[strand]|[start]|[stop] format")
 
 #Options for the output control
-parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "if set, a new makefile is created, but not folder structure");
+parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "If set, a new makefile is created, but not folders");
 
 #bowtie2 options
 parser.add_argument('--bowtie_args1', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str1)
@@ -45,7 +48,7 @@ parser.add_argument('--bowtie_args2', nargs = '+', default = [], type = str, hel
 args = parser.parse_args();
 
 #######################################################################################################################
-##Set some constants
+#Set paths' constants
 firstname = "%s.%s" % (args.name, "first")
 secondname = "%s.%s" % (args.name, "second")
 
@@ -60,12 +63,13 @@ mirna_package = os.path.abspath(os.path.join(args.chiflex, 'mirna'));
 
 
 #######################################################################################################################
-#Function to create top level Makefile
+#Main function to create top level Makefile
 def makefile_main():
 	mlist=[];
 	
-	#processing of the right chimeric part
+	#Processing of the left chimeric part bowite2 settings
 	bs_list1 = get_bowtie_call(bowtie_settings1, args.bowtie_args1, args.indices[0], args.reads, firstname)
+	
 	#Map reads with bowtie2
 	input_files = os.path.abspath(args.reads)
 	output_files = os.path.join('sam', '%s.mapped.sam' % firstname)
@@ -88,31 +92,43 @@ def makefile_main():
 		#following reassignment is done for furthe consistency
 		output_files = output_files[0]
 		
-		
+	#Demultiplex mapping hits into control and true mapped reads
 	input_files = output_files;
 	output_files = [os.path.join('sam', '%s.%s.bam' % (firstname, x)) for x in ['unique', 'control']]
 	script = get_script('demultiplex_sam.py', arguments={'--output': 'sam', '--name': firstname, '--score': conf['first']['demultiplex_sam']['score'], '--bestdistance': conf['first']['demultiplex_sam']['bestdistance']}, inp = input_files, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 	
+	#Filter mapped reads using control ones
 	input_files = output_files;
 	output_files = os.path.join('sam', '%s.filtered.bam' % firstname)
 	script = get_script('filter_alignment.py', arguments={'--output': output_files, '--features': " ".join(conf['first']['filter_alignment']['features']), '--fdr': conf['first']['filter_alignment']['fdr'], '--signal': input_files[0], '--control': input_files[1]}, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 	
+	#Filter mapped reads with a long ehough soft-clipped tail
 	input_files = output_files;
 	output_files = os.path.join('sam', '%s.length%d.bam' % (firstname, conf['min_right_length'])) 
 	script = get_script('filter_sam.py', arguments={'--output': output_files, '--filters': 'chimera_right', '--arguments': "minright=%d" % conf['min_right_length']}, inp = input_files, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 
+	#Convert mapped reads into truncated(without left mapped part) fastq file;
 	input_files = output_files;
 	output_files = os.path.join('fastq', '%s.length%d.fastq' % (firstname, conf['min_right_length'])) 
 	script = get_script('sam2fastq_masked.py', arguments={'--pad': '\'\''}, inp = input_files, out=output_files, package=advanced_package)
 	mlist.append(dependence(input_files, output_files, script));
 	
+	#Make backward conversion for PAR_CLIP reads
+	if(args.backward):
+		input_files = output_files
+		output_files = os.path.join('fastq', '%s.length%d.converted.fastq' % (firstname, conf['min_right_length'])) 
+		script = get_script('introduce_conversion.py', arguments={'--From': 'C', '--To': 'T'}, inp = input_files, out=output_files, package=advanced_package)
+		mlist.append(dependence(input_files, output_files, script))		
+		
 	
-	#processing of the right chimeric part
-	bs_list2 = get_bowtie_call(bowtie_settings2, args.bowtie_args2, args.indices[1], os.path.join(args.path, output_files), secondname)#reads will come further	
-	#Map reads with bowtie2
+	
+	#Processing of the left chimeric part bowite2 settings
+	bs_list2 = get_bowtie_call(bowtie_settings2, args.bowtie_args2, args.indices[1], os.path.join(args.path, output_files), secondname)
+	
+	#Map truncated reads with bowtie2
 	input_files = output_files
 	output_files = os.path.join('sam', '%s.mapped.sam' % secondname)
 	script = bs_list2
@@ -126,47 +142,53 @@ def makefile_main():
 		mlist.append(dependence(input_files, output_files, script))
 	
 	#Collapse confident, but nonunique mappings into single sam entry, to protect them from further filtering out
-	if(args.nonunique):
+	if(args.nonunique and not args.backward):
 		input_files = output_files
 		output_files = os.path.join('sam', 'collapsed.second.bam'), os.path.join('auxillary', 'collapsed.second.bed')
 		script = get_script('collapse_nonunique_sam.py', arguments={'-s': output_files[0], '-b': output_files[1], '--minscore': 36}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		#following reassignment is done for furthe consistency
 		output_files = output_files[0]
-		
+	
+	#Demultiplex mapping hits into control and true mapped reads
 	input_files = output_files;
 	output_files = [os.path.join('sam', '%s.%s.bam' % (secondname, x)) for x in ['unique', 'control']]
-	script = get_script('demultiplex_sam.py', arguments={'--output': 'sam', '--name': secondname, '--score': conf['second']['demultiplex_sam']['score'], '--bestdistance': conf['second']['demultiplex_sam']['bestdistance']}, inp = input_files, package=chiflex_package)
+	script = get_script('demultiplex_sam.py', arguments={'--output': 'sam', '--name': secondname, '--score': conf['second']['demultiplex_sam']['score'], '--bestdistance': conf['second']['demultiplex_sam']['bestdistance'], '--backward': args.backward, '--collapsed': args.collapsed}, inp = input_files, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 	
+	#Filter mapped reads using control ones
 	input_files = output_files;
 	output_files = os.path.join('sam', '%s.filtered.bam' % secondname)
 	script = get_script('filter_alignment.py', arguments={'--output': output_files, '--features': " ".join(conf['second']['filter_alignment']['features']), '--fdr': conf['second']['filter_alignment']['fdr'], '--signal': input_files[0], '--control': input_files[1]}, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 	
-	
+	#Merge left and right mappings of the same reads into chimeras
 	input_files = os.path.join('sam', '%s.length%d.bam' % (firstname, conf['min_right_length'])), output_files
 	output_files = os.path.join('chimeras', '%s.merged.gff' % args.name)
 	script = get_script('merged2chimeras.py', arguments={'--oformat': 'gff', '--fixgap': ""}, inp=input_files, out=output_files, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 	
+	#If set, reassign coordinates of the right mappings to genomic ones
 	if(args.reassign):
 		input_files = output_files 
 		output_files = os.path.join('chimeras', '%s.coord_assigned.gff' % args.name)
 		script = get_script('assign_coordinates.py', arguments={'--quite': ''}, inp = input_files, out = output_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
+	#Sort chimeras for following merging into interactions
 	input_files =  output_files
 	output_files = os.path.join('interactions', '%s.sorted.gff' % args.name) 
 	script = get_script('sort.py', inp=input_files, out = output_files, package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 
+	#If set, merge chimeras into interactions
 	input_files =  output_files
 	output_files = os.path.join('interactions', '%s.interactions.gff' % args.name),  os.path.join('interactions', '%s.rid2iid.tsv' % args.name)
 	script = get_script('collapse2interaction.py', arguments={'-od': output_files[1], '--name': args.name, '--distance': conf['collapse2interaction']['distance']}, inp=input_files, out = output_files[0], package=chiflex_package)
 	mlist.append(dependence(input_files, output_files, script));
 	output_files = output_files[0];
 	
+	#if set, assign sequences, energy and binding pattern for each interaction
 	if(args.references):
 		input_files = output_files
 		output_files = os.path.join('interactions', '%s.seqassigned.gff' % args.name)
@@ -187,14 +209,16 @@ def makefile_main():
 			script = get_script('assign_mode.py', arguments={'--mir': os.path.abspath(args.mirna), '--set_control': ''}, inp=input_files, out = output_files, package=mirna_package)
 			mlist.append(dependence(input_files, output_files, script));
 		
+	#Get header and cleaner for the makefile
 	mlist.insert(0, get_header(output_files))
-	# makefie cleaner
 	mlist.append('clean:\n\techo "nothing to clean."\n');
+	
 	return "\n\n".join(mlist)
 
 
 #######################################################################################################################
-#Create folder structure
+#Create folders
+
 project_path = os.path.abspath(args.path)
 folders = ['sam', 'reports', 'chimeras', 'log', 'auxillary', 'interactions', 'fastq']
 
@@ -217,16 +241,19 @@ while (not args.only_makefile):
 			
 			
 #######################################################################################################################
-#Create Makefiles
+#Create Makefile
 with open(os.path.join(project_path, 'Makefile'), 'w') as mf:
 	mf.write(makefile_main());
 
 
-
+#######################################################################################################################
+#Create Makefiles
 def multipath(l):
 	return "\t".join([os.path.abspath(x) for x in l])
 
-#report project call:
+#######################################################################################################################
+#Create a report
+
 arguments_report = (
 ('name', ('Project name, assigned to the generated interactions', str)),
 ('path', ('Project folder', os.path.abspath)),
@@ -259,3 +286,6 @@ with open(os.path.join(project_path, 'log/project.txt'), 'w') as rf:
 	rf.write("bowtie2 settings for second round of mapping:\n")
 	for arg, (value, dashes) in bowtie_settings2.items():
 		rf.write("\t%s%s:\t%s\n" % (dashes, arg, value))
+		
+		
+		

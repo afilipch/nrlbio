@@ -7,7 +7,8 @@ import sys
 import pysam;
 
 from nrlbio.statistics import sam as sam_statistics
-from nrlbio.samlib import ArWrapper, demultiplex_read_hits
+from nrlbio.samlib import demultiplex_read_hits
+from nrlbio.generators import generator_segments
 
 
 
@@ -17,6 +18,8 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path
 parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, help = "path to the output folder");
 parser.add_argument('-r', '--report', nargs = '?', default = "reports", type = str, help = "path to the report folder");
 parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
+parser.add_argument('--backward', nargs = '?', default = False, const=True, type = bool, help = "This flag has to be set, if reads were backward converted");
+parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "This flag has to be set, if reads were collapsed");
 parser.add_argument('-s', '--score', nargs = '?', default = 'as', choices = ['as', 'as_qstart', 'as_qstart_entropy', 'as_qstart_rstart', 'as_qstart_rstart_entropy'], type = str, help = "score function for hits");
 parser.add_argument('--bestdistance', nargs = '?', default = 10, type = float, help = "minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique");
 args = parser.parse_args();
@@ -24,32 +27,6 @@ args = parser.parse_args();
 # parse [score] argument
 score2function = {'as': 'as_score', 'as_qstart': 'as_qstart_score', 'as_qstart_entropy': 'as_qstart_entropy_score', 'as_qstart_rstart': 'as_qstart_rstart_score', 'as_qstart_rstart_entropy': 'as_qstart_rstart_entropy_score'}
 exec("from nrlbio.samlib import %s as key_score" % score2function[args.score]);
-
-
-
-counts = [0]*3
-def _iteration(arwlist, bestdistance):
-	if(arwlist):
-		unique, nonunique, control = demultiplex_read_hits(arwlist, bestdistance)
-		if(unique):
-			counts[0]+=1
-			sam_unique.write(unique.aligned_read);
-			stat_unique.increment_basic(unique.aligned_read)
-			stat_unique.increment_short(unique.aligned_read)
-		elif(control):
-			counts[1]+=1
-			sam_control.write(control.aligned_read)
-			stat_control.increment_basic(control.aligned_read)
-			stat_control.increment_short(control.aligned_read)
-		if(nonunique):
-			counts[2]+=1
-			for nu in nonunique:
-				sam_nonunique.write(nu.aligned_read);
-				stat_nonunique.increment_basic(nu.aligned_read)
-				stat_nonunique.increment_short(nu.aligned_read)
-
-
-
 
 
 # open output and input sam/bam files
@@ -67,28 +44,36 @@ stat_nonunique = sam_statistics.Stat(name="Nonuniquely mapped")
 
 #mappings derived from the same read are pulled together. Collapsed into one (or more, in case of non-unique mappings) wrapping read object. 
 #then they are written to a new destination, according to their source: real, or control
-arwlist = [];
-current_name = '';
-for aligned_read in samfile.fetch(until_eof=True):
-	if(not aligned_read.is_unmapped):
-		
-		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, score_function=key_score, add_nr_tag=False)
-		
-		if(current_name != arw.qname):
-			_iteration(arwlist, args.bestdistance)
-			arwlist = [arw];
-			current_name = arw.qname;
-			
+counts = [0]*4
+for arwlist in generator_segments(args.path, key_score=key_score, add_nr_tag=args.collapsed, converted=args.backward):
+	hits = demultiplex_read_hits(arwlist, args.bestdistance, backward=args.backward)
+	if(len(hits)==1):
+		hit = hits[0];
+		if(hit.control):
+			counts[1]+=1
+			sam_control.write(hit.aligned_read)
+			stat_control.increment_basic(hit.aligned_read)
+			stat_control.increment_short(hit.aligned_read)
 		else:
-			arwlist.append(arw);
-else:
-	_iteration(arwlist, args.bestdistance);
-			
-			
-# create html reports from statistics			
+			counts[0]+=1
+			sam_unique.write(hit.aligned_read);
+			stat_unique.increment_basic(hit.aligned_read)
+			stat_unique.increment_short(hit.aligned_read)
+	else:
+		snu = filter(lambda x: not x.control, hits)
+		if(snu):
+			counts[2]+=1
+			for nu in snu:
+				sam_nonunique.write(nu.aligned_read);
+				stat_nonunique.increment_basic(nu.aligned_read)
+				stat_nonunique.increment_short(nu.aligned_read)
+		else:
+			counts[3]+=1;
+
+
+# create html reports from statistics
 stat_unique.tohtml(os.path.join(args.report, "%s.unique.html" % args.name))
 stat_control.tohtml(os.path.join(args.report, "%s.control.html" % args.name))
 stat_nonunique.tohtml(os.path.join(args.report, "%s.nonunique.html" % args.name))
 			
-sys.stderr.write("number of unique hits: %d\nnumber of control hits: %d\nnumber of nonunique hits: %d\n\n" % tuple(counts));			
+sys.stderr.write("number of unique hits: %d\nnumber of control hits: %d\nnumber of nonunique hits: %d\nnumber of control nonunique hits: %d\n\n" % tuple(counts));

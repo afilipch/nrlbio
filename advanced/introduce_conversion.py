@@ -15,7 +15,7 @@ def get_variants(seq, From, To):
 	for p, n in enumerate(seq):
 		if(n == From):
 			variants.append(("".join([seq[:p], To, seq[p+1:]]), p))
-	return variants		
+	return variants
 
 
 for fastq in generator_fastq(args.path):

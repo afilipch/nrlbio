@@ -11,13 +11,31 @@ chscore:
     ylabel: 'num of intervals'
     range: [0,300]
     step: 1
-    color: 'lightgreen'       
+    color: 'lightgreen'
 length:
     title:  'Length'
     xlabel: 'length, nts'
     ylabel: 'num of intervals'
-    range: [0,300]    
-    #step: 1
+    #range: [0,300]    
+    step: 1
+    color: 'lightgreen'
+left:
+    title:  'Length of rantom head'
+    xlabel: 'length, nts'
+    ylabel: 'num of intervals'
+    step: 1    
+    color: 'lightgreen'
+right:
+    title:  'Length of random tail'
+    xlabel: 'length, nts'
+    ylabel: 'num of intervals'
+    step: 1    
+    color: 'lightgreen'
+conv:
+    title:  'Number of conversions'
+    xlabel: 'num of conversions'
+    ylabel: 'num of intervals'
+    step: 1    
     color: 'lightgreen'
 gap:
     title:  'Gap'
@@ -48,3 +66,8 @@ interaction:
     title:  "Types of the interaction"
 ktype:
     title:  "Types of the interaction"
+gtype:
+    title:  "Genomic type of interval"
+rtype:
+    title:  "Type of a read"
+        

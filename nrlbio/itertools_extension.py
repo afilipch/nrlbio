@@ -234,6 +234,35 @@ def counter2list(counter):
 	
 def median(lst):
 	return numpy.median(numpy.array(lst))
+
+
+def rolling_window(lst, window_size):
+	'''Generates consecutive windows of size [window_size] from lst iterable'''
+	it = iter(lst)
+	win = [it.next() for cnt in xrange(window_size)] # First window
+	yield win
+	for e in it: # Subsequent windows
+		win[:-1] = win[1:]
+		win[-1] = e
+		yield win
+
+
+def smooth_values(lst, window_size):
+	'''Generates sums of consecutive widows of size [window_size] from lst iterable'''
+	it = iter(lst)
+	win = [it.next() for cnt in xrange(window_size)] # First window
+	aggregate = sum(win)
+	for _ in win:
+		yield aggregate
+		
+	for e in it: # Subsequent windows
+		aggregate = aggregate - win[0] + e;
+		win[:-1] = win[1:]
+		win[-1] = e
+		yield aggregate
+		
+		
+		
 	
 
 #testing section
@@ -266,14 +295,15 @@ if(__name__ == "__main__"):
 	#for e in sorted(a, cmp=lambda x,y: cmp_indices(x,y,[2,0, 1])):
 		#print e
 		
-	from collections import Counter	
-	b = [1,1,1,3,2,3,4,4,6,4,6,6,7,7,9,8,9, 55, 55, 8, 8,8,8,8,8]
+	#from collections import Counter	
+	#b = [1,1,1,3,2,3,4,4,6,4,6,6,7,7,9,8,9, 55, 55, 8, 8,8,8,8,8]
 	
-	counter = Counter(b)
-	print counter
-	print counter2list(counter)
+	#counter = Counter(b)
+	#print counter
+	#print counter2list(counter)
 	
-	
+	for ag in smooth_values(range(20), 3):
+		print ag;
 	
 	
 	

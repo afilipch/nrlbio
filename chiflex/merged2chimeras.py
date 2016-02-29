@@ -54,7 +54,7 @@ def arws2doublebed(arws, fixgap=False, bedformat=True):
 			r.append(str(construct_gff_interval(arw.rname, arw.aligned_read.reference_start, arw.aligned_read.reference_end,'ch', score=str(arw.AS), strand=strand_conv[arw.aligned_read.is_reverse], source='un', frame='.', attrs=[('ID', "|".join((arw.qname, str(c)))), ('gap', gap), ('chscore', score), ('qstart', arw.qstart), ('qend', arw.qend) ])));
 			
 		
-	return r;	
+	return r;
 		
 		
 		

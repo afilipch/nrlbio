@@ -154,6 +154,44 @@ def generator_mirna(paths, seed_start=1, seed_stop=7):
 		for seqrecord in SeqIO.parse(path, 'fasta'):
 			yield Mirna(seqrecord.id, str(seqrecord.seq.upper()), seed_start = seed_start, seed_stop = seed_stop)
 			
+			
+def generator_segments(path, key_score= lambda x: x.AS, add_nr_tag=False, secondmate=False, converted=False):
+	'''Generates all mapping hits for a single read from a given sam/bam file (path to it)'''
+
+	import pysam;
+	if(converted):
+		from nrlbio.samlib import BackwardWrapper as CWrapper
+	else:
+		from nrlbio.samlib import ArWrapper as CWrapper
+	
+	samfile = pysam.Samfile(path)
+	arwlist = [];
+	current_name = '';
+	
+	for segment in samfile.fetch(until_eof=True):
+		if(not segment.is_unmapped):
+			
+			rname = samfile.getrname(segment.tid)
+			arw = CWrapper(segment, rname, score_function=key_score, add_nr_tag=add_nr_tag, secondmate=secondmate)
+			
+			if(current_name and current_name != arw.qname):
+				yield arwlist
+				arwlist = [arw];
+
+				
+			else:
+				arwlist.append(arw);
+		else:
+			if(current_name):
+				yield arwlist;
+				arwlist = [];
+				
+		current_name = arw.qname;
+				
+	else:
+		yield arwlist
+			
+			
 
 			
 		

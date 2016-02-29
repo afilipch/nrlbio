@@ -5,8 +5,8 @@ import sys;
 
 import pysam;
 
-from nrlbio.samlib import ArWrapper, remove_duplicates, as_score
-
+from nrlbio.samlib import remove_duplicates, as_score
+from nrlbio.generators import generator_segments
 
 
 parser = argparse.ArgumentParser(description='collapse nonunique sam records. The group of hits with identical alignment will be collapsed into one of them. All locations on reference corresponding to the identical alignments will be stored in separate bed file');
@@ -20,56 +20,38 @@ args = parser.parse_args();
 
 
 
-def _iteration(arwlist):
+def _iteration(arwlist, cid):
 	result = remove_duplicates(arwlist, as_score, minscore=args.minscore)
 	if(result):
 		arw, bed = result
-		arw.aligned_read.tags = arw.aligned_read.tags + [("CI", collapsed+1)];	
+		arw.aligned_read.tags = arw.aligned_read.tags + [("CI", collapsed)];	
 		output_sam.write(arw.aligned_read);
 		for i in bed:
-			if(i[3]):
-				strand = '-'
-			else:
-				strand = '+'
-			output_bed.write("%s\t%d\t%d\t%d\t0\t%s\n" % (i[0], i[1], i[2], collapsed+1, strand));
-		return 0, 1
+			output_bed.write("%s\t%d\t%d\t%d\t0\t%s\n" % (i[0], i[1], i[2], collapsed, i[3]));
+		return 1
 	else:
 		for arw in arwlist:
-			arw.aligned_read.tags = arw.aligned_read.tags + [("CI", 0)];	
+			arw.aligned_read.tags = arw.aligned_read.tags + [("CI", 0)];
 			output_sam.write(arw.aligned_read);
-		return 1, 0	
+		return 0
 		
 
 samfile = pysam.Samfile(args.path)
 output_sam = pysam.Samfile(args.output_sam, "wb", template=samfile)
 
 
-noncollapsed, collapsed = 0,0
+total, collapsed = 0,0
 		
-		
-arwlist = [];
-current_name = '';
+	
+
+	
+
 with open(args.output_bed, 'w') as output_bed:
-	for aligned_read in samfile.fetch(until_eof=True):
-		if(not aligned_read.is_unmapped):
-			rname = samfile.getrname(aligned_read.tid)
-			arw = ArWrapper(aligned_read, rname, add_nr_tag=False)
-			
-			if(current_name != arw.qname):
-				r = _iteration(arwlist);
-				noncollapsed+=r[0] 
-				collapsed+=r[1] 
-				arwlist = [arw];
-				current_name = arw.qname;
-				
-			else:
-				arwlist.append(arw);
-	else:
-		r = _iteration(arwlist);
-		noncollapsed+=r[0] 
-		collapsed+=r[1] 
+	for arwlist in generator_segments(args.path):
+		collapsed+= _iteration(arwlist, collapsed);
+		total +=1 
 	
 	
-sys.stderr.write("total hits: %d\ncollapsed nonunique hits: %d\n" % (noncollapsed + collapsed, collapsed))
+sys.stderr.write("total hits: %d\ncollapsed nonunique hits: %d\n" % (total, collapsed))
 
 

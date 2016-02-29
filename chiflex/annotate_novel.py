@@ -22,12 +22,14 @@ parser = argparse.ArgumentParser(description='Script tries to de novo annotate c
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the chimeras, double bed/gff file");
 parser.add_argument('--distance', nargs = '?', default = 100000, type = int, help = "max allowed disctance between chimeric hits");
 parser.add_argument('--reference', nargs = '?', required = True, type = str, help = "path to the reference(genome) to extract sequences from");
+parser.add_argument('--stranded', nargs = '?', default = False, const=True, type = bool, help = "Should be set if the sequencing data are stranded")
+parser.add_argument('--reverse', nargs = '?', default = False, const=True, type = bool, help = "Should be set if the sequencing data are reversed (For example - second mate reads)")
 args = parser.parse_args();
 
 def check_distance(i1, i2, distance):
 	return i1.chrom==i2.chrom and i1.strand==i2.strand and find_distance((i1.start, i1.end), (i2.start, i2.end))<distance;
 
-def check_splice_site(i1, i2, seqrecord):
+def check_splice_site(i1, i2, seqrecord, stranded, reverse):
 	gap = int(i1.attrs['gap'])
 	if(i1.strand == '+'):
 		flank5 = seqrecord2seq(seqrecord, i1.end+gap, i1.end+2, strand='+')
@@ -45,11 +47,17 @@ def check_splice_site(i1, i2, seqrecord):
 	breakpoints = [];
 	antisense = False;
 	for b in range(abs(gap)+1):
-		if(flank5[b:b+2] == "GT" and flank3[b:b+2] == "AG"):
-			breakpoints.append(b);
-		if(flank5[b:b+2] == "CT" and flank3[b:b+2] == "AC"):
-			breakpoints.append(b);
-			antisense = True;
+		if(reverse):
+			if(flank5[b:b+2] == "CT" and flank3[b:b+2] == "AC"):
+				breakpoints.append(b);
+				antisense = True;
+		else:		
+			if(flank5[b:b+2] == "GT" and flank3[b:b+2] == "AG"):
+				breakpoints.append(b);
+			if(not stranded):
+				if(flank5[b:b+2] == "CT" and flank3[b:b+2] == "AC"):
+					breakpoints.append(b);
+					antisense = True;
 	return breakpoints, antisense;
 		
 		
@@ -111,7 +119,7 @@ for i1, i2 in generator_doublebed(args.path):
 	total += 1;
 	if(check_distance(gi1, gi2, args.distance)):
 		seqrecord = reference[gi1.chrom];
-		breakpoints, antisense = check_splice_site(gi1, gi2, seqrecord);
+		breakpoints, antisense = check_splice_site(gi1, gi2, seqrecord, args.stranded, args.reverse);
 		uniqbreakpoints.append(len(breakpoints))
 		if(len(breakpoints)==1):
 			cs1, cs2 = clarify(gi1, gi2, breakpoints[0], antisense)

@@ -87,9 +87,9 @@ class Stat(object):
 			
 
 			
-def get_link(interval, system, internal = False):	
+def get_link(interval, system, internal = False):
 	if(internal):
-		source = "http://141.80.186.52/"
+		source = "http://genome.mdc-berlin.de/"
 	else:
 		source = "http://genome.ucsc.edu/"
 		

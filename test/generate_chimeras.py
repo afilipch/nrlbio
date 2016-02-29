@@ -40,7 +40,9 @@ parser.add_argument('--target_length', nargs = '?', default = 50, type = int, he
 
 args = parser.parse_args();
 
-TOTAL_COUNT=0#count of reads generated	
+TOTAL_COUNT=0#count of reads generated
+ProxyInterval = namedtuple('Proxy', ['chrom', 'strand', 'start', 'end'])
+RANDOM_INTERVAL = ProxyInterval('chr', '+', 10, 20)
 
 
 # set left and right random sequence length probability
@@ -120,9 +122,9 @@ def get_seq(interval, fasta_dict, left, right, conv_prob):
 
 	
 	
-def interval2read(interval, fasta_dict, type_, left=0, right=0, conv_prob=0):
+def interval2read(interval, fasta_dict, type_, left=0, right=0, conv_prob=0, type_name='single'):
 	seq, conv_num = get_seq(interval, fasta_dict, left, right, conv_prob)
-	header = "|".join([str(TOTAL_COUNT), "single", '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, '%d:%d' % (left, right), str(conv_num)])
+	header = "|".join([str(TOTAL_COUNT), type_name, '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, '%d:%d:%d' % (left, right, 0), str(conv_num)])
 	
 	if(seq):
 		return ">%s\n%s" % (header, seq);
@@ -131,7 +133,7 @@ def interval2read(interval, fasta_dict, type_, left=0, right=0, conv_prob=0):
 	
 	
 def interval2shuffled(interval, fasta_dict, type_):
-	header = "|".join([str(TOTAL_COUNT), "shuffled", '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, str(len(interval)), '0'])
+	header = "|".join([str(TOTAL_COUNT), "shuffled", '%s:%s:%d:%d' % (interval.chrom, interval.strand, interval.start, interval.end), type_, '%d:%d:%d' % (len(interval), 0, 0), '0'])
 	seq, stub = get_seq(interval, fasta_dict, 0, 0, 0)
 	
 	if(seq):
@@ -141,8 +143,8 @@ def interval2shuffled(interval, fasta_dict, type_):
 	
 	
 def get_random_entry(length):
-	header = "|".join([str(TOTAL_COUNT), "random", '0', '0', str(length), '0'])
-	seq = random_string(length);	
+	header = "|".join([str(TOTAL_COUNT), "random", '%s:%s:%d:%d' % (RANDOM_INTERVAL.chrom, RANDOM_INTERVAL.strand, RANDOM_INTERVAL.start, RANDOM_INTERVAL.end), 'random', '%d:%d:%d' % (length, 0, 0), '0'])
+	seq = random_string(length);
 	return ">%s\n%s" % (header, seq);
 
 	
@@ -374,7 +376,7 @@ for _ in range(args.num_single_reads[2]):
 #shuffled exonic reads
 for _ in range(args.num_random_reads[0]/3):
 	while(True):
-		exon = select_exon(genes, args.length)		
+		exon = select_exon(genes, args.length)
 		entry = interval2shuffled(get_random_interval(exon, args.length), fasta, "exon")
 		if(entry):
 			TOTAL_COUNT+=1;
@@ -386,7 +388,7 @@ for _ in range(args.num_random_reads[0]/3):
 #shuffled intronic reads
 for _ in range(args.num_random_reads[0]/3):
 	while(True):
-		exon = select_intron(genes, args.length)	
+		exon = select_intron(genes, args.length)
 		entry = interval2shuffled(get_random_interval(intron, args.length), fasta, "intron")
 		if(entry):
 			TOTAL_COUNT+=1;
@@ -408,8 +410,8 @@ for _ in range(args.num_random_reads[0]/3):
 
 #random reads:
 for _ in range(args.num_random_reads[1]):
-	TOTAL_COUNT+=1;
 	print get_random_entry(args.length);
+	TOTAL_COUNT+=1;
 
 
 
@@ -467,7 +469,7 @@ def get_mir_random(m_int, mirdict, length, type_, left=0, conv_prob=0):
 	
 	seq1, conv_num1 = get_seq(m_int, mirdict, left, 0, conv_prob)
 	seq2 = random_string(length);
-	header = "|".join([str(TOTAL_COUNT), 'mirna_random', '%s:%s:%d:%d' % (m_int.chrom, m_int.strand, m_int.start, m_int.end), type_, '%d:%d:%d' % (left, 0, 0), "%d:%d" % (conv_num1, 0)])
+	header = "|".join([str(TOTAL_COUNT), 'mirna_random', "&".join(['%s:%s:%d:%d' % (x.chrom, x.strand, x.start, x.end) for x in (m_int, RANDOM_INTERVAL)]), type_, '%d:%d:%d' % (left, length,0), "%d:%d" % (conv_num1, 0)])
 	
 	if(seq1 and seq2):
 		return ">%s\n%s" % (header, "".join((seq1, seq2)))
@@ -487,9 +489,8 @@ for _ in range(args.num_mir_reads[0]):
 	mirseq = mirdict[mirname]	
 	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
 
-	TOTAL_COUNT+=1;	
-	print interval2read(mir_interval, mirdict, "mirna", left=left, right=right, conv_prob=args.conv_prob)
-
+	print interval2read(mir_interval, mirdict, "mirna", left=left, right=right, conv_prob=args.conv_prob, type_name='mirna_single')
+	TOTAL_COUNT+=1;
 
 
 
@@ -568,7 +569,7 @@ for _ in range(args.num_mir_reads[4]):
 			break;
 
 
-#miRNA chimera exon shuffled
+#miRNA chimera exon random
 for _ in range(args.num_mir_reads[5]):
 	left, right, left_cut, right_cut = _get_mir_edges();
 
@@ -576,9 +577,8 @@ for _ in range(args.num_mir_reads[5]):
 	mirseq = mirdict[mirname]	
 	mir_interval = _get_mir_interval(mirname, mirseq, left_cut, right_cut)
 	
-	TOTAL_COUNT+=1;
 	print get_mir_random(mir_interval, mirdict, args.target_length, "random", left=left, conv_prob=args.conv_prob)
-
+	TOTAL_COUNT+=1;
 
 
 	

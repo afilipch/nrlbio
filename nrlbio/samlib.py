@@ -4,10 +4,14 @@
 import sys;
 from collections import namedtuple, Counter;
 from math import log
+from collections import defaultdict
 
 from nrlbio import numerictools;
 from nrlbio.statistics.sam import get_conversions, get_alignment
 from nrlbio.sequencetools import entropy;
+
+
+strand_conv = {True: '-', False: '+'}
 
 #__________________________________________________________________________________
 #Local Auxillary functions
@@ -74,10 +78,14 @@ class ArWrapper(object):
 		conversions list of tuples: 1st element in each tuple is nucleotide/gap (string/None) in reference. 2st element in each tuple is nucleotide/gap (string/None) in query.
 	'''	
 		
-	def __init__(self, aligned_read, rname, score_function=as_score, add_nr_tag = False):
+	def __init__(self, aligned_read, rname, score_function=as_score, add_nr_tag = False, secondmate=False):
 		self.aligned_read = aligned_read;
 		self.qname = aligned_read.qname;
 		self.rname = rname
+		if(secondmate):
+			self.strand = strand_conv[not aligned_read.is_reverse]
+		else:
+			self.strand = strand_conv[aligned_read.is_reverse]
 		
 		self.qstart, self.qend = convert_positions_query(aligned_read)
 		
@@ -130,14 +138,10 @@ class ArWrapper(object):
 			self.start = int(self.aligned_read.pos)
 			self.stop = int(self.aligned_read.aend)
 			self.chrom = self.rname
-			if(self.aligned_read.is_reverse):
-				self.strand = '-'
-			else:
-				self.strand = '+'
 				
 				
 	def __str__(self):
-		return "\t".join([str(x) for x in (self.qname, self.rname, self.qstart, self.qend, self.aligned_read.is_reverse, self.score)]);
+		return "\t".join([str(x) for x in (self.qname, self.rname, self.qstart, self.qend, self.strand, self.score)]);
 		
 		
 		
@@ -154,17 +158,14 @@ class BackwardWrapper(ArWrapper):
 		to char: backward conversion to (to 'T' in PAR-CLIP)	
 	
 	'''
-	def __init__(self, aligned_read, rname, from_, to, score_function=as_score, add_nr_tag = False):
+	def __init__(self, aligned_read, rname, score_function=as_score, add_nr_tag = False, secondmate=False):
 		
-		super(BackwardWrapper, self).__init__(aligned_read, rname, score_function=score_function, add_nr_tag = False);
-		
-		self.from_ = from_
-		self.to = to
-		
+		super(BackwardWrapper, self).__init__(aligned_read, rname, score_function=score_function, add_nr_tag = False, secondmate=False)
 		
 		l = aligned_read.qname.split("_")
 		self.qname = "_".join(l[:-1]);
-		self.conv_pos = int(l[-1].split(":")[-1]);
+		self.from_, self.to, conv_pos = l[-1].split(":");
+		self.conv_pos = int(conv_pos);
 
 		if(add_nr_tag):
 			number_of_reads = int(self.qname.split("_")[-1][1:])
@@ -193,51 +194,51 @@ class BackwardWrapper(ArWrapper):
 						p+=1
 						
 				self.aligned_read.tags = self.aligned_read.tags + [("NT", 1)];	
-				self.aligned_read.seq = "".join((self.aligned_read.seq[:self.conv_pos], self.from_, self.aligned_read.seq[self.conv_pos+1:]))										
+				self.aligned_read.seq = "".join((self.aligned_read.seq[:self.conv_pos], self.from_, self.aligned_read.seq[self.conv_pos+1:]))
 			else:
-				self.qname = ''
-				return None	#filtering API		
+				self.conversions = get_conversions(self.aligned_read);
+				#return None	#filtering API
 				
 		else:
 			self.conversions = get_conversions(self.aligned_read);
 			
 		self.aligned_read.qname = self.qname;
+		
+		return None
 
 		
+def collapse_backward_hits(arwlist):
+	dc = defaultdict(list);
+	for arw in arwlist:
+		dc[arw.rname, arw.strand].append(arw);
+		
+	collapsed = [];
+	for arws in dc.values():
+		arws.sort(key=lambda x: x.aligned_read.reference_start);
+		collapsed.append(arws[0]);
+		end = arws[0].aligned_read.reference_end
+		for arw in arws[1:]:
+			if(arw.aligned_read.reference_start > end):
+				collapsed.append(arw);
+			end = max(end, arw.aligned_read.reference_end);
+	return collapsed;
+		
 
-def demultiplex_read_hits(arwlist, min_difference):
+def demultiplex_read_hits(arwlist, bestdistance, backward=False):
 	'''Demultiplex hits derived from the same read (choose the best ones on basis of its score). Assignes if the read comes from decoy or nonunique.
 	
 		arwlist list: ArWrappers of the aligned reads(hits) derived from the same reads
-		min_difference int: minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique
+		bestdistance int: minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique
 		
-		Returns tuple: 3-element tuple
-			1st ArWrapper|None: the best uniquely hit, None if the best alignment is nonunique or originated from decoy
-			2nd list: list of nonunique alignments. List is empty if the best uniquely hit present
-			3rd ArWrapper|None: the best hit originated from decoy, None if the decoy hit is not the best among all alignments for the read
+		Returns list: list of all valid (within bestdistance difference to the best hit) hits (ArWrapper objects)
 	'''
-
-	real = filter(lambda x: not x.control, arwlist);
-	control = filter(lambda x: x.control, arwlist);
-	best_real, max_real = numerictools.maxes(real, lambda x: x.score)
-	best_control, max_control = numerictools.maxes(control, lambda x: x.score)
-	
-	if(max_real):
-		distances = [max_real - x.score for x in arwlist if x.score!=max_real]
-		if(distances):
-			dif_from_best = min(distances);
-		else:
-			dif_from_best = min_difference + 1;	
-	
-	if(max_real > max_control and dif_from_best>min_difference):
-		if(len(best_real) == 1):
-			return best_real[0], [], None
-		else:
-			return None, best_real, None
-	elif(max_control > max_real):
-		return None, best_real, best_control[0];
+	bestchoice = max(arwlist, key =  lambda x: x.score)
+	if(backward):
+		return collapse_backward_hits(filter(lambda x: (bestchoice.score-x.score)<bestdistance, arwlist))
 	else:
-		return None, best_real, None
+		return filter(lambda x: (bestchoice.score-x.score)<bestdistance, arwlist)
+
+	
 		
 		
 		
@@ -250,7 +251,7 @@ def remove_duplicates(arwlist, key_function, minscore=0):
     
     if(max_real>max_control and len(best_real)>1 and best_real[0].AS >= minscore):
         if(len(set([x.aligned_read.query for x in best_real]))==1):
-            return best_real[0], [(x.rname, x.aligned_read.pos, x.aligned_read.aend, x.aligned_read.is_reverse) for x in best_real]
+            return best_real[0], [(x.rname, x.aligned_read.pos, x.aligned_read.aend, x.strand) for x in best_real]
     else:
         return None
 
