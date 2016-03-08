@@ -25,13 +25,14 @@ def _paired_rnahybrid(basepairing):
 	return bound;  
 
 
-def get_rnahybrid(target, mirna, system='3utr_human', arguments = ""):
+def get_rnahybrid(target, mirna, system='3utr_human', arguments = "", extended=False):
 	"""Calculates hybridization energy of intermolecular interaction between given sequences via RNAhybrid tool. NOTE, RNAhybridis is designed to hybridize miRNA and respective target (not folding themselves). Therefore input sequences are called 'target' and 'mirna' respectively, and basepairing of mirna is also reported.
 	
 		target str: miRNAs target sequence
 		mirna str: miRNA sequence
 		system str: background system for RNAhybrid, does not affect current workflow of the function
 		arguments str: optional arguments for RNAhybid. For detailed information see RNAhybid documentation
+		extended bool: if set, additional information is returned
 		
 	Returns: 
 		float: hybridization energy
@@ -39,10 +40,15 @@ def get_rnahybrid(target, mirna, system='3utr_human', arguments = ""):
 	"""
 	call =  "RNAhybrid -s %s  \"%s\" \"%s\" -b 1 -c %s " % (system, target, mirna, arguments)
 	status, output = commands.getstatusoutput(call)
-	e = float(output.split(":")[4]);  
-	basepairing = output.split(":")[7:11];  
+	a = output.split(":")
+	e = float(a[4]);  
+	basepairing = a[7:11];  
 	p = _paired_rnahybrid(basepairing);
-	return e, p;
+	if(extended):
+		pval = float(a[5])
+		return e, p, basepairing, pval
+	else:
+		return e, p
 
 
 def get_shuffled_rnahybrid(target, mirna, trials=20, system='3utr_human', arguments = ""):

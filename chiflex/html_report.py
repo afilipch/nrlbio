@@ -91,5 +91,5 @@ def generate_html_interactions():
 			inter.set_html_attributes(args.system)
 			yield inter;
 
-html_interactions = generate_html_interactions()			
-print template.render({"interactions": html_interactions, 'title': args.title})			
+html_interactions = generate_html_interactions()
+print template.render({"interactions": html_interactions, 'title': args.title});

@@ -98,8 +98,10 @@ class ArWrapper(object):
 			self.control = False;
 			
 		if(add_nr_tag):
-			number_of_reads = int(self.qname.split("_")[-1][1:])
-			self.aligned_read.tags = self.aligned_read.tags + [("NR", number_of_reads)];
+			self.n_uniq = int(self.qname.split("_")[-1][1:])
+			self.aligned_read.tags = self.aligned_read.tags + [("NR", self.n_uniq)];
+		else:
+			self.n_uniq = 1; 
 			
 		self.score = score_function(self);
 		

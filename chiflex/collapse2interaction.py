@@ -25,7 +25,7 @@ def merge(intervals, name):
 	strand = intervals[0].strand
 	
 	gap = str(min([int(x.attrs['gap']) for x in intervals], key = abs))
-	unique_reads = len(intervals)
+	unique_reads = sum([int(x.attrs['n_uniq']) for x in intervals])
 	chscore = str(max([x.attrs['chscore'] for x in intervals]))
 	
 	return construct_gff_interval(chrom, start, stop, 'interaction', score=score, strand=strand, source='chiflex', frame='.', attrs=[("ID", name), ('gap', gap), ('chscore', chscore), ('n_uniq', unique_reads)])

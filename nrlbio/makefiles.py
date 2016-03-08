@@ -18,8 +18,11 @@ def get_script(script, arguments={}, inp = '', out = None, package=chiflex_packa
 	
 	l = [" ".join(('python', os.path.join(package, script) )), input_files]
 	for k,v in arguments.items():
-		l.append(k)
-		l.append(str(v))
+		if(v==False):
+			pass;
+		else:
+			l.append(k)
+			l.append(str(v))
 	if(out):
 		l.append(">")
 		l.append(out)

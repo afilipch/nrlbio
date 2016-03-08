@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser(description='produce chimeras from merged and a
 parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "Path to merged sam/bam file, if the chimeric hits are present there consequently(one reference scenario). Path to two sam/bam files, if chimeric reads are splited between them(two reference scenario)");
 parser.add_argument('--fixgap', nargs = '?', default = False, const=True, type = bool, help = "Can be set in two reference scenario, when already mapped left part was removed before the second mapping")
 parser.add_argument('--oformat', nargs = '?', default = 'bed', choices=['bed', 'gff'], type = str, help = "format of the output file")
+parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "This flag has to be set, if reads were collapsed");
 args = parser.parse_args();
 
 strand_conv = {True: '-', False: '+'}
@@ -51,7 +52,7 @@ def arws2doublebed(arws, fixgap=False, bedformat=True):
 			r.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d\t%d\n" % (arw.rname, arw.aligned_read.reference_start, arw.aligned_read.reference_end, "|".join((arw.qname, str(c))), arw.AS, strand_conv[arw.aligned_read.is_reverse], arw.qstart, arw.qend, score, gap));
 	else:
 		for c, arw in enumerate(arws): 
-			r.append(str(construct_gff_interval(arw.rname, arw.aligned_read.reference_start, arw.aligned_read.reference_end,'ch', score=str(arw.AS), strand=strand_conv[arw.aligned_read.is_reverse], source='un', frame='.', attrs=[('ID', "|".join((arw.qname, str(c)))), ('gap', gap), ('chscore', score), ('qstart', arw.qstart), ('qend', arw.qend) ])));
+			r.append(str(construct_gff_interval(arw.rname, arw.aligned_read.reference_start, arw.aligned_read.reference_end,'ch', score=str(arw.AS), strand=strand_conv[arw.aligned_read.is_reverse], source='un', frame='.', attrs=[('ID', "|".join((arw.qname, str(c)))), ('gap', gap), ('chscore', score), ('qstart', arw.qstart), ('qend', arw.qend), ('n_uniq', arw.n_uniq) ])));
 			
 		
 	return r;
@@ -63,7 +64,7 @@ if(len(args.path) == 1):
 	samfile = pysam.Samfile(args.path[0])
 	for segments in generator_doublesam(samfile):
 		segchroms = [samfile.getrname(segment.tid) for segment in segments]
-		arws = [ArWrapper(segment, segchrom) for segment, segchrom in zip(segments, segchroms)]
+		arws = [ArWrapper(segment, segchrom, add_nr_tag=args.collapsed) for segment, segchrom in zip(segments, segchroms)]
 		for interval_string in arws2doublebed(arws, args.fixgap, bedformat):
 			sys.stdout.write(interval_string)
 		
@@ -74,13 +75,13 @@ elif(len(args.path) == 2):
 	samfile = pysam.Samfile(args.path[0]);
 	for segment in samfile.fetch(until_eof=True):
 		segchrom = samfile.getrname(segment.tid) 
-		chimeras[segment.query_name].append(ArWrapper(segment, segchrom))
+		chimeras[segment.query_name].append(ArWrapper(segment, segchrom, add_nr_tag=args.collapsed))
 	samfile.close();
 	
 	samfile = pysam.Samfile(args.path[1]);
 	for segment in samfile.fetch(until_eof=True):
 		segchrom = samfile.getrname(segment.tid) 
-		chimeras[segment.query_name].append(ArWrapper(segment, segchrom))
+		chimeras[segment.query_name].append(ArWrapper(segment, segchrom, add_nr_tag=args.collapsed))
 	samfile.close();
 	
 	
@@ -88,3 +89,5 @@ elif(len(args.path) == 2):
 		if(len(arws)==2):
 			for interval_string in arws2doublebed(arws, args.fixgap, bedformat):
 				sys.stdout.write(interval_string)
+else:
+	sys.stderr.write('Incorrect number of input sam/bam files. It has to be 1 or 2\n')

@@ -93,17 +93,24 @@ def get_link(interval, system, internal = False):
 	else:
 		source = "http://genome.ucsc.edu/"
 		
-	if(system == "hg19"):
-		system_string = "cgi-bin/hgTracks?hgsid=7901&org=H.sapiens&db=hg19&position=";
-	elif(system == "hg38"):
-		system_string = "cgi-bin/hgTracks?hgsid=7901&org=H.sapiens&db=hg38&position=";	
-	elif(system == "mm9"):
-		system_string = "cgi-bin/hgTracks?hgsid=7901&org=M.musculus&db=mm9&position="; 
+	if(system == "hg19" or system == 'hg38'):
+		system_string = "cgi-bin/hgTracks?hgsid=7901&org=H.sapiens&db=%s&position=" % system;
+	elif(system == "mm9" or system == "mm10"):
+		system_string = "cgi-bin/hgTracks?hgsid=7901&org=M.musculus&db=%s&position=" % system; 
 	elif(system == "ce6"):
 		system_string = "cgi-bin/hgTracks?hgsid=7901&org=C.elegans&db=ce6&position=";
+	elif('circ'):
+		return 'http://circbase.org/cgi-bin/singlerecord.cgi?id=%s' % interval.chrom
+		
 	else:
 		raise ValueError('Genome system \'%s\' is not supported\n' % system);
 		
 	return "%s%s%s:%d..%d" % (source, system_string, interval.chrom , interval.start+1, interval.stop);
+
+
+def get_tarbase_link(mirid):
+	return "http://mirtarbase.mbc.nctu.edu.tw/php/search.php?q=search_exact&searchword=%s" % mirid
+
+
 	
 	

@@ -18,7 +18,7 @@ llimit = 20
 
 
 def seed_score(counts):
-	return counts[0]*3 + counts[1]*2 + counts[2]*2 + counts[3] + counts[4]*2 + counts[5]*3
+	return counts[0]*3 + counts[1]*2 + counts[2]*2 + counts[3] + counts[4]*2 + counts[5]*3 
 
 def broad_score(counts):
 	m29a, m28a, m27a, m29, m28, m27, m38, mm28 = counts

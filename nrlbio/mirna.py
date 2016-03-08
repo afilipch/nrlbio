@@ -58,7 +58,7 @@ class Mirna(object):
 		self.m38 = get_seed_match(seq, 2, 8)
 		self.m8 = reverse_complement(seq[7])
 		self.m9 = reverse_complement(seq[8])
-		self.first = 'A';		
+		self.first = 'A';
 		
 	def set_1mm_matches(self):
 		self.matches_1mm = diverge_with_1mm(self.match);
