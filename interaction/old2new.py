@@ -14,5 +14,6 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path
 args = parser.parse_args();
 
 for interval in BedTool(args.path):
-	sys.stdout.write(str(construct_gff_interval(interval[6], 0, 22, 'newint', score=interval.score, strand='+', source='un', frame='.', attrs=[('ID', "%s|0" % interval.name), ('seq', interval[7]), ('n_uniq', interval[11])])));
-	sys.stdout.write(str(construct_gff_interval(interval.chrom, interval.start, interval.stop, 'newint', score=interval.score, strand=interval.strand, source='un', frame='.', attrs=[('ID', "%s|1" % interval.name), ('seq', interval[8]), ('n_uniq', interval[11])])));
+	for mirid in interval[6].split(","):
+		sys.stdout.write(str(construct_gff_interval(mirid, 0, 22, 'newint', score=interval.score, strand='+', source='un', frame='.', attrs=[('ID', "%s|0" % interval.name), ('seq', interval[7]), ('n_uniq', interval[11])])));
+		sys.stdout.write(str(construct_gff_interval(interval.chrom, interval.start, interval.stop, 'newint', score=interval.score, strand=interval.strand, source='un', frame='.', attrs=[('ID', "%s|1" % interval.name), ('seq', interval[8]), ('n_uniq', interval[11])])));

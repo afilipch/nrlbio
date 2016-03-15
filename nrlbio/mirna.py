@@ -148,7 +148,7 @@ class Mirna(object):
 def fasta2mirnas(fasta, seed_start=1, seed_stop=7):
 	mirdict = {};
 	for seqrecord in SeqIO.parse(fasta, "fasta"):
-		mirdict[seqrecord.id] = Mirna(seqrecord.id, str(seqrecord.seq.upper()), seed_start, seed_stop)
+		mirdict[seqrecord.id] = Mirna(seqrecord.id, str(seqrecord.seq.upper()).replace('U', 'T'), seed_start, seed_stop)
 	return mirdict;
 	
 	

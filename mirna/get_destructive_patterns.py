@@ -84,13 +84,19 @@ def split_interval(interval, seq, length_limit=20):
 		
 	return r;
 
-		
-		
+
 def pattern2score(pattern):
-	return sum(pattern[1:9]) - sum(pattern[9:11]) + sum(pattern[11:19])
+	s = sum(pattern[1:20])
+	if(all(pattern[8:12])):
+		s = s-20
+	return s
+	
 
 def interval2score(interval, energy, pattern):
-	return pattern2score(pattern) - energy + math.log(int(interval.attrs['n_uniq']));
+	return (pattern2score(pattern) + math.log(-1*energy, 2)) + math.log(int(interval.attrs['n_uniq']));
+
+def slicing_score(interval, energy, pattern):
+	return sum(pattern)/float(len(pattern))*100
 
 
 def get_interaction(interval, mirseq, name, gsystem, pval_cutoff):
@@ -99,7 +105,8 @@ def get_interaction(interval, mirseq, name, gsystem, pval_cutoff):
 	if(pval>pval_cutoff):
 		return None, []
 	else:
-		interval.attrs['dscore'] = "%1.2f" % interval2score(interval, energy, pattern)
+		interval.attrs['destructive_score'] = "%1.2f" % interval2score(interval, energy, pattern)
+		interval.attrs['slicing_score'] = "%1.2f" % slicing_score(interval, energy, pattern)
 		interval.attrs['pval'] = "%1.5f" % pval
 		interval.attrs['energy'] = str(energy);
 		interval.attrs['pattern'] = ",".join([str(x) for x in pattern]);
@@ -134,7 +141,7 @@ for count, (i1, i2) in enumerate(generator_doublebed(args.path)):
 
 	
 
-interactions.sort(key=lambda x: float(x.interval.attrs['dscore']), reverse=True)
+interactions.sort(key=lambda x: float(x.interval.attrs['destructive_score']), reverse=True)
 if(args.best_only):
 	interactions = interactions[:args.best_only]
 
