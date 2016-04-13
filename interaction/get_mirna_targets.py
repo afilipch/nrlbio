@@ -13,5 +13,6 @@ args = parser.parse_args();
 
 	
 for i1, i2 in generator_doublebed(args.path):
-	i2.name = i1.chrom
+	i2.name = i2.name.split("|")[0]
+	i2.attrs['mirid'] = i1.chrom
 	sys.stdout.write(str(i2))

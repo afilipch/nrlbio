@@ -157,6 +157,11 @@ def chunk_entropy(seq, length, step = 1, order = 1):
 	return	min_entropy
 
 
+def splitstring(s, size):
+	'''splits string into chunks of particular length'''
+	return [s[x:x+size] for x in range(0, len(s), size)]
+
+
 	
 		
 		

@@ -9,9 +9,16 @@ from pybedtools import BedTool
 parser = argparse.ArgumentParser(description='Converts file in gff to bed format');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to a file in gff format");
 parser.add_argument('-a', '--attributes', nargs = '+', required = False, type = str, help = "Names of gff attributes to be written as additional bed fields in an order they are provided");
-parser.add_argument('--addchr', nargs = '?', default = False, const=True, type = str, help = "If set, \'chr\' string to the chromosome number will be added and changes MT to chrM");
+parser.add_argument('--addchr', nargs = '?', default = False, const=True, type = bool, help = "If set, \'chr\' string to the chromosome number will be added and changes MT to chrM");
+parser.add_argument('--description', nargs = '?', default = False, const=True, type = bool, help = "If set, first line will be a description of the tab-separated fields");
 args = parser.parse_args();
+
+
 attrs = args.attributes
+
+if(args.description):
+	base = ["#chrom", "start", "end", "ID", "score", "strand"]
+	print "\t".join(base + attrs)
 
 if(args.addchr):
 	def fix_chrom(interval):

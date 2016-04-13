@@ -8,6 +8,7 @@ import copy
 from Bio import SeqIO;
 import jinja2
 
+from nrlbio.mirna import slicing_score, destructive_score
 from nrlbio.generators import generator_doublebed
 from nrlbio.rnahybrid import get_rnahybrid, get_shuffled_rnahybrid
 from nrlbio.html import get_link, get_tarbase_link
@@ -85,18 +86,8 @@ def split_interval(interval, seq, length_limit=20):
 	return r;
 
 
-def pattern2score(pattern):
-	s = sum(pattern[1:20])
-	if(all(pattern[8:12])):
-		s = s-20
-	return s
-	
-
 def interval2score(interval, energy, pattern):
-	return (pattern2score(pattern) + math.log(-1*energy, 2)) + math.log(int(interval.attrs['n_uniq']));
-
-def slicing_score(interval, energy, pattern):
-	return sum(pattern)/float(len(pattern))*100
+	return destructive_score(energy, pattern) + math.log(float(interval.attrs['n_uniq']), 2)
 
 
 def get_interaction(interval, mirseq, name, gsystem, pval_cutoff):
@@ -106,7 +97,7 @@ def get_interaction(interval, mirseq, name, gsystem, pval_cutoff):
 		return None, []
 	else:
 		interval.attrs['destructive_score'] = "%1.2f" % interval2score(interval, energy, pattern)
-		interval.attrs['slicing_score'] = "%1.2f" % slicing_score(interval, energy, pattern)
+		interval.attrs['slicing_score'] = "%1.2f" % slicing_score(pattern)
 		interval.attrs['pval'] = "%1.5f" % pval
 		interval.attrs['energy'] = str(energy);
 		interval.attrs['pattern'] = ",".join([str(x) for x in pattern]);

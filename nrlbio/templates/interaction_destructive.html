@@ -23,23 +23,29 @@
 				<br>
 			</td>
 			<td>
-				</span> miRNA ID <a target="_blank" href="{{interaction.mlink}}" style="color: green">{{interaction.interval.name}}</a>
+				</span> miRNA ID <a target="_blank" href="{{interaction.mlink}}" style="color: green">{{interaction.interval.attrs.mirid}}</a>
 				<br>
 				miRNA seq <span style="color:green;white-space:pre;">{{interaction.interval.attrs.mseq}}</span>
 			</td>
 			<td>
+				Destructive score: {{interaction.interval.attrs.destructive_score}}
+				<br>
+				Conservation score: {{interaction.interval.attrs.cons_dscore}}
+				<br>
 				N_niq reads: {{interaction.interval.attrs.n_uniq}}
 				<br>
 				MFE: {{interaction.interval.attrs.energy}}
 				<br>
-				MFE pvalue: {{interaction.interval.attrs.pval}}
+				Gene Symbol: {{interaction.interval.attrs.gene_symbols}}
 				<br>
-				Destructive score: {{interaction.interval.attrs.destructive_score}}
+				Regulation: {{interaction.interval.attrs.regulation}}
 				<br>
-				Slicing score: {{interaction.interval.attrs.slicing_score}}
+				Biotype: {{interaction.interval.attrs.biotypes}}
 				<br>
-				Split: {{interaction.interval.attrs.split}}
-			</td>
+				Transcription: {{interaction.interval.attrs.transcription}}
+				<br>
+<!--				Slicing score: {{interaction.interval.attrs.slicing_score}}
+			</td>-->
 		</tr>
 	{%endfor%}	
 </table>		

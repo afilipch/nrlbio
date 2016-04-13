@@ -50,6 +50,7 @@ ax.spines['polar'].set_visible(False)
 colors = ['skyblue', 'coral'];
 
 for intervals, color in zip(lintervals, colors):
+	print 'n'
 	intervals.sort(key= lambda x: x.start)
 
 	theta = [-(x.end*pos2grade)+np.pi/2 for x in intervals]

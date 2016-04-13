@@ -1,6 +1,7 @@
 '''Collection of function and classes specific for miRNA sequences'''
 
 import sys;
+import math;
 from collections import defaultdict
 
 from Bio.Seq import reverse_complement;
@@ -220,9 +221,103 @@ class Family():
 		return dm;
 	
 	def __str__(self):
-		return "mirnas=%s, start=%d, stop=%d, seed=%s, match=%s, expr=%1.1f" % (self.name, self.seed_start, self.seed_stop, self.seed, self.match, self.expression);	
+		return "mirnas=%s, start=%d, stop=%d, seed=%s, match=%s, expr=%1.1f" % (self.name, self.seed_start, self.seed_stop, self.seed, self.match, self.expression);
+	
+	
+	
+	
+#####################################################################################################################################################################
+#Tools for miRNA destructive sites prediction
+
+
+def mirfasta2conservation(mirfasta, translational_table=None):
+	'''Parses conservation fasta file of miRNAs into a dictionary which connects conserved miRNAs
+		
+		mirfasta str: path to the conserved miRNAs, fasta file
+		translational_table dict: dictionary which maps mirBase specie names to UCSC specie names
+		
+	Returns dict of dicts: key1 - miRNA id, key2 - specie id, value - miRNA seq 
+	'''
+	mir2cons = defaultdict(dict)
+	refmir = {}
+	records = SeqIO.parse(mirfasta, 'fasta');
+	
+	fsr = records.next();
+	rspecie = fsr.id.split("-")[0]
+	tkey = fsr.id
+	
+	mir2cons = defaultdict(dict)
+	for seqrecord in records:
+		tspecie = seqrecord.id.split("-")[0]
+		if(tspecie == rspecie):
+			tkey = seqrecord.id
+			refmir[tkey] = str(seqrecord.seq.upper()).replace('U', 'T')
+		else:
+			if(translational_table):
+				mir2cons[tkey][translational_table[tspecie]] = str(seqrecord.seq.upper()).replace('U', 'T')
+			else:
+				mir2cons[tkey][tspecie] = str(seqrecord.seq.upper()).replace('U', 'T')
+			
+	return mir2cons, refmir
+
+
+
+RTT = {'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G'}
+DAWARD = [1, 2, 2, 2, 2, 2, 2, 2, 1.5, 0, 0, 0, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+DPENALTY = [0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+
+def destructive_score(basepairing, award=DAWARD, penalty=DPENALTY):
+		scores = [];
+		bulge = [];
+		pos = 0;
+		
+		revbase = [list(x)[::-1] for x in basepairing]
+		for tu, tm, mm, mu in zip(*revbase):
+			if(mm!=' ' and tm!=' '):
+				if(RTT[mm] == tm):
+					scores.append(award[pos]);
+				else:
+					scores.append(0.5*award[pos]);
+					
+				if(pos == 9 or pos == 10 or pos == 11):
+					bulge.append(True);
+					
+			elif(tu!=' ' and mu!=' '):
+				scores.append(-1.5*penalty[pos]);
+				
+			elif(tu!=' ' or mu!=' '):
+				scores.append(-2*penalty[pos]);
+				
+			else:
+				sys.exit('WARNING: Something wrong with rnahybrid parsing\n')
+				
+				
+			if(mm!=' ' or mu!=' '):
+				pos += 1;
+				
+			
+		#fix last hanging nucleotide issue
+		if(basepairing[0][0] != ' ' and basepairing[3][0] == ' '):
+			scores[-1] = -1*scores[-1];
+			
+		#penalize slicing
+		score = sum(scores);
+		if(len(bulge)==3):
+			score -= sum(award[1:7])
+			
+		return score;
+	
+
+
+def slicing_score(pattern):
+	return int(all(pattern[1:20]))
 		
 		
+		
+		
+#####################################################################################################################################################################
+#Testing section
 if(__name__ == "__main__"):
 	mir = Mirna('hsa-miR-30a', 'TGTACTAGATCCTCGACTGGAAG', seed_start=1, seed_stop=7);
 	fullmatch = 'TCTAGTACA'

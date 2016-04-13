@@ -246,13 +246,13 @@ with open(os.path.join(project_path, 'Makefile'), 'w') as mf:
 	mf.write(makefile_main());
 
 
-#######################################################################################################################
-#Create Makefiles
-def multipath(l):
-	return "\t".join([os.path.abspath(x) for x in l])
 
 #######################################################################################################################
 #Create a report
+
+def multipath(l):
+	return "\t".join([os.path.abspath(x) for x in l])
+
 
 arguments_report = (
 ('name', ('Project name, assigned to the generated interactions', str)),

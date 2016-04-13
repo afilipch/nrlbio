@@ -25,19 +25,20 @@ parser = argparse.ArgumentParser(description='Creates makefile and directory str
 
 #Required options
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the project folder. If folder does not exist, it will be created");
-parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "path to sequencing reads. fastq/fasta file");
-parser.add_argument('--reference', nargs = '?', type = str, required = True, help = "path to the mapping reference");
-parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "path to the Chiflex folder")
+parser.add_argument('--reads', nargs = '+', type = os.path.abspath, required = True, help = "path to sequencing reads. fastq/fasta file. If more than one file provided, reads will be collapsed");
+parser.add_argument('--reference', nargs = '?', type = os.path.abspath, required = True, help = "path to the mapping reference");
+parser.add_argument('--chiflex', nargs = '?', type = os.path.abspath, required = True, help = "path to the Chiflex folder")
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "name of the project, will be used as name for interactions ids")
 arg_modes = parser.add_argument('--modes', nargs = '+', type = str, required = True, choices = modes_order.keys(),  help = "Mode of the Chiflex. If you are looking for circular or linear splice junctions - choose mode \'splicing\'. If you want to find read clusters(binding sites) - choose mode \'clustering\'. If you explore RNA-RNA intra- or intermolecular interactions - choose mode \'interaction\'. NOTE: it is possible to run more than one mode together. However mapping options will be selected for the mode with a highest(1st is higher than 2nd) priority. Priorities: %s. NOTE: Without setting [--genome] or [--exon] option interaction and splicing modes cannot be used. NOTE: Without setting [--genome_index] option clustering mode cannot be used" % ["%s=%d" % x for x in modes_order.items()])
 
 #Paths to the files for additional annotation;
-parser.add_argument('--genome', nargs = '?', type = str, default = None, help = "path to a reference sequences(genome, transcriptome, etc.) in fasta format. Is required for de novo splice sites search and downstream sequence analysis. NOTE: if [--genome] and [--exons] are provided simultaneously, then splice sites will be de novo annotated based on [--genome]");
-parser.add_argument('--exons', nargs = '?', type = str, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type(circular or linear splice junction, intra- or intermolecular interaction) will be assigned to each interaction. That is, only known splice sites will be found. NOTE: if [--genome] and [--exons] are provided simultaneously, then splice sites will be de novo annotated based on [--genome]");
-parser.add_argument('--annotation', nargs = '?', type = str, default = None, help = "path to an annotation file in gff format. If provided, found genomic loci will be annotated");
-parser.add_argument('--genome_index', nargs = '?', type = str, default = None, help = "reference(genome) index file (.fai)");
+parser.add_argument('--genome', nargs = '?', type = os.path.abspath, default = None, help = "path to a reference sequences(genome, transcriptome, etc.) in fasta format. Is required for de novo splice sites search and downstream sequence analysis. NOTE: if [--genome] and [--exons] are provided simultaneously, then splice sites will be de novo annotated based on [--genome]");
+parser.add_argument('--exons', nargs = '?', type = os.path.abspath, default = None, help = "path to a file of exonic regions in bed format. If provided, specific type(circular or linear splice junction, intra- or intermolecular interaction) will be assigned to each interaction. That is, only known splice sites will be found. NOTE: if [--genome] and [--exons] are provided simultaneously, then splice sites will be de novo annotated based on [--genome]");
+parser.add_argument('--annotation', nargs = '?', type = os.path.abspath, default = None, help = "path to an annotation file in gff format. If provided, found genomic loci will be annotated");
+parser.add_argument('--genome_index', nargs = '?', type = os.path.abspath, default = None, help = "reference(genome) index file (.fai)");
 
 #Options for the mapping result postprocessing
+parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed collapsed with collpse.pl script. Read count appendix of the read id will be used to calculate read support of the interactions")
 parser.add_argument('--repetitive', nargs = '?', default = False, const=True, type = bool, help = "if set, repetitive mapped sequences are removed")
 parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "if set, nonunique mappings with high alignment score are kept")
 parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "if set, hits position on a reference will be reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers has to be in [chrom]|[strand]|[start]|[stop] format")
@@ -51,6 +52,8 @@ parser.add_argument('--reports', nargs = '?', default = False, const = True, typ
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are:%s" % bowtie_help_str)
 args = parser.parse_args();
 
+print args.reads
+
 #######################################################################################################################
 #Set priotity for the modes
 main_mode = min(args.modes, key= lambda x: modes_order[x]);
@@ -59,7 +62,6 @@ main_mode = min(args.modes, key= lambda x: modes_order[x]);
 #######################################################################################################################
 ##Parse bowtie options
 bowtie_settings = bowtie_configurations[main_mode];
-bs_list = get_bowtie_call(bowtie_settings, args.bowtie, args.reference, args.reads, args.name)
 
 
 #######################################################################################################################
@@ -67,7 +69,7 @@ bs_list = get_bowtie_call(bowtie_settings, args.bowtie, args.reference, args.rea
 if('interaction' in args.modes or 'splicing' in args.modes):
 	if(args.genome):
 		annotate_with_genome = True;
-		genome_path = os.path.abspath(args.genome)
+		genome_path = args.genome
 	elif(args.exons):
 		annotate_with_genome = False;
 	else:
@@ -77,24 +79,48 @@ if(('clustering' in args.modes) and (not args.genome_index)):
 	raise argparse.ArgumentError(arg_modes, "Without setting [--genome_index] option clustering mode cannot be used\n")
 	
 	
-chiflex_package = os.path.abspath(os.path.join(args.chiflex, 'chiflex'));
-splicing_package = os.path.abspath(os.path.join(args.chiflex, 'splicing'))
-interaction_package = os.path.abspath(os.path.join(args.chiflex, 'interaction'))
+chiflex_package = os.path.join(args.chiflex, 'chiflex')
+splicing_package = os.path.join(args.chiflex, 'splicing')
+interaction_package = os.path.join(args.chiflex, 'interaction')
+
 
 
 
 #######################################################################################################################
 #Function to create top level Makefile
 def makefile_main():
+	clean = []
 	mlist=[];
 	generated_makefiles = [];
-	modes_makefiles = [];	
+	modes_makefiles = [];
+	
+	#Collapse reads, if more than one fasta/fastq file is provided
+	if(len(args.reads) > 1):
+		input_files = args.reads
+		output_files = 'merged.fastq'
+		script = 'cat', " ".join(input_files), '>', output_files
+		mlist.append(dependence(input_files, output_files, script))
+		clean.append(output_files)
+		
+		
+		input_files = output_files
+		output_files = 'collapsed.fastq'
+		script = 'collapse.pl', input_files, '>', output_files
+		mlist.append(dependence(input_files, output_files, script))
+		clean.append(output_files)
+		
+		collapsed = True
+		
+	else:
+		input_files = args.reads
+		collapsed = args.collapsed
 	
 	#Map reads with bowtie2
-	input_files = os.path.abspath(args.reads)
+	input_files = output_files
 	output_files = os.path.join('sam', '%s.mapped.sam' % args.name)
-	script = bs_list
+	script = get_bowtie_call(bowtie_settings, args.bowtie, args.reference, input_files, args.name)
 	mlist.append(dependence(input_files, output_files, script))
+	clean.append(output_files)
 	
 	#Remove repetitive mappings if option 'repetitive' set
 	if(args.repetitive):
@@ -102,6 +128,7 @@ def makefile_main():
 		output_files = os.path.join('sam', 'nonrep.bam')
 		script = get_script('filter_sam.py', arguments={'--output': output_files, '--filters': 'repetitive', '--arguments': 'min_entropy=1.6'}, inp = input_files, package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
+		clean.append(output_files)
 	
 	#Collapse confident, but nonunique mappings into single sam entry, to protect them from further filtering out
 	if(args.nonunique):
@@ -111,6 +138,7 @@ def makefile_main():
 		mlist.append(dependence(input_files, output_files, script))
 		#following reassignment is done for furthe consistency
 		output_files = output_files[0]
+		clean.append(output_files)
 		
 		
 		
@@ -119,7 +147,7 @@ def makefile_main():
 		input_files = output_files;
 		output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'control']]
 		script = get_script('demultiplex_sam.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_sam']['score'], '--bestdistance': conf['demultiplex_sam']['bestdistance']}, inp = input_files, package=chiflex_package)
-		mlist.append(dependence(input_files, output_files, script));		
+		mlist.append(dependence(input_files, output_files, script));
 		
 		input_files = ['makefile_clustering'] + output_files
 		output_files = 'clustering'
@@ -189,7 +217,7 @@ def makefile_main():
 			mlist.append(dependence(input_files, output_files, script));
 			
 		else:
-			input_files = uniquef, os.path.abspath(args.exons)
+			input_files = uniquef, args.exons
 			output_files = os.path.join('chimeras', 'unique.annotated.gff')
 			if(args.stranded):
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
@@ -204,7 +232,7 @@ def makefile_main():
 			mlist.append(dependence(input_files, output_files, script));			
 			
 	
-			input_files = controlf, os.path.abspath(args.exons)
+			input_files = controlf, args.exons
 			output_files = os.path.join('chimeras', 'control.annotated.gff')
 			if(args.stranded):
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
@@ -248,7 +276,7 @@ def makefile_main():
 	#makefile header
 	mlist.insert(0, get_header(modes_makefiles, phony=True))
 	# makefie cleaner
-	mlist.append('clean:%s' %  "\n".join(["\t$(MAKE) -f %s clean" % x for x in generated_makefiles]) );
+	mlist.append( 'clean:\n%s\n\trm %s' %  ("\n".join(["\t$(MAKE) -f %s clean" % x for x in generated_makefiles]), ' '.join(clean)) );
 
 	return "\n\n".join(mlist)
 
@@ -326,7 +354,7 @@ def makefile_clustering():
 		
 		
 	if(args.annotation):
-		input_files = output_files, os.path.abspath(args.annotation)
+		input_files = output_files, args.annotation
 		output_files = os.path.join('clusters', 'clusters.annotated.gff')
 		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 		m.append(dependence(input_files, output_files, script))
@@ -370,7 +398,7 @@ def makefile_interaction():
 		mlist.append(dependence(input_files, output_files, script));
 				
 		if(args.exons):
-			input_files = output_files, os.path.abspath(args.exons)
+			input_files = output_files, args.exons
 			output_files = os.path.join('interactions', 'interactions.%s.itype.ktype.gff' % itype)
 			if(args.stranded):
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
@@ -380,7 +408,7 @@ def makefile_interaction():
 			mlist.append(dependence(input_files, output_files, script));
 		
 		if(args.annotation):
-			input_files = output_files, os.path.abspath(args.annotation)
+			input_files = output_files, args.annotation
 			output_files = os.path.join('interactions', 'annotated.%s.gff' % itype)
 			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
@@ -408,7 +436,7 @@ def makefile_splicing():
 		mlist.append(dependence(input_files, output_files, script))
 		
 		if(args.exons):
-			input_files = output_files, os.path.abspath(args.exons)
+			input_files = output_files, args.exons
 			output_files = os.path.join('interactions', 'filtered.%s.ktype.gff' % itype)
 			if(args.stranded):
 				cargs = arguments={'--exons': input_files[1], '--stranded': ''}
@@ -488,7 +516,8 @@ for mode in args.modes:
 		mf.write(modes2functions[mode][0]());
 	
 	
-	
+def multipath(l):
+	return "\t".join([os.path.abspath(x) for x in l])	
 	
 	
 #report project call:
@@ -496,12 +525,12 @@ arguments_report = (
 ('name', ('Project name, assigned to the generated interactions', str)),
 ('modes', ('Modes of the project', str)),
 ('path', ('Project folder', os.path.abspath)),
-('reads', ('Sequencing reads', os.path.abspath)),
-('chiflex', ('Chiflex module used in the project', os.path.abspath)), 
-('reference', ('Mapping reference index(genome, transcriptome) used for mapping', os.path.abspath)), 
-('genome', ('Reference sequences(genome)', os.path.abspath)),
-('exons', ('Exon system used for interactions annotation', os.path.abspath)), 
-('annotation', ('Annotation system used for interactions annotation', os.path.abspath)), 
+('reads', ('Sequencing reads', multipath)),
+('chiflex', ('Chiflex module used in the project', str)), 
+('reference', ('Mapping reference index(genome, transcriptome) used for mapping', str)), 
+('genome', ('Reference sequences(genome)', str)),
+('exons', ('Exon system used for interactions annotation', str)), 
+('annotation', ('Annotation system used for interactions annotation', str)), 
 ('repetitive', ('Repetitive mapped sequences are removed', str)),
 ('nonunique', ('Nonunique mappings with high alignment score are kept', str)),
 ('reports', ('html reports are produced', str)), 

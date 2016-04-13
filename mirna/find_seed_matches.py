@@ -1,4 +1,4 @@
-#! /usr/lib/python
+#! /usr/bin/python
 '''Finds seed matches for provided miRNAs. If expression of miRNAS is provided, than only seeds for top expressed miRNA families may be detected'''
 
 import argparse

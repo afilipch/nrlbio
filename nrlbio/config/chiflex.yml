@@ -39,8 +39,8 @@ bowtie:
         f: ['False', '-']
         p: ['8', '-']    
     clustering:
-        N: ['1', '-']
-        L: ['15','-']
+        N: ['0', '-']
+        L: ['13','-']
         i: ['C,3', '-']
         ignore-quals: ['False', '--']
         norc: ['False', '--']

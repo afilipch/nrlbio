@@ -49,6 +49,7 @@ def refseq2interval(refseq):
 			yield Interval(chrom, int(s), int(e), name, str(i), strand);
 			
 
+
 def intervals2dict(intervals):
 	d = defaultdict(list);
 	for i in intervals:
@@ -59,7 +60,7 @@ def intervals2dict(intervals):
 	
 	
 def find_closest(chrom, strand, start, stop, interval_dict, max_distance=4, lookforward = 10):
-	'''Finds all interavls witthin a certain distance for given chrom, strand, start and stop positions:
+	'''Finds all interavls within a certain distance for given chrom, strand, start and stop positions:
 	
 	chrom str: chromosome of interval of interest
 	strand str: strand of interval of interest

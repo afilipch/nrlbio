@@ -20,6 +20,11 @@ def get_script(script, arguments={}, inp = '', out = None, package=chiflex_packa
 	for k,v in arguments.items():
 		if(v==False):
 			pass;
+		elif(v==True):
+			l.append(k)
+		elif(hasattr(v, '__iter__')):
+			l.append(k)
+			l.append(" ".join([str(x) for x in v]))
 		else:
 			l.append(k)
 			l.append(str(v))
@@ -49,7 +54,7 @@ def get_header(output_files, phony=False):
 		ofs = " ".join(list(output_files))
 	
 	if(phony):
-		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s\n.PHONY: all %s" % (ofs, ofs)
+		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall_clean: all clean\nall: %s\n.PHONY: %s all all_clean clean" % (ofs, ofs)
 	else:
 		return "SHELL=/bin/bash\n.DELETE_ON_ERROR:\n\nall: %s" % ofs
 	
@@ -66,8 +71,8 @@ def get_bowtie_call(settings, arguments, reference, reads, project_name):
 		else:
 			sys.stderr.write("provided option \'%s\' is currently not supported by Chiflex and will be ignored\n" % name) 
 		
-	settings['x'] = os.path.abspath(os.path.abspath(reference)), '-'
-	settings['U'] = os.path.abspath(os.path.abspath(reads)), '-'
+	settings['x'] = os.path.abspath(reference), '-'
+	settings['U'] = reads, '-'
 	settings['S'] = os.path.join('sam', '%s.mapped.sam' % project_name), '-'
 
 

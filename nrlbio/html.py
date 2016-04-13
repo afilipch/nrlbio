@@ -93,13 +93,13 @@ def get_link(interval, system, internal = False):
 	else:
 		source = "http://genome.ucsc.edu/"
 		
-	if(system == "hg19" or system == 'hg38'):
+	if(system in ("hg19", 'hg38')):
 		system_string = "cgi-bin/hgTracks?hgsid=7901&org=H.sapiens&db=%s&position=" % system;
-	elif(system == "mm9" or system == "mm10"):
+	elif(system in ("mm9", "mm10")):
 		system_string = "cgi-bin/hgTracks?hgsid=7901&org=M.musculus&db=%s&position=" % system; 
-	elif(system == "ce6"):
-		system_string = "cgi-bin/hgTracks?hgsid=7901&org=C.elegans&db=ce6&position=";
-	elif('circ'):
+	elif(system in ("ce6", "ce10", "ce11")):
+		system_string = "cgi-bin/hgTracks?hgsid=7901&org=C.elegans&db=%s&position=" % system;
+	elif(system == 'circ'):
 		return 'http://circbase.org/cgi-bin/singlerecord.cgi?id=%s' % interval.chrom
 		
 	else:
