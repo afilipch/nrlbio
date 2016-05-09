@@ -51,9 +51,9 @@ class Chimera(object):
 			raise ChimeraException('Chimera cannot be made from aligned reads with differenr identifiers\nFollowing are given:\n%s\n' % "\n".join(["\t%s" % x for x.qname in ar.wrappers]))
 			
 		self.ar_wrappers = ar_wrappers;
-		self.control = [x.rname.split("_")[0] == "random" for x in self.ar_wrappers]
+		self.control = any([x.rname.split("_")[0] == "random" for x in self.ar_wrappers])
 		
-		self.gap = ar_wrappers[1].qstart - ar_wrappers[0].qend;		
+		self.gap = ar_wrappers[1].qstart - ar_wrappers[0].qend;
 		self.AS = [x.AS for x in ar_wrappers];
 		self.score = score_function(self);
 		
@@ -99,7 +99,7 @@ class Chimera(object):
 		return "\n".join(l)
 		
 		
-def arwlist2chimera(arwlist, gap = 100, overlap = 100, score_function = as_score):
+def arwlist2chimera(arwlist, gap = 1, overlap = 4, score_function = as_score):
 	'''Compiles all possible chimeras from hits(pysam aligned reads) provided
 	
 		arlist iterable: element is pysam.AlignedRead. All hits of the initial read to compile into chimeras
@@ -107,62 +107,34 @@ def arwlist2chimera(arwlist, gap = 100, overlap = 100, score_function = as_score
 		gap int: maximum gap allowed between two hits
 		
 		Returns list: all possible chimeras compiled from hits(pysam aligned reads)
-	'''	
+	'''
 	chimeras = []
-	#print "*"*120
 	for a1, a2 in combinations(arwlist, 2):
-		#print a1
-		#print a2
-		#print a1.qstart, a1.qend, a2.qstart, a2.qend
-		#print "_"*120
-		if((-overlap <= a2.qstart - a1.qend <= gap) or (-overlap <= a1.qstart - a2.qend <= gap)):
-			if(a1.qstart < a2.qstart):
-				chimeras.append(Chimera([a1, a2], score_function))			
-			else:
-				chimeras.append(Chimera([a2, a1], score_function))
-			
+		if(-overlap <= a2.qstart - a1.qend <= gap):
+			chimeras.append(Chimera([a1, a2], score_function))
+			continue
+		if(-overlap <= a1.qstart - a2.qend <= gap):
+			chimeras.append(Chimera([a2, a1], score_function))
 	return chimeras;
 	
 
 
 
-def demultiplex(chimeras, min_difference):
-	'''Demultiplex chimeras derived from the same read (choose the best ones on basis of its score). Assignes if the chimera comes from real or decoy refrence, ornonunique.
 	
-		Chimeras list: list of Chimeras derived from the same reads
-		min_difference int: minimal distance allowed between the best and the second best chimera. If the actual distance is less, than hit will be assigned as nonunique
+def demultiplex(chimeras, bestdistance, backward=False):
+	'''Demultiplex chimeric hits derived from the same read (choose the best ones on basis of its score)
+	
+		chimeras list: Chimeras of the aligned reads(hits) derived from the same reads
+		bestdistance int: minimal distance allowed between the best and the second best chimera. If the actual distance is less, than  will chimera be assigned as nonunique
 		
-		Returns tuple: 3-element tuple
-			1st Chimera|None: the best unique chimera, if the best chimera is nonunique originated from decoy
-			2nd list: list of nonunique chimeras. List is empty if the best unique chimera present
-			3rd Chimera|None: the best chimera originated from decoy, None if it is not the best among all possible chimeras for the read
+		Returns list: list of all valid (within bestdistance difference to the best chimera) chimera (Chimera objects)
 	'''
-	if(not chimeras):
-		return None, [], None
-	
-	real = filter(lambda x: not any(x.control), chimeras);
-	control = filter(lambda x: any(x.control), chimeras);
-	
-	best_real, max_real = numerictools.maxes(real, lambda x: x.score)
-	best_control, max_control = numerictools.maxes(control, lambda x: x.score)
-	
-	if(max_real):
-		distances = [max_real - x.score for x in chimeras if x.score!=max_real]
-		if(distances):
-			dif_from_best = min(distances);
-		else:
-			dif_from_best = min_difference + 1;
-	
-	if(max_real > max_control):
-		if(len(best_real) == 1 and min_difference<dif_from_best):
-			return best_real[0], [], None
-		else:
-			return None, best_real, None
-	elif(max_control > max_real):
-		return None, best_real, best_control[0];
+	if(chimeras):
+		bestchoice = max(chimeras, key =  lambda x: x.score)
+		return filter(lambda x: (bestchoice.score-x.score)<bestdistance, chimeras)
 	else:
-		return None, best_real, None
-		
+		return []
+			
 		
 		
 		

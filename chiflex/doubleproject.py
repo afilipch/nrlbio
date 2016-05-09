@@ -20,17 +20,17 @@ bowtie_help_str2 = "[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x
 
 parser = argparse.ArgumentParser(description='Creates makefile and directories for chiflex project')#, formatter_class = argparse.RawTextHelpFormatter);
 #Required options
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the project folder. If folder does not exist, it will be created");
-parser.add_argument('--reads', nargs = '?', type = str, required = True, help = "Path to sequencing reads. fastq/fasta file");
-parser.add_argument('--indices', nargs = 2, type = str, required = True, help = "Path to the mapping reference bowtie2 indices. NOTE: At the first step, mapping will be done for the first index provided");
-parser.add_argument('--chiflex', nargs = '?', type = str, required = True, help = "Path to the Chiflex folder")
+parser.add_argument('path', metavar = 'N', nargs = '?', type = os.path.abspath, help = "Path to the project folder. If folder does not exist, it will be created");
+parser.add_argument('--reads', nargs = '?', type = os.path.abspath, required = True, help = "Path to sequencing reads. fastq/fasta file");
+parser.add_argument('--indices', nargs = 2, type = os.path.abspath, required = True, help = "Path to the mapping reference bowtie2 indices. NOTE: At the first step, mapping will be done for the first index provided");
+parser.add_argument('--chiflex', nargs = '?', type = os.path.abspath, required = True, help = "Path to the Chiflex folder")
 parser.add_argument('--name', nargs = '?', type = str, required = True, help = "Name of the project, will be used as a name for interactions ids")
 
 
 #Paths to the files for additional annotation;
-parser.add_argument('--references', nargs = '+', type = str, help = "Path to the mapping references in fasta format. If set, the sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
-parser.add_argument('--annotation', nargs = '?', type = str, help = "Path to an annotation file in gff format. If provided, found genomic loci will be annotated");
-parser.add_argument('--mirna', nargs = '?', type = str, help = "Path to the miRNA sequences in fasta format. If set, interactions will be further analized as miRNA:target chimeras. NOTE: This mode is applicable for any small RNA");
+parser.add_argument('--references', nargs = '+', type = os.path.abspath, help = "Path to the mapping references in fasta format. If set, the sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
+parser.add_argument('--annotation', nargs = '?', type = os.path.abspath, help = "Path to an annotation file in gff format. If provided, found genomic loci will be annotated");
+parser.add_argument('--mirna', nargs = '?', type = os.path.abspath, help = "Path to the miRNA sequences in fasta format. If set, interactions will be further analized as miRNA:target chimeras. NOTE: This mode is applicable for any small RNA");
 
 #Options for the mapping result postprocessing
 parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed collpsed with collpse.pl script. Read count appendix of the read id will be used to calculate read support of the interactions")
@@ -52,9 +52,9 @@ args = parser.parse_args();
 firstname = "%s.%s" % (args.name, "first")
 secondname = "%s.%s" % (args.name, "second")
 
-chiflex_package = os.path.abspath(os.path.join(args.chiflex, 'chiflex'));
-advanced_package = os.path.abspath(os.path.join(args.chiflex, 'advanced'));
-mirna_package = os.path.abspath(os.path.join(args.chiflex, 'mirna'));
+chiflex_package = os.path.join(args.chiflex, 'chiflex')
+advanced_package = os.path.join(args.chiflex, 'advanced')
+mirna_package = os.path.join(args.chiflex, 'mirna')
 
 
 
@@ -71,7 +71,7 @@ def makefile_main():
 	bs_list1 = get_bowtie_call(bowtie_settings1, args.bowtie_args1, args.indices[0], args.reads, firstname)
 	
 	#Map reads with bowtie2
-	input_files = os.path.abspath(args.reads)
+	input_files = args.reads
 	output_files = os.path.join('sam', '%s.mapped.sam' % firstname)
 	script = bs_list1
 	mlist.append(dependence(input_files, output_files, script))
@@ -206,7 +206,7 @@ def makefile_main():
 		if(args.mirna):
 			input_files =  output_files
 			output_files = os.path.join('interactions', '%s.modeassigned.gff' % args.name)
-			script = get_script('assign_mode.py', arguments={'--mir': os.path.abspath(args.mirna), '--set_control': ''}, inp=input_files, out = output_files, package=mirna_package)
+			script = get_script('assign_mode.py', arguments={'--mir': args.mirna, '--set_control': ''}, inp=input_files, out = output_files, package=mirna_package)
 			mlist.append(dependence(input_files, output_files, script));
 		
 	#Get header and cleaner for the makefile
@@ -219,7 +219,7 @@ def makefile_main():
 #######################################################################################################################
 #Create folders
 
-project_path = os.path.abspath(args.path)
+project_path = args.path
 folders = ['sam', 'reports', 'chimeras', 'log', 'auxillary', 'interactions', 'fastq']
 
 

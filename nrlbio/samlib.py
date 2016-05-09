@@ -227,7 +227,7 @@ def collapse_backward_hits(arwlist):
 		
 
 def demultiplex_read_hits(arwlist, bestdistance, backward=False):
-	'''Demultiplex hits derived from the same read (choose the best ones on basis of its score). Assignes if the read comes from decoy or nonunique.
+	'''Demultiplex hits derived from the same read (choose the best ones on basis of its score)
 	
 		arwlist list: ArWrappers of the aligned reads(hits) derived from the same reads
 		bestdistance int: minimal distance allowed between the best and the second best hit. If the actual distance is less, than hit will be assigned as nonunique

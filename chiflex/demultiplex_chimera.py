@@ -10,6 +10,7 @@ import nrlbio.statistics.sam as sam_statistics
 from nrlbio.samlib import ArWrapper, demultiplex_read_hits
 from nrlbio.chimera import as_gap_score, arwlist2chimera
 from nrlbio.chimera import demultiplex as demultiplex_ch
+from nrlbio.generators import generator_segments
 
 
 
@@ -49,70 +50,63 @@ def compare_single_chimera(arw, chimera, maxgap):
 counts = [0]*6
 
 def _iteration(arwlist, s_distance, ch_distance):
-	#if(arwlist):
-		#if(arwlist[0].qname == testid):
-			#for arw in arwlist:
-				#segment = arw.aligned_read;
-				#print "%s\t%s\t%d\t%s\t%d\t%s\n" % (segment.query_name.split("|")[2], arw.rname, segment.reference_start, segment.cigarstring, segment.get_tag("AS"), segment.query_name)
-			#print 
-			
-			#unique, nonunique, control = demultiplex_read_hits(arwlist, key_score);
-			#segment = unique.aligned_read;
-			#print "BEST UNIQUE", "%s\t%s\t%d\t%s\t%d\t%s\n" % (segment.query_name.split("|")[2], unique.rname, segment.reference_start, segment.cigarstring, segment.get_tag("AS"), segment.query_name)
-			
-			#chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
-			#print "\npossible chimeras: %d\n" % len(chimeras);
-			
-			#unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras);
-			#for arw in unique_chimera.ar_wrappers:
-				#segment = arw.aligned_read;
-				#print "BEST CHIMERA", "%s\t%s\t%d\t%s\t%d\t%s\n" % (segment.query_name.split("|")[2], arw.rname, segment.reference_start, segment.cigarstring, segment.get_tag("AS"), segment.query_name)
-			#print	
-				
-				
-				
-				
 		#demultiplex single hits
-		unique, nonunique, control = demultiplex_read_hits(arwlist, s_distance);
+		choices = demultiplex_read_hits(arwlist, s_distance);
+		if(len(choices) == 1):
+			choice = choices[0]
+			nonunique = []
+		else:
+			choice = None
+			nonunique = filter(lambda x: not x.control, choices)
 		
 		#gather hits into chimeras
-		chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 6, score_function = key_score_chimera)
-		unique_chimera, nonunique_chimera, control_chimera = demultiplex_ch(chimeras, ch_distance);
+		chimeras = arwlist2chimera(arwlist, gap = 0, overlap = 5, score_function = key_score_chimera)
 		
-		#assign read to be chimeric or single separately for control and signal
-		if(unique and unique_chimera):
-			unique, unique_chimera = compare_single_chimera(unique, unique_chimera, args.maxgap)
-		elif(unique and control_chimera):
-			unique, control_chimera = compare_single_chimera(unique, control_chimera, args.maxgap)
-		elif(control and unique_chimera):
-			control, unique_chimera = compare_single_chimera(control, unique_chimera, args.maxgap)
-		elif(control and control_chimera):
-			control, control_chimera = compare_single_chimera(control, control_chimera, args.maxgap)
+		#demultiplex chimeras
+		ch_choices = demultiplex_ch(chimeras, ch_distance);
+		if(not ch_choices):
+			ch_choice, ch_nonunique = None, None
+		elif(len(ch_choices) == 1):
+			ch_choice = ch_choices[0]
+			ch_nonunique = []
+		else:
+			ch_choice = None
+			ch_nonunique = filter(lambda x: not x.control, ch_choices)
+		
+		#assign read to be chimeric or single
+		if(choice and ch_choice):
+			choice, ch_choice = compare_single_chimera(choice, ch_choice, args.maxgap)
+
 			
 		#output single reads	
-		if(unique):
-			counts[0] += 1
-			sam_unique.write(unique.aligned_read);
-		elif(control):
-			counts[1] += 1
-			sam_control.write(control.aligned_read)
+		if(choice):
+			if(choice.control):
+				counts[1] += 1
+				sam_control.write(choice.aligned_read)
+			else:
+				counts[0] += 1
+				sam_unique.write(choice.aligned_read);
+			
 		if(nonunique):
 			counts[2] += 1
 			for nu in nonunique:
 				sam_nonunique.write(nu.aligned_read);
+				
 			
 		#output chimeras
-		if(unique_chimera):
-			counts[3] += 1
-			for arw in unique_chimera.ar_wrappers:
-				sam_unique_chimera.write(arw.aligned_read);
-		elif(control_chimera):
-			counts[4] += 1
-			for arw in control_chimera.ar_wrappers:
-				sam_control_chimera.write(arw.aligned_read);
-		if(nonunique):
+		if(ch_choice):
+			if(ch_choice.control):
+				counts[4] += 1
+				for arw in ch_choice.ar_wrappers:
+					sam_control_chimera.write(arw.aligned_read);
+			else:
+				counts[3] += 1
+				for arw in ch_choice.ar_wrappers:
+					sam_unique_chimera.write(arw.aligned_read);
+					
+		if(ch_nonunique):
 			counts[5] += 1
-			for nu in nonunique_chimera:
+			for nu in ch_nonunique:
 				for arw in nu.ar_wrappers:
 					sam_nonunique_chimera.write(arw.aligned_read);
 
@@ -144,24 +138,9 @@ sam_nonunique_chimera = pysam.Samfile(os.path.join(args.output, "%s.nonunique_ch
 
 #mappings derived from the same read are pulled together. Collapsed into one (or more, in case of non-unique mappings) wrapping read object. 
 #then they are written to a new destination, according to their source: real, or control
-arwlist = [];
-current_name = '';
-for aligned_read in samfile.fetch(until_eof=True):
-	if(not aligned_read.is_unmapped):
-		
-		rname = samfile.getrname(aligned_read.tid)
-		arw = ArWrapper(aligned_read, rname, score_function=key_score, add_nr_tag=False)
-		
-		if(current_name != arw.qname):
-			_iteration(arwlist, args.s_distance, args.ch_distance)
-			arwlist = [arw];
-			current_name = arw.qname;
-			
-		else:
-			arwlist.append(arw);
-else:
-	_iteration(arwlist, args.s_distance, args.ch_distance);
-	
+for arwlist in generator_segments(args.path, key_score):
+	_iteration(arwlist, args.s_distance, args.ch_distance)
+
 	
 sys.stderr.write("number of unique hits: %d\nnumber of control hits: %d\nnumber of nonunique hits: %d\n\nnumber of unique chimeras: %d\nnumber of control chimeras: %d\nnumber of nonunique chimeras: %d\n\n" % tuple(counts));
 			

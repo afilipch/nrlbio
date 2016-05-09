@@ -52,7 +52,6 @@ parser.add_argument('--reports', nargs = '?', default = False, const = True, typ
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are:%s" % bowtie_help_str)
 args = parser.parse_args();
 
-print args.reads
 
 #######################################################################################################################
 #Set priotity for the modes

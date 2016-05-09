@@ -7,7 +7,7 @@ from pybedtools import BedTool
 
 parser = argparse.ArgumentParser(description='assigns genomic coordinates to the regions which are on non-genomic reference(transcriptome, 3\'utr, etc.)');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to bed/gff file");
-parser.add_argument('--quite', nargs = '?', const=True, default = False, type = bool, help = "If seq, warning messges will be supressed. Useful for mirna:target identification");
+parser.add_argument('--quite', nargs = '?', const=True, default = False, type = bool, help = "If set, warning messges will be supressed. Useful for mirna:target identification");
 args = parser.parse_args();
 
 def reassign(interval):

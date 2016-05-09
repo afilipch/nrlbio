@@ -1,5 +1,5 @@
-#! /usr/lib/python
-'''applies filter(s) to the given sam records'''
+#! /usr/bin/python
+'''Applies filter(s) to the given sam records'''
 import argparse
 import sys;
 
@@ -8,11 +8,11 @@ from nrlbio.filters_for_sam import *
 from nrlbio import filters_for_sam
 from nrlbio.formatting import string2fargs
 
-parser = argparse.ArgumentParser(description='applies filter(s) to the given sam records');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
-parser.add_argument('-o', '--output', nargs = '?', required = True, type = str, help = "path to output filtered sam file");
-parser.add_argument('-f', '--filters', nargs = '+', required = True, choices=['repetitive', 'chimera_right', 'contain_repetitive'], type = str, help = "list of filters to apply");
-parser.add_argument('-a', '--arguments', nargs = '+', required = False, type = str, help = "key arguments for filters in format \'min_entropy=1.5,length=18 minright=15\'| None if no arguments provided for the filter. arguments have to be provided corresponding to the order of filters");
+parser = argparse.ArgumentParser(description='Applies filter(s) to the given sam records');
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to sam/bam file");
+parser.add_argument('-o', '--output', nargs = '?', required = True, type = str, help = "Path to output filtered sam file");
+parser.add_argument('-f', '--filters', nargs = '+', required = True, choices=['repetitive', 'chimera_right', 'contain_repetitive'], type = str, help = "List of filters to apply");
+parser.add_argument('-a', '--arguments', nargs = '+', required = False, type = str, help = "Key arguments for filters in format \'min_entropy=1.5,length=18 minright=15\'| None if no arguments provided for the filter. arguments have to be provided corresponding to the order of filters");
 args = parser.parse_args();
 
 
