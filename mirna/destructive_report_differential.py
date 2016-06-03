@@ -1,13 +1,16 @@
 #! /usr/bin/python
-'''Selects for targets with a destructive potential''' 
+'''Selects for targets with a destructive potential and reports thei differential expression''' 
 import argparse
 import sys;
 import math;
 import copy
+from collections import defaultdict
+
 
 from Bio import SeqIO;
 import jinja2
 from pybedtools import BedTool
+
 
 from nrlbio.mirna import slicing_score
 from nrlbio.rnahybrid import get_rnahybrid
@@ -24,9 +27,14 @@ parser.add_argument('--system', nargs = '?', required = True, choices = system_c
 parser.add_argument('-o', '--output', nargs = '?', required = True, type = str, help = "Path to the output report");
 
 parser.add_argument('--internal', nargs = '?', const = True, default = False, type = bool, help = "If set, links will point to internal UCSC browser")
-parser.add_argument('--template', nargs = '?', default = "interaction_destructive.html", type = str, help = "path to jinja2/django template")
+parser.add_argument('--template', nargs = '?', default = "interaction_destructive_differential.html", type = str, help = "path to jinja2/django template")
 parser.add_argument('--title', nargs = '?', default = 'Destructive Interactions', type = str, help = "title of html report");
 parser.add_argument('--best_only', nargs = '?', default = 0, type = int, help = "If set, only the top [best_only] interactions will be output");
+
+parser.add_argument('--targets', nargs = '?', required = True, type = str, help = "Coordinates of targets, gff file")
+parser.add_argument('--expr_targets', nargs = '?', required = True, type = str, help = "Expression of targets, gff file")
+parser.add_argument('--expr_mirna', nargs = '?', required = True, type = str, help = "Expression of targets, tsv file");
+parser.add_argument('--conditions', nargs = 2, required = True, type = str, help = "Names of experimental conditions (names of gff fields corresponding to the expression counts)");
 
 args = parser.parse_args();
 
@@ -42,6 +50,10 @@ class Interaction(object):
 		self.ilink = get_link(interval, system, internal = internal)
 		self.mlink = get_tarbase_link(interval.attrs['mirid'])
 		
+	def assign_expression(self, texpr, mirexpr):
+		self.target_lfc2, self.target_expr_c1, self.target_expr_c2 = texpr
+		self.mirna_lfc2, self.mirna_expr_c1, self.mirna_expr_c2  = mirexpr
+		
 	def __cmp__(self, other):
 		for key in ('destructive_score', 'cons_dscore'):
 			a = cmp(float(self.interval.attrs.get(key, 0)), float(other.interval.attrs.get(key, 0)))
@@ -53,11 +65,7 @@ class Interaction(object):
 
 
 def interval2score(interval):
-	cons_dscores, cons_bscores, cons_bls = [interval.attrs[x].split(',') for x in ('cons_dscores', 'cons_bscores', 'cons_bls')]
-	cons_score = 0;
-	for dscore, bscore, bl in zip(cons_dscores, cons_bscores, cons_bls):
-		cons_score += float(dscore)*float(bscore)*math.log(float(bl) + 4, 4)
-	return float(interval.attrs['dscore']) + cons_score/math.log(2+len(dscore), 4) 
+	return float(interval.attrs['dscore']) + float(interval.attrs.get('cons_dscore', 0)) 
 
 
 interactions = [];
@@ -71,12 +79,34 @@ for count, interval in enumerate(BedTool(args.path)):
 
 	
 	interactions.append(Interaction(interval, basepairing, args.system, args.internal))
-	sys.stdout.write(str(interval))
+	#sys.stdout.write(str(interval))
 	
 	if(count and count % 10000 == 0):
 		sys.stderr.write("%d interactions are processed\n" % count);
 		
+		
 
+coordinates2cid = defaultdict(list)
+for interval in BedTool(args.targets):
+	coordinates2cid[(interval.chrom, interval.start, interval.end, interval.strand)].append(interval.name)
+
+expr_targets={}
+for interval in BedTool(args.expr_targets):
+	for cid in coordinates2cid[(interval.chrom, interval.start, interval.end, interval.strand)]:
+		expr_targets[cid] = interval.attrs['lfc2'], interval.attrs[args.conditions[0]], interval.attrs[args.conditions[1]]
+	
+expr_mirna = {}
+with open(args.expr_mirna) as f:
+	f.next()
+	for l in f:
+		a = l.strip().split("\t")
+		expr_mirna[a[0]] =  a[-1], ",".join(a[1:3]), ",".join(a[3:5])
+		
+	
+
+
+for interaction in interactions:
+	interaction.assign_expression(expr_targets[interaction.interval.chrom], expr_mirna[interaction.interval.attrs['mirid']])
 
 
 

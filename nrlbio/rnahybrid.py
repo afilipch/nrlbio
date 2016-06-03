@@ -46,7 +46,8 @@ def get_rnahybrid(target, mirna, system='3utr_human', arguments = "", extended=F
 	p = _paired_rnahybrid(basepairing);
 	if(extended):
 		pval = float(a[5])
-		return e, p, basepairing, pval
+		pos = int(a[6])
+		return e, p, basepairing, pval, pos
 	else:
 		return e, p
 

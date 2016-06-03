@@ -67,7 +67,7 @@ for name, mirid, targets in targets_generator(args.mafasta):
 	for specie, mirseq in tdict.items():
 		tseq = targets.get(specie, None)
 		if(tseq):
-			energy, pattern, basepairing, pval = get_rnahybrid(tseq, mirseq, extended=True);
+			energy, pattern, basepairing, pval, pos = get_rnahybrid(tseq.replace("-", ""), mirseq, extended=True);
 			dscore = destructive_score(basepairing)
 			if(dscore>=args.minscore):
 				score+=1;

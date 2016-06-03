@@ -60,7 +60,7 @@ else:
 	
 def getscore(a):
 	cid, tseq, mseq, n_uniq = a
-	energy, pattern, basepairing, pval = get_rnahybrid(tseq, mseq, system = rhsys, extended=True);
+	energy, pattern, basepairing, pval, pos = get_rnahybrid(tseq, mseq, system = rhsys, extended=True);
 	return cid, destructive_score(basepairing) + math.log(n_uniq, 2)
 
 

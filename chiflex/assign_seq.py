@@ -23,6 +23,8 @@ def seqrecord_iterator(paths):
 
 reference = SeqIO.to_dict(seqrecord_iterator(args.fasta))
 
+#sys.stderr.write("\n".join([str(x) for x in reference.keys() if x[:3]=='chr']) + "\n")
+
 for interval in BedTool(args.path):
 	seq = interval2seq(interval, reference);
 	interval.attrs['seq'] = seq;

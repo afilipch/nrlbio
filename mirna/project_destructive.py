@@ -29,8 +29,9 @@ parser.add_argument('--mircons', nargs = '?', type = os.path.abspath, help = "Pa
 parser.add_argument('--mir2ucsc', nargs = '?', type = os.path.abspath, help = "Path to the table which connects miRNA specie names with those from MAF files, tsv file. If set along with [--maf, --genomes, --mircons, --mir2ucsc], destructive conservation will be evaluated");
 
 #Miscellaneous options
-parser.add_argument('--annotation', nargs = '?', type = os.path.abspath, help = "Path to an annotation file in gff format. If provided, found genomic loci will be annotated");
-parser.add_argument('--precursors', nargs = '?', type = os.path.abspath, help = "Path to the miRNA precursors, if set precursors will be removed from predictions, bed/gff format");
+parser.add_argument('--annotation', nargs = '?', default =None, type = os.path.abspath, help = "Path to an annotation file in gff format. If provided, found genomic loci will be annotated");
+parser.add_argument('--precursors', nargs = '?', default =None, type = os.path.abspath, help = "Path to the miRNA precursors, if set precursors will be removed from predictions, bed/gff format");
+#parser.add_argument('--liftover', nargs = 2, default =None, type = os.path.abspath, help = "Path to the liftover files (1st file for conversion before conservation analyses, 2nd file for conservation after analyses), If set liftovers coordinates before conservation analyses and liftovers back after");
 parser.add_argument('--threads', nargs = '?', default = 8, type = int, help = "Number of threads to use")
 parser.add_argument('--minscore', nargs = '?', default = 20.0, type = float, help = "Only the regions with destructive score greater or equal to [--minscore] will be selected")
 parser.add_argument('--reassign', nargs = '?', default = False, const=True, type = bool, help = "If set, regions position on a reference are reassigned to the genomic ones. Usefull in the case of nongenomic references(transcriptome, rRNAs, etc.). NOTE: reference headers have to be in [chrom]|[strand]|[start]|[stop] format")
@@ -149,7 +150,7 @@ def makefile_main():
 		#Extract MAF blocks for potential destructive sites
 		input_files = output_files
 		output_files = 'conserved.fa'
-		script = get_script('extract_maf.py', arguments={'--maf': args.maf, '--genomes': args.genomes, '--table': args.mir2ucsc, '--system': args.system, '--left': 5, '--right': 5, '--min-len': 18}, inp = input_files, out = output_files, package = scripts_package)
+		script = get_script('extract_maf.py', arguments={'--maf': args.maf, '--genomes': args.genomes, '--table': args.mir2ucsc, '--system': args.system, '--left': 5, '--right': 5, '--min-len': 18, '--muscle': True}, inp = input_files, out = output_files, package = scripts_package)
 		mlist.append(dependence(input_files, output_files, script))
 		clean.append(output_files)
 		
@@ -157,6 +158,13 @@ def makefile_main():
 		input_files = 'dscored.gff', 'conserved.fa'
 		output_files = 'cons_assigned.gff'
 		script = get_script('destructive_conservation.py', arguments={'--mir' : args.mircons, '--mir2ucsc': args.mir2ucsc, '--refspecie': args.system, '--mafasta': input_files[1]}, inp = input_files[0], out = output_files,  package=mirna_package)
+		mlist.append(dependence(input_files, output_files, script))
+		
+	if(args.annotation):
+		#Create final HTML report on destructive sites found
+		input_files = output_files
+		output_files = 'annotated.gff'
+		script = get_script('annotate_bed_with_gff3.py', arguments={'--gff3' : args.annotation}, inp = input_files, out = output_files,  package=chiflex_package)
 		mlist.append(dependence(input_files, output_files, script))
 		
 		

@@ -30,13 +30,7 @@
 			<td>
 				Destructive score: {{interaction.interval.attrs.destructive_score}}
 				<br>
-				Conservation scores: {{interaction.interval.attrs.cons_dscores}}
-				<br>
-				Bulge score: {{interaction.interval.attrs.cons_bscores}}
-				<br>
-				Bulge length: {{interaction.interval.attrs.cons_bls}}
-				<br>				
-				Match score: {{interaction.interval.attrs.cons_mscores}}
+				Conservation score: {{interaction.interval.attrs.cons_dscore}}
 				<br>
 				N_niq reads: {{interaction.interval.attrs.n_uniq}}
 				<br>
@@ -49,7 +43,21 @@
 				Biotype: {{interaction.interval.attrs.biotypes}}
 				<br>
 				Transcription: {{interaction.interval.attrs.transcription}}
-				<br>	
+				<br>
+				<br>
+				miRNA LFC2: {{interaction.mirna_lfc2}}
+				<br>
+				miRNA condition 1: {{interaction.mirna_expr_c1}}
+				<br>
+				miRNA condition 2: {{interaction.mirna_expr_c2}}
+				<br>
+				<br>
+				Target LFC2: {{interaction.target_lfc2}}
+				<br>
+				Target condition 1: {{interaction.target_expr_c1}}
+				<br>
+				Target condition 2: {{interaction.target_expr_c2}}
+				<br>
 <!--				Slicing score: {{interaction.interval.attrs.slicing_score}}
 			</td>-->
 		</tr>

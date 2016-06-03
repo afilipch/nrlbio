@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(description='Collapses circular or linear splic
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the file with circular or linear splice junctions, bed/gff file");
 parser.add_argument('-od', '--dictionary', nargs = '?', required = True, type = str, help = "path to output \"interaction to read id\" file")
 parser.add_argument('--jtype', nargs = '?', required = True, choices=['csj', 'lsj'], type = str, help = "type of junction [csj|lsj]")
-parser.add_argument('--support', nargs = '?', default = 2, type = int, help = "min read support for a splice junction to pass")
+parser.add_argument('--support', nargs = '?', default = 1, type = int, help = "min read support for a splice junction to pass")
 args = parser.parse_args()
 
 

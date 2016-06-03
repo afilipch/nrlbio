@@ -532,11 +532,14 @@ if __name__ == '__main__':
 
 	for aln, interval in alignment_generator(args.path, maftrack, left=args.left, right=args.right):
 		print ">%s|%d|%d|%s|%s|%s\nAAAAAAAAAAAAA" % (interval.chrom, interval.start, interval.end, interval.strand, interval.name, interval.attrs.get('mirid', 'stub'))
-		
+		if args.muscle:
+			mfa = aln.MUSCLE()
+		else:
+			mfa = aln
 
-		for specie, header in zip(aln.species, aln.headers):
+		for specie, header in zip(mfa.species, mfa.headers):
 			if(not select_only or specie in select_only):
-				print ">%s\n%s" % (header, "".join(aln.by_species[specie]))
+				print ">%s\n%s" % (header, "".join(mfa.by_species[specie]))
 			else:
 				sys.stderr.write("Specie %s is is not in a table. Skipped\n" % specie)
 

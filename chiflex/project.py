@@ -111,7 +111,7 @@ def makefile_main():
 		collapsed = True
 		
 	else:
-		input_files = args.reads
+		output_files = args.reads[0]
 		collapsed = args.collapsed
 	
 	#Map reads with bowtie2

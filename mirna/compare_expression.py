@@ -25,8 +25,9 @@ def compexpr(c1, c2, varcoeff):
 	mean2 = numpy.mean(c2);
 	diff =  abs(mean1-mean2)/numpy.mean(numpy.concatenate((c1,c2)))
 	vdiff = diff/varcoeff
+	inner_diff = max([(numpy.std(c1)/mean1)/varcoeff, (numpy.std(c2)/mean2)/varcoeff])
 	lfc = log((mean1+0.1)/(mean2+0.1), 2) 
-	return list(c1) + list(c2) + [vdiff, lfc]
+	return list(c1) + list(c2) + [inner_diff, vdiff, lfc]
 
 
 #Get actual normalized expression for two conditions(with replicates)
@@ -35,17 +36,15 @@ condition1 = defaultdict(lambda: defaultdict(float))
 for en, cpath in enumerate(args.condition1):
 	for interval in BedTool(cpath):
 		expr = float(interval.attrs['norm_expr'])
-		if(expr>args.minexpr):
-			mirids.add(interval.attrs['Name'])
-			condition1[interval.attrs['Name']][en] = expr;
+		mirids.add(interval.attrs['Name'])
+		condition1[interval.attrs['Name']][en] = expr;
 		
 condition2 = defaultdict(lambda: defaultdict(float))
 for en, cpath in enumerate(args.condition2):
 	for interval in BedTool(cpath):
 		expr = float(interval.attrs['norm_expr'])
-		if(expr>args.minexpr):
-			mirids.add(interval.attrs['Name'])
-			condition2[interval.attrs['Name']][en] = expr;
+		mirids.add(interval.attrs['Name'])
+		condition2[interval.attrs['Name']][en] = expr;
 		
 		
 #Get global normalized standard deviation (coefficient of variance) on basis of replicates
@@ -53,15 +52,19 @@ cvs = [];
 for mirid, edict in condition1.items():
 	if(len(edict)>1):
 		a = numpy.array(edict.values())
-		cvs.append(numpy.std(a)/numpy.mean(a))
+		if(max(a)>=args.minexpr):
+			cvs.append(numpy.std(a)/numpy.mean(a))
 		
 for mirid, edict in condition2.items():
 	if(len(edict)>1):
 		a = numpy.array(edict.values())
-		cvs.append(numpy.std(a)/numpy.mean(a))
+		if(max(a)>=args.minexpr):
+			cvs.append(numpy.std(a)/numpy.mean(a))
+		
 		
 varcoeff = numpy.mean(numpy.array(cvs));
 sys.stderr.write("Global variation coefficient is equal to %1.4f\n" % varcoeff)
+		
 		
 		
 #Calculate log fold change and zscore between the two means(between conditions)
@@ -71,11 +74,12 @@ for mirid in mirids:
 	cd2 = condition2[mirid]
 	c1 = numpy.array([cd1[x] for x in range(size1)])
 	c2 = numpy.array([cd2[x] for x in range(size2)])
-	expression.append([mirid] + compexpr(c1, c2, varcoeff))
+	if(max(c1)>args.minexpr or max(c2)>args.minexpr):
+		expression.append([mirid] + compexpr(c1, c2, varcoeff))
 
 
 #Output the results
-header = ['mirid'] + ["%s_%d" % (args.names[0], x+1) for x in range(size1)] + ["%s_%d" % (args.names[1], x+1) for x in range(size2)] + ['zscore', 'lfc2']
+header = ['id'] + ["%s_%d" % (args.names[0], x+1) for x in range(size1)] + ["%s_%d" % (args.names[1], x+1) for x in range(size2)] + ['zscore_inner', 'zscore', 'lfc2']
 sys.stdout.write("\t".join(header) + "\n") 
 
 expression.sort(key = lambda x: x[-1], reverse=True)

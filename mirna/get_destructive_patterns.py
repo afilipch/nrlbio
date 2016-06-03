@@ -7,9 +7,9 @@ import copy
 
 from Bio import SeqIO;
 import jinja2
+from pybedtools import BedTool
 
 from nrlbio.mirna import slicing_score, destructive_score
-from nrlbio.generators import generator_doublebed
 from nrlbio.rnahybrid import get_rnahybrid, get_shuffled_rnahybrid
 from nrlbio.html import get_link, get_tarbase_link
 from nrlbio.pybedtools_extension import construct_gff_interval
@@ -20,8 +20,8 @@ sys2rhsys = {'hg19': '3utr_human', 'hg38': '3utr_human', 'mm9': '3utr_human', 'm
 parser = argparse.ArgumentParser(description='Selects for targets with a destructive potential');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the mirna:target interactions to select from, double gff/bed. Sequences have to be assigned to each interaction");
 parser.add_argument('--system', nargs = '?', required = True, choices = system_choices, type = str, help = "Genome system. Can be set to %s" % "|".join(system_choices))
-parser.add_argument('--mir', nargs = '?', required=True, type = str, help = "Path to the miRNAs, fasta format");
-parser.add_argument('-o', '--output', nargs = '?', required = True, type = str, help = "Path to the output report");
+#parser.add_argument('--mir', nargs = '?', required=True, type = str, help = "Path to the miRNAs, fasta format");
+parser.add_argument('-o', '--output', nargs = '?', default = 'destructive.html', type = str, help = "Path to the output report");
 parser.add_argument('--internal', nargs = '?', const = True, default = False, type = bool, help = "If set, links will point to internal UCSC browser")
 parser.add_argument('--template', nargs = '?', default = "interaction_destructive.html", type = str, help = "path to jinja2/django template")
 parser.add_argument('--title', nargs = '?', default = 'Destructive Interactions', type = str, help = "title of html report");
@@ -31,9 +31,9 @@ args = parser.parse_args();
 
 rhsys = sys2rhsys[args.system]
 
-mirdict = {};
-for seqrecord in SeqIO.parse(args.mir, "fasta"):
-	mirdict[seqrecord.id] = str(seqrecord.seq.upper())
+##mirdict = {};
+##for seqrecord in SeqIO.parse(args.mir, "fasta"):
+	##mirdict[seqrecord.id] = str(seqrecord.seq.upper())
 	
 	
 class Interaction(object):
@@ -80,29 +80,29 @@ def split_interval(interval, seq, length_limit=20):
 	interval.attrs['seq'] = seq;
 	
 	r = [];
-	for b in filter(lambda x: x[1]-x[0]>=length_limit, (lboundaries, rboundaries)):
-		r.append(construct_gff_interval(interval.chrom, b[0], b[1], 'ai', score='0', strand=interval.strand, attrs=[ ('ID', interval.name), ('seq', b[2]), ('n_uniq', (int(interval.attrs['n_uniq'])+1)/2), ('split', 'yes') ] ))
+	for num, b in enumerate(filter(lambda x: x[1]-x[0]>=length_limit, (lboundaries, rboundaries))):
+		r.append(construct_gff_interval(interval.chrom, b[0], b[1], 'ai', score='0', strand=interval.strand, attrs=[ ('ID', "%s_%d" % (interval.name,num)), ('seq', b[2]), ('n_uniq', (int(interval.attrs['n_uniq'])+1)/2), ('split', 'yes') ] ))
 		
 	return r;
 
 
-def interval2score(interval, energy, pattern):
-	return destructive_score(energy, pattern) + math.log(float(interval.attrs['n_uniq']), 2)
+def interval2score(interval, basepairing):
+	return destructive_score(basepairing) + math.log(float(interval.attrs['n_uniq']), 2)
 
 
-def get_interaction(interval, mirseq, name, gsystem, pval_cutoff):
-	interval.name = name
-	energy, pattern, basepairing, pval = get_rnahybrid(interval.attrs['seq'], mirseq, system = rhsys, extended=True);
+def get_interaction(interval, mirseq, mirid, gsystem, pval_cutoff):
+	#interval.name = name
+	energy, pattern, basepairing, pval, pos = get_rnahybrid(interval.attrs['seq'], mirseq, system = rhsys, extended=True);
 	if(pval>pval_cutoff):
 		return None, []
 	else:
-		interval.attrs['destructive_score'] = "%1.2f" % interval2score(interval, energy, pattern)
-		interval.attrs['slicing_score'] = "%1.2f" % slicing_score(pattern)
+		interval.attrs['destructive_score'] = "%1.2f" % interval2score(interval, basepairing)
 		interval.attrs['pval'] = "%1.5f" % pval
 		interval.attrs['energy'] = str(energy);
 		interval.attrs['pattern'] = ",".join([str(x) for x in pattern]);
 		interval.attrs['mseq'] = mirseq;
 		interval.attrs['split'] = interval.attrs.get('split', 'no')
+		interval.attrs['mirid'] = mirid
 		seq = basepairing2seq(basepairing)
 		aintervals = split_interval(interval, seq, length_limit=20);
 		sys.stdout.write(str(interval))
@@ -110,22 +110,22 @@ def get_interaction(interval, mirseq, name, gsystem, pval_cutoff):
 
 
 interactions = [];
-for count, (i1, i2) in enumerate(generator_doublebed(args.path)):
-	name = i1.chrom
-	mirseq = mirdict[i1.chrom]
+for count, interval in enumerate(BedTool(args.path)):
+	mirid = interval.attrs['mirid']
+	mirseq = interval.attrs['mseq']
 	#ti = copy.copy(i2)
-	interaction, aintervals = get_interaction(i2, mirseq, name, args.system, 1)
+	interaction, aintervals = get_interaction(interval, mirseq, mirid, args.system, 1)
 	interactions.append(interaction)
 	while(aintervals):
 		newaints = [];
 		for ainterval in aintervals:
-			interaction, aints = get_interaction(ainterval, mirseq, name, args.system, args.pval_cutoff)
+			interaction, aints = get_interaction(ainterval, mirseq, mirid, args.system, args.pval_cutoff)
 			newaints.extend(aints)
 			if(interaction):
 				interactions.append(interaction)
 		aintervals = newaints;
 		
-	if(count and count % 10000 == 0):
+	if(count and count % 1000 == 0):
 		sys.stderr.write("%d interactions are processed\n" % count);
 			
 
@@ -133,6 +133,7 @@ for count, (i1, i2) in enumerate(generator_doublebed(args.path)):
 	
 
 interactions.sort(key=lambda x: float(x.interval.attrs['destructive_score']), reverse=True)
+interactions = [x for x in interactions if x.interval.attrs.get('biotypes', 'cds') != 'cds']
 if(args.best_only):
 	interactions = interactions[:args.best_only]
 
