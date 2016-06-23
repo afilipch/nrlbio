@@ -355,7 +355,7 @@ def makefile_clustering():
 	if(args.annotation):
 		input_files = output_files, args.annotation
 		output_files = os.path.join('clusters', 'clusters.annotated.gff')
-		script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
+		script = get_script('annotate_bed_with_gff3.py', arguments={'--gff3': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 		m.append(dependence(input_files, output_files, script))
 		
 	
@@ -409,7 +409,7 @@ def makefile_interaction():
 		if(args.annotation):
 			input_files = output_files, args.annotation
 			output_files = os.path.join('interactions', 'annotated.%s.gff' % itype)
-			script = get_script('annotate_bed.py', arguments={'--annotation': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
+			script = get_script('annotate_bed_with_gff3.py', arguments={'--gff3': input_files[1]}, inp = input_files[0], out=output_files, package=chiflex_package)
 			mlist.append(dependence(input_files, output_files, script));
 			
 		final_files.append(output_files)

@@ -31,6 +31,7 @@ parser.add_argument('--mir2ucsc', nargs = '?', type = os.path.abspath, help = "P
 #Miscellaneous options
 parser.add_argument('--annotation', nargs = '?', default =None, type = os.path.abspath, help = "Path to an annotation file in gff format. If provided, found genomic loci will be annotated");
 parser.add_argument('--precursors', nargs = '?', default =None, type = os.path.abspath, help = "Path to the miRNA precursors, if set precursors will be removed from predictions, bed/gff format");
+parser.add_argument('--reverse', nargs = '?', default = False, const = True, type = bool, help = "If set search will be performed also on reverse complements of given sequences");
 #parser.add_argument('--liftover', nargs = 2, default =None, type = os.path.abspath, help = "Path to the liftover files (1st file for conversion before conservation analyses, 2nd file for conservation after analyses), If set liftovers coordinates before conservation analyses and liftovers back after");
 parser.add_argument('--threads', nargs = '?', default = 8, type = int, help = "Number of threads to use")
 parser.add_argument('--minscore', nargs = '?', default = 20.0, type = float, help = "Only the regions with destructive score greater or equal to [--minscore] will be selected")
@@ -92,7 +93,10 @@ def makefile_main():
 		#Look for 2-8 seed matches with up to one mismatch in the provided sequences
 		input_files = args.sequences
 		output_files = 'anchors.bed'
-		script = get_script('search_destructive_anchors.py', arguments={'--mir': args.mir}, inp = input_files, out = output_files,  package=mirna_package)
+		if(args.reverse):
+			script = get_script('search_destructive_anchors.py', arguments={'--mir': args.mir, '--reverse': True}, inp = input_files, out = output_files,  package=mirna_package)
+		else:
+			script = get_script('search_destructive_anchors.py', arguments={'--mir': args.mir}, inp = input_files, out = output_files,  package=mirna_package)
 		mlist.append(dependence(input_files, output_files, script))
 		clean.append(output_files)
 	
@@ -155,7 +159,10 @@ def makefile_main():
 		clean.append(output_files)
 		
 		#Assign conservation destructive score based on previously extracted MAF blocks
-		input_files = 'dscored.gff', 'conserved.fa'
+		if(args.precursors):
+			input_files = 'dscored_wo_precursors.gff', 'conserved.fa'
+		else:
+			input_files = 'dscored.gff', 'conserved.fa'
 		output_files = 'cons_assigned.gff'
 		script = get_script('destructive_conservation.py', arguments={'--mir' : args.mircons, '--mir2ucsc': args.mir2ucsc, '--refspecie': args.system, '--mafasta': input_files[1]}, inp = input_files[0], out = output_files,  package=mirna_package)
 		mlist.append(dependence(input_files, output_files, script))
@@ -171,7 +178,10 @@ def makefile_main():
 	#Create final HTML report on destructive sites found
 	input_files = output_files
 	output_files = 'destructive.gff', 'destructive.html'
-	script = get_script('destructive_report.py', arguments={'--output' : output_files[1], '--system': args.system, '--best_only': 1000}, inp = input_files, out = output_files[0],  package=mirna_package)
+	if(checkcons):
+		script = get_script('destructive_report.py', arguments={'--output' : output_files[1], '--system': args.system, '--best_only': 1000, 'conservation': True}, inp = input_files, out = output_files[0],  package=mirna_package)
+	else:
+		script = get_script('destructive_report.py', arguments={'--output' : output_files[1], '--system': args.system, '--best_only': 1000}, inp = input_files, out = output_files[0],  package=mirna_package)		
 	mlist.append(dependence(input_files, output_files, script))
 
 

@@ -245,6 +245,7 @@ def mirfasta2conservation(mirfasta, translational_table=None):
 	fsr = records.next();
 	rspecie = fsr.id.split("-")[0]
 	tkey = fsr.id
+	refmir[tkey] = str(fsr.seq.upper()).replace('U', 'T')
 	
 	mir2cons = defaultdict(dict)
 	for seqrecord in records:

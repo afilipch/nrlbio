@@ -27,7 +27,7 @@ parser.add_argument('--internal', nargs = '?', const = True, default = False, ty
 parser.add_argument('--template', nargs = '?', default = "interaction_destructive.html", type = str, help = "path to jinja2/django template")
 parser.add_argument('--title', nargs = '?', default = 'Destructive Interactions', type = str, help = "title of html report");
 parser.add_argument('--best_only', nargs = '?', default = 0, type = int, help = "If set, only the top [best_only] interactions will be output");
-
+parser.add_argument('--conservation', nargs = '?', default = False, const = True, type = bool, help = "If set, conservation score will be taken into account");
 args = parser.parse_args();
 
 
@@ -51,13 +51,16 @@ class Interaction(object):
 
 
 
-
-def interval2score(interval):
-	cons_dscores, cons_bscores, cons_bls = [interval.attrs[x].split(',') for x in ('cons_dscores', 'cons_bscores', 'cons_bls')]
-	cons_score = 0;
-	for dscore, bscore, bl in zip(cons_dscores, cons_bscores, cons_bls):
-		cons_score += float(dscore)*float(bscore)*math.log(float(bl) + 4, 4)
-	return float(interval.attrs['dscore']) + cons_score/math.log(2+len(dscore), 4) 
+if(args.conservation):
+	def interval2score(interval):
+		cons_dscores, cons_bscores, cons_bls = [interval.attrs[x].split(',') for x in ('cons_dscores', 'cons_bscores', 'cons_bls')]
+		cons_score = 0;
+		for dscore, bscore, bl in zip(cons_dscores, cons_bscores, cons_bls):
+			cons_score += float(dscore)*float(bscore)*math.log(float(bl) + 4, 4)
+		return float(interval.attrs['dscore']) + cons_score/math.log(2+len(dscore), 4)
+else:
+	def interval2score(interval):
+		return float(interval.attrs['dscore'])
 
 
 interactions = [];

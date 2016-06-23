@@ -19,7 +19,9 @@ def extract_html(fname):
 		for line in fname:
 			M = re.search(r'\<A HREF="(?P<url>\S+)"\s+TARGET\=_blank\>(?P<name>.*)\</A\>', line)
 			if not M:
-				print "No match",line
+				M = re.search(r'\<a href="(?P<url>\S+)"\s+target\=_blank\>(?P<name>.*)\</a\>', line)
+				if(not M):
+					print "No match",line
 			else:
 				#print M.group()
 				yield M.group('name').split('/')[-1], M.group('url').replace('../','http://genome.ucsc.edu/')

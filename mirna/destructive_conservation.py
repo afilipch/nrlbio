@@ -11,6 +11,7 @@ from Bio import SeqIO
 
 from nrlbio.mirna import destructive_score, mirfasta2conservation
 from nrlbio.rnahybrid import get_rnahybrid
+from nrlbio.generators import targets_generator
 
 parser = argparse.ArgumentParser(description='Tool for destructive miRNA sites prediction');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genomic intervals to check binding conservation, gff/bed file");

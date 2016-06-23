@@ -11,6 +11,7 @@ from Bio import SeqIO
 
 from nrlbio.mirna import destructive_score, mirfasta2conservation
 from nrlbio.rnahybrid import get_rnahybrid
+from nrlbio.generators import targets_generator
 
 
 parser = argparse.ArgumentParser(description='Tool for destructive miRNA sites prediction');
@@ -32,23 +33,36 @@ args = parser.parse_args();
 #mseq1 = "TCTTTGGTTATCTAGCTGTATGA"
 
 
-def get_hybrid_on_mirna(basepairing, mseq, tseq, pos):	
+def get_hybrid_on_mirna(basepairing, mseq, tseq, pos):
 	curbp = copy.copy(basepairing)
+	
+	#print 
+	#print "-"*120
+	#print
+	#print curbp, pos
 
 	if(curbp[1][0] == ' ' and curbp[3][0] == ' '):
 		curbp = [x[1:] for x in curbp]
 	if(curbp[1][-1] == ' ' and curbp[3][-1] == ' '):
 		curbp = [x[:-1] for x in curbp]
+		
+	if(curbp[1][0] == ' ' and curbp[2][0] == ' '):
+		tpos = -2;
+	else:
+		tpos = -1;
+		
+
+	#print tseq
+	#print curbp
 
 	mpos = 0;
-	tpos = -1;
 	mlen = len(mseq);
 	matchdict = defaultdict(list);
 	
 	added = set()
 	
 	for tb, th, mh, mb in zip(*curbp):
-		#print tb, th, mh, mb, '\t',
+		#print tb, th, mh, mb, tseq[tpos+pos]
 		if(th != ' '):
 			tpos += 1;
 			mpos += 1;
@@ -63,7 +77,7 @@ def get_hybrid_on_mirna(basepairing, mseq, tseq, pos):
 			if(tpos+pos not in added):
 				matchdict[mlen-mpos].append((False, tpos+pos, tseq[tpos+pos]));
 				added.add(tpos+pos)
-		#print mlen-mpos, matchdict[mlen-mpos]
+		#print tb, th, mh, mb, tseq[tpos+pos]
 		
 	return matchdict
 
@@ -136,23 +150,6 @@ def get_match_score(cmatch, refmatch, seed=(1,9), down=12):
 	
 #get_bulge_score(rn5tseq, rn5mseq, refmatch)	
 
-#################################################################################################################
-#Wrapper to connect conserved target sequences to miRNA id
-def targets_generator(consfasta):
-	sequences = {}
-	for seqrecord in SeqIO.parse(consfasta, 'fasta'):
-		a = seqrecord.id.split("|");
-		if(len(a) == 6):
-			if(sequences):
-				yield name, mirid, sequences
-			sequences = {}
-			name, mirid = a[4], a[5]
-		else:
-			sequences[seqrecord.id] = str(seqrecord.seq.upper()).replace('U', 'T')
-	else:
-		yield name, mirid, sequences
-		
-		
 
 #################################################################################################################
 #get translational table from MirBase to UCSC genome names
@@ -215,7 +212,7 @@ for name, mirid, targets in targets_generator(args.mafasta):
 					  
 					  
 for interval in BedTool(args.path):
-	scores, bscores, mscores, bls = coord2score.get(interval.name, ('', ''))
+	scores, bscores, mscores, bls = coord2score.get(interval.name, ('', '', '', ''))
 	interval.attrs['cons_dscores'] = scores
 	interval.attrs['cons_bscores'] = bscores
 	interval.attrs['cons_mscores'] = mscores

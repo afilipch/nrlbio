@@ -32,25 +32,55 @@ for mirid, mirna in fasta2mirnas(args.mir, seed_start=1, seed_stop=1+args.slengt
 	for mm in mirna.matches_1mm:
 		match2mirid[mm].append(mirid);
 		
-if(args.reverse):
-	reverse2mirid = {};
-	for match, mirids in match2mirid.items():
-		reverse2mirid[reverse_complement(match)] = mirids
+#if(args.reverse):
+	#reverse2mirid = {};
+	#for match, mirids in match2mirid.items():
+		#reverse2mirid[reverse_complement(match)] = mirids
 
 		
 #start = 0;
 end = args.slength
 
 for seqrecord in SeqIO.parse(args.path, 'fasta'):
-	l=[str(x) for x in seqrecord[:end]];
-	mirids = match2mirid.get(''.join(l));
+	seq = str(seqrecord.seq.upper()).replace('U', 'T')
+	l=[str(x) for x in seq[:end]];
+	match = ''.join(l)
+	mirids = match2mirid.get(match);
 	if(mirids):
 		print "%s\t%d\t%d\t%s\t0\t+" % (seqrecord.id, 0, end, ",".join(mirids))
+	#if(args.reverse and match in reverse2mirid):
+		#print "%s\t%d\t%d\t%s\t0\t-" % (seqrecord.id, 0, end, ",".join(mirids))
 
-	for c, n in enumerate(seqrecord[end:]):
+	for c, n in enumerate(seq[end:]):
 		l.pop(0)
 		l.append(n)
-		mirids = match2mirid.get(''.join(l));
+		match = ''.join(l)
+		mirids = match2mirid.get(match);
 		if(mirids):
 			print "%s\t%d\t%d\t%s\t0\t+" % (seqrecord.id, c+1, c+end+1, ",".join(mirids))
+		#if(args.reverse and match in reverse2mirid):
+			#print "%s\t%d\t%d\t%s\t0\t-" % (seqrecord.id, 0, end, ",".join(mirids))
+			
+if(args.reverse):
+	for seqrecord in SeqIO.parse(args.path, 'fasta'):
+		length = len(seqrecord)
+		seq = str(seqrecord.seq.reverse_complement().upper()).replace('U', 'T')
+		l=[str(x) for x in seq[:end]];
+		match = ''.join(l)
+		mirids = match2mirid.get(match);
+		if(mirids):
+			print "%s\t%d\t%d\t%s\t0\t-" % (seqrecord.id, length-end, length, ",".join(mirids))
+
+		for c, n in enumerate(seq[end:]):
+			l.pop(0)
+			l.append(n)
+			match = ''.join(l)
+			mirids = match2mirid.get(match);
+			if(mirids):
+				print "%s\t%d\t%d\t%s\t0\t-" % (seqrecord.id, length-c-1-end, length-c-1, ",".join(mirids))	
+			
+			
+			
+			
+			
 

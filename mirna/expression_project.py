@@ -148,7 +148,7 @@ arguments_report = (
 ('path', ('Project folder', str)),
 ('reads', ('Sequencing reads', str)),
 ('chiflex', ('Chiflex module used in the project', str)), 
-('index', ('Mapping reference index (genome, transcriptome) used for mapping', multipath)), 
+('index', ('Mapping reference index (genome, transcriptome) used for mapping', str)), 
  
 ('mirbase_precursors', ('Path to miRNAs precursors used for expression analysis', os.path.abspath)), 
 

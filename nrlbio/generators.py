@@ -190,6 +190,24 @@ def generator_segments(path, key_score= lambda x: x.AS, add_nr_tag=False, second
 				
 	else:
 		yield arwlist
+		
+		
+def targets_generator(consfasta):
+	'''generates aligned blocks from fasta file(got from extract_maf.py) as python dictionaries'''
+	from Bio import SeqIO
+	
+	sequences = {}
+	for seqrecord in SeqIO.parse(consfasta, 'fasta'):
+		a = seqrecord.id.split("|");
+		if(len(a) == 6):
+			if(sequences):
+				yield name, mirid, sequences
+			sequences = {}
+			name, mirid = a[4], a[5]
+		else:
+			sequences[seqrecord.id] = str(seqrecord.seq.upper()).replace('U', 'T')
+	else:
+		yield name, mirid, sequences
 			
 			
 

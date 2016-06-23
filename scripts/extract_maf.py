@@ -530,18 +530,19 @@ if __name__ == '__main__':
     
 	maftrack = Track(args.maf, MAFBlockMultiGenomeAccessor, sense_specific=False, genome_provider=genome_provider, excess_threshold=args.excess_threshold, min_len=args.min_len, system=args.system)
 
-	for aln, interval in alignment_generator(args.path, maftrack, left=args.left, right=args.right):
+	for count, (aln, interval) in enumerate(alignment_generator(args.path, maftrack, left=args.left, right=args.right)):
 		print ">%s|%d|%d|%s|%s|%s\nAAAAAAAAAAAAA" % (interval.chrom, interval.start, interval.end, interval.strand, interval.name, interval.attrs.get('mirid', 'stub'))
 		if args.muscle:
 			mfa = aln.MUSCLE()
 		else:
 			mfa = aln
-
-		for specie, header in zip(mfa.species, mfa.headers):
-			if(not select_only or specie in select_only):
-				print ">%s\n%s" % (header, "".join(mfa.by_species[specie]))
-			else:
-				sys.stderr.write("Specie %s is is not in a table. Skipped\n" % specie)
+		
+		if(mfa):
+			for specie, header in zip(mfa.species, mfa.headers):
+				if(not select_only or specie in select_only):
+					print ">%s\n%s" % (header, "".join(mfa.by_species[specie]))
+				else:
+					sys.stderr.write("Specie %s is is not in a table. Skipped\n" % specie)
 
 
 
