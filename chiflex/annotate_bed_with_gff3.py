@@ -3,7 +3,6 @@
 import argparse
 import sys;
 from collections import defaultdict
-import yaml
 
 from pybedtools import BedTool, Interval
 

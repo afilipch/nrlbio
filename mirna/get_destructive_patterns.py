@@ -133,7 +133,7 @@ for count, interval in enumerate(BedTool(args.path)):
 	
 
 interactions.sort(key=lambda x: float(x.interval.attrs['destructive_score']), reverse=True)
-interactions = [x for x in interactions if x.interval.attrs.get('biotypes', 'cds') != 'cds']
+#interactions = [x for x in interactions if x.interval.attrs.get('biotypes', 'cds') != 'cds']
 if(args.best_only):
 	interactions = interactions[:args.best_only]
 

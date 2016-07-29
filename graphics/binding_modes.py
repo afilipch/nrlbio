@@ -15,9 +15,9 @@ from nrlbio.mirna import fasta2mirnas, MODES_ORDER
 parser = argparse.ArgumentParser(description='Draws a plot of binding modes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the interacting RNA, double gff file with mode and mode_shuffled assigned");
 parser.add_argument('--norm', nargs = '?', default=False, const = True, type = bool, help = "If set, binding modes will be normalized");
-#parser.add_argument('--norm', nargs = '?', default=False, const = True, type = bool, help = "If set, control values for binding modes will renormalized, which removes a bias of binding modes order");
 parser.add_argument('--output', nargs = '?', default='pattern.png', type = str, help = "Path to the output");
 parser.add_argument('--title', nargs = '?', type = str, help = "Title for a plot");
+parser.add_argument('--control', nargs = '?', default = 'shuffled sequences', type = str, help = "Type of control: shuffled sequences or shuffled interactions");
 args = parser.parse_args();
 
 mode = defaultdict(int)
@@ -64,7 +64,7 @@ boundaries = range(0, len(mode));
 bins = range(0, len(mode)+1);
 
 #plot real and control binding pattern
-plt.hist((boundaries,boundaries), weights=(mode,mode_shuffled), bins=bins, label=('interactions(%d)' % (total/2), 'shuffled sequences'), align='right', rwidth=0.7, color=('0.2', '0.8'))
+plt.hist((boundaries,boundaries), weights=(mode,mode_shuffled), bins=bins, label=('interactions(%d)' % (total/2), args.control), align='right', rwidth=0.7, color=('0.2', '0.8'))
 
 
 #set labels and title

@@ -82,11 +82,11 @@ for (read_type, mapped_type, is_exact, ttype), counts in mapping_stat.iteritems(
 	
 	
 for title, data in real2mapped.items():
-	output = os.path.join(real2mapped_dir, title.replace("(", "_").replace(")", "").replace("|", "_"))
+	output = os.path.join(real2mapped_dir, title.replace("(", "_").replace(")", "").replace("|", "_") + ".svg")
 	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
 	
 for title, data in mapped2real.items():
-	output = os.path.join(mapped2real_dir, title.replace("(", "_").replace(")", "").replace("|", "_"))
+	output = os.path.join(mapped2real_dir, title.replace("(", "_").replace(")", "").replace("|", "_") + ".svg")
 	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
 	
 	
@@ -116,11 +116,11 @@ for (read_type, mapped_type, is_exact, ttype), counts in fc_stat.iteritems():
 	
 	
 for title, data in fc.items():
-	output = os.path.join(fc_dir, title)
+	output = os.path.join(fc_dir, title  + ".svg")
 	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)	
 	
 for title, data in fc_incorrect.items():
-	output = os.path.join(fc_dir, title)
+	output = os.path.join(fc_dir, title  + ".svg")
 	pie(fix_labeled_data(data), top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.25, frame=(0.2, 0.2, 0.6, 0.6))	
 
 
@@ -148,11 +148,11 @@ for (read_type, mapped_type, is_exact, ttype), counts in fs_stat.iteritems():
 	
 	
 for title, data in fs.items():
-	output = os.path.join(fs_dir, title)
+	output = os.path.join(fs_dir, title + ".svg")
 	pie(data, top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.15)
 
 for title, data in fs_incorrect.items():
-	output = os.path.join(fs_dir, title)
+	output = os.path.join(fs_dir, title + ".svg")
 	pie(fix_labeled_data(data), top=10, min_fraction=0.05, title=title, output=output, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, labeldistance=1.25, frame=(0.2, 0.2, 0.6, 0.6))
 
 	

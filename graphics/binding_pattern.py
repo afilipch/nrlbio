@@ -17,6 +17,7 @@ parser.add_argument('--norm', nargs = '?', default=False, const = True, type = b
 parser.add_argument('--length', nargs = '?', default=0, type = int, help = "Length of binding pattern, if not set binding pattern will be calculated for the longest sRNA in interactions");
 parser.add_argument('--output', nargs = '?', default='pattern.png', type = str, help = "Path to the output");
 parser.add_argument('--title', nargs = '?', type = str, help = "Title for a plot");
+parser.add_argument('--control', nargs = '?', default = 'shuffled sequences', type = str, help = "Type of control: shuffled sequences or shuffled interactions");
 args = parser.parse_args();
 
 pattern = defaultdict(float)
@@ -61,7 +62,7 @@ else:
 	
 #plot real and control binding pattern
 plt.plot(pattern, '0.2',  linewidth=2, label='interactions(%d)' % (total/2))
-plt.plot(pattern_shuffled, '0.8',  linewidth=2, label='shuffled sequences')
+plt.plot(pattern_shuffled, '0.8',  linewidth=2, label=args.control)
 
 #set labels and title
 if(args.norm):

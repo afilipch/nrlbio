@@ -5,8 +5,9 @@ import sys;
 
 import pysam;
 
-from nrlbio.samlib import remove_duplicates, as_score
+#from nrlbio.samlib import remove_duplicates, as_score
 from nrlbio.generators import generator_segments
+from nrlbio.numerictools import maxes
 
 
 parser = argparse.ArgumentParser(description='collapse nonunique sam records. The group of hits with identical alignment will be collapsed into one of them. All locations on reference corresponding to the identical alignments will be stored in separate bed file');
@@ -17,11 +18,17 @@ parser.add_argument('-m', '--minscore', nargs = '?', default = 0, type = float, 
 args = parser.parse_args();
 
 
-
+def remove_duplicates(arwlist, minscore):
+	best, score = maxes(arwlist, lambda x: x.AS)
+	
+	if((len(best)>1 and score>=minscore) and len(set([(x.aligned_read.qstart, x.aligned_read.qend)  for x in best]))==1):
+		return best[0], [(x.rname, x.aligned_read.pos, x.aligned_read.aend, x.strand) for x in best]
+	else:
+		return None
 
 
 def _iteration(arwlist, cid):
-	result = remove_duplicates(arwlist, as_score, minscore=args.minscore)
+	result = remove_duplicates(arwlist, args.minscore)
 	if(result):
 		arw, bed = result
 		arw.aligned_read.tags = arw.aligned_read.tags + [("CI", collapsed)];	

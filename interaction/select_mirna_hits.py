@@ -11,7 +11,7 @@ from nrlbio.generators import generator_doublebed
 
 parser = argparse.ArgumentParser(description='Selects mapping hits of chimeric target parts only for mirna ids provided');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to the mirna:target interactions to select from, double gff");
-parser.add_argument('--mirids', nargs = '+', required=True, type = str, help = "miRNA ids to select");
+parser.add_argument('--mirids', nargs = '+', default=[], type = str, help = "miRNA ids to select, if not set hits for all provided interactions will be selected");
 parser.add_argument('--table', nargs = '?', required=True, type = str, help = "Table (rid2iid.tsv) which connects interaction ids with read ids");
 parser.add_argument('--sam', nargs = '?', required=True, type = str, help = "Path to mapping hits, sam/bam file");
 parser.add_argument('--output', nargs = '?', required = True, type = str, help = "Path for the selected sam/bam file");
@@ -27,10 +27,10 @@ if(args.inverse):
 			iids.add(i1.name.split("|")[0])
 else:		
 	for i1, i2 in generator_doublebed(args.path):
-		if(i1.chrom in mirids):
+		if(not mirids or i1.chrom in mirids):
 			iids.add(i1.name.split("|")[0]);
 			
-	
+#print iids	
 rids = set();
 
 with open(args.table) as f:
