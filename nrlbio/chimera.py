@@ -25,14 +25,14 @@ def as_score(chimera):
 	'''score function for Chimera based only on alignment score'''
 	return sum(chimera.AS)
 	
-def as_gap_score(chimera, maxgap=8):
-	'''score function for Chimera based on alignment score and gap'''
-	if(chimera.gap>0):
-		gap = chimera.gap*2
-	else:
-		gap = chimera.gap
+#def as_gap_score(chimera, maxgap=8):
+	#'''score function for Chimera based on alignment score and gap'''
+	#if(chimera.gap>0):
+		#gap = chimera.gap*2
+	#else:
+		#gap = chimera.gap
 	
-	return sum(chimera.AS)*(1 - chimera.gap**2/maxgap**2)	
+	#return sum(chimera.AS)*(1 - chimera.gap**2/maxgap**2)
 	
 
 class Chimera(object):
@@ -46,28 +46,30 @@ class Chimera(object):
 	'''	
 		
 		
-	def __init__(self, ar_wrappers, score_function):
-		if(len(set([x.qname for x in ar_wrappers])) != 1): 
-			raise ChimeraException('Chimera cannot be made from aligned reads with differenr identifiers\nFollowing are given:\n%s\n' % "\n".join(["\t%s" % x for x.qname in ar.wrappers]))
+	def __init__(self, arws):
+		if(len(set([x.qname for x in arws])) != 1): 
+			raise ChimeraException('Chimera cannot be made from aligned reads with different identifiers\nFollowing are given:\n%s\n' % "\n".join(["\t%s" % x for x.qname in ar.wrappers]))
 			
-		self.ar_wrappers = ar_wrappers;
-		self.control = any([x.rname.split("_")[0] == "random" for x in self.ar_wrappers])
+		self.arws = arws;
+		self.control = any([x.rname.split("_")[0] == "random" for x in self.arws])
 		
-		self.gap = ar_wrappers[1].qstart - ar_wrappers[0].qend;
-		self.AS = [x.AS for x in ar_wrappers];
-		self.score = score_function(self);
+		self.gap = arws[1].qstart - arws[0].qend;
+		self.AS = sum([x.AS for x in arws]);
 		
-		if(ar_wrappers[0].aligned_read.is_reverse):
-			self.gap_seq = reverse_complement(ar_wrappers[0].aligned_read.query_sequence)[self.ar_wrappers[1].qstart:self.ar_wrappers[0].qend]
+		if(arws[0].aligned_read.is_reverse):
+			self.gap_seq = reverse_complement(arws[0].aligned_read.query_sequence)[self.arws[1].qstart:self.arws[0].qend]
 		else:
-			self.gap_seq = ar_wrappers[0].aligned_read.query_sequence[self.ar_wrappers[1].qstart:self.ar_wrappers[0].qend]
+			self.gap_seq = arws[0].aligned_read.query_sequence[self.arws[1].qstart:self.arws[0].qend]
 			
+			
+	def set_score(self, fun):
+		self.score = fun(self)
 		
 		
 	def __str__(self):
 		'''converts Chimera in a bed-like entry(line). First six elements correspond to the first hit, Second six elements to the second one'''
 		l = [];
-		for arw in self.ar_wrappers:
+		for arw in self.arws:
 			l.append("%s\t%d\t%d\t%s\t%d\t%s\t" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, arw.qname, arw.AS, strand_conv[arw.aligned_read.is_reverse]))
 			
 		gen_info = "%1.5f\t%d" % (self.score, self.gap);
@@ -93,13 +95,13 @@ class Chimera(object):
 		else:
 			gap_seq = str(self.gap)
 			
-		for c, arw in enumerate(self.ar_wrappers):
+		for c, arw in enumerate(self.arws):
 			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, "|".join((arw.qname, str(c))), arw.AS, strand_conv[arw.aligned_read.is_reverse], arw.qstart, arw.qend, gap_seq, gen_info));
 			
 		return "\n".join(l)
 		
 		
-def arwlist2chimera(arwlist, gap = 1, overlap = 4, score_function = as_score):
+def arwlist2chimeras(arwlist, maxgap, maxoverlap):
 	'''Compiles all possible chimeras from hits(pysam aligned reads) provided
 	
 		arlist iterable: element is pysam.AlignedRead. All hits of the initial read to compile into chimeras
@@ -110,11 +112,11 @@ def arwlist2chimera(arwlist, gap = 1, overlap = 4, score_function = as_score):
 	'''
 	chimeras = []
 	for a1, a2 in combinations(arwlist, 2):
-		if(-overlap <= a2.qstart - a1.qend <= gap):
-			chimeras.append(Chimera([a1, a2], score_function))
+		if(-maxoverlap <= a2.qstart - a1.qend <= maxgap):
+			chimeras.append(Chimera([a1, a2]))
 			continue
-		if(-overlap <= a1.qstart - a2.qend <= gap):
-			chimeras.append(Chimera([a2, a1], score_function))
+		if(-maxoverlap <= a1.qstart - a2.qend <= maxgap):
+			chimeras.append(Chimera([a2, a1]))
 	return chimeras;
 	
 
