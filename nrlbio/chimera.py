@@ -55,6 +55,7 @@ class Chimera(object):
 		
 		self.gap = arws[1].qstart - arws[0].qend;
 		self.AS = sum([x.AS for x in arws]);
+		self.coordinates = [];
 		
 		if(arws[0].aligned_read.is_reverse):
 			self.gap_seq = reverse_complement(arws[0].aligned_read.query_sequence)[self.arws[1].qstart:self.arws[0].qend]
@@ -62,8 +63,25 @@ class Chimera(object):
 			self.gap_seq = arws[0].aligned_read.query_sequence[self.arws[1].qstart:self.arws[0].qend]
 			
 			
-	def set_score(self, fun):
-		self.score = fun(self)
+	def set_score(self, score):
+		self.score = score
+		
+		
+	def get_coordinates(self, reassign):
+		
+		if(reassign):
+			for arw in self.arws:
+				chrom, strand, start, end = arw.rname.split("|")[:4]
+				if(strand == '+'):
+					rend = int(start) + arw.aligned_read.reference_end
+					rstart = int(start) + arw.aligned_read.reference_start
+				else:
+					rend = int(end) - arw.aligned_read.reference_start
+					rstart = int(end) - arw.aligned_read.reference_end
+				self.coordinates.append((chrom, strand, rstart, rend))
+		else:
+			for arw in self.arws:
+				self.coordinates.append((arw.rname, strand_conv[arw.aligned_read.is_reverse], arw.aligned_read.reference_start, arw.aligned_read.reference_end))
 		
 		
 	def __str__(self):
@@ -72,11 +90,11 @@ class Chimera(object):
 		for arw in self.arws:
 			l.append("%s\t%d\t%d\t%s\t%d\t%s\t" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, arw.qname, arw.AS, strand_conv[arw.aligned_read.is_reverse]))
 			
-		gen_info = "%1.5f\t%d" % (self.score, self.gap);
-		l.append(gen_info)
+		#gen_info = "%1.5f\t%d" % (self.score, self.gap);
+		#l.append(gen_info)
 	
-		for a in self.aligned_reads:
-			l.append("\t%d\t%d\t%s" % (a.qstart, a.qend, a.aligned_read.query[-1]))
+		#for arw in self.arws:
+			#l.append("\t%d\t%d\t%s" % (arw.qstart, arw.qend, arw.aligned_read.query[-1]))
 		
 		return "".join(l);	
 		
@@ -94,9 +112,13 @@ class Chimera(object):
 			gap_seq = self.gap_seq;
 		else:
 			gap_seq = str(self.gap)
-			
-		for c, arw in enumerate(self.arws):
-			l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s\t%s" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, "|".join((arw.qname, str(c))), arw.AS, strand_conv[arw.aligned_read.is_reverse], arw.qstart, arw.qend, gap_seq, gen_info));
+		
+		if(self.coordinates):
+			for c, arw in enumerate(self.arws):
+				l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s" % (self.coordinates[c][0], self.coordinates[c][2], self.coordinates[c][3], "|".join((arw.qname, str(c))), arw.AS, self.coordinates[c][1], arw.qstart, arw.qend,  gen_info));			
+		else:
+			for c, arw in enumerate(self.arws):
+				l.append("%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%s" % (arw.rname, arw.aligned_read.pos, arw.aligned_read.aend, "|".join((arw.qname, str(c))), arw.AS, strand_conv[arw.aligned_read.is_reverse], arw.qstart, arw.qend, gen_info));
 			
 		return "\n".join(l)
 		

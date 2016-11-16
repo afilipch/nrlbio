@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='Draws a plot of binding pattern');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the interactiong RNA, double gff file with pattern and pattern_shuffled assigned");
 parser.add_argument('--norm', nargs = '?', default=False, const = True, type = bool, help = "If set, binding pattern will be normalized");
 parser.add_argument('--length', nargs = '?', default=0, type = int, help = "Length of binding pattern, if not set binding pattern will be calculated for the longest sRNA in interactions");
-parser.add_argument('--output', nargs = '?', default='pattern.png', type = str, help = "Path to the output");
+parser.add_argument('--output', nargs = '?', type = str, help = "Path to the output");
 parser.add_argument('--title', nargs = '?', type = str, help = "Title for a plot");
 parser.add_argument('--control', nargs = '?', default = 'shuffled sequences', type = str, help = "Type of control: shuffled sequences or shuffled interactions");
 args = parser.parse_args();
@@ -50,6 +50,7 @@ if(args.length):
 
 
 #plot section
+colors = ('0.2', '0.8')
 
 #prepare an appropriate layout
 plt.figure(1, figsize=(8,5))
@@ -61,8 +62,8 @@ else:
 	plt.axis((0, len(pattern), 0, max(pattern)*1.2))
 	
 #plot real and control binding pattern
-plt.plot(pattern, '0.2',  linewidth=2, label='interactions(%d)' % (total/2))
-plt.plot(pattern_shuffled, '0.8',  linewidth=2, label=args.control)
+plt.plot(pattern, colors[0],  linewidth=2, label='interactions(%d)' % (total/2))
+plt.plot(pattern_shuffled, colors[1],  linewidth=2, label=args.control)
 
 #set labels and title
 if(args.norm):
@@ -77,7 +78,10 @@ if(args.title):
 plt.legend(loc='upper right',prop={'size':10})
 
 #output plot in PNG format
-plt.savefig(args.output, bbox_inches='tight')
+if(args.output):
+	plt.savefig(args.output, bbox_inches='tight')
+else: 
+	plt.show();
 
 	
 	

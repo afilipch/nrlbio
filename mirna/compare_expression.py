@@ -74,8 +74,9 @@ for mirid in mirids:
 	cd2 = condition2[mirid]
 	c1 = numpy.array([cd1[x] for x in range(size1)])
 	c2 = numpy.array([cd2[x] for x in range(size2)])
-	if(max(c1)>args.minexpr or max(c2)>args.minexpr):
-		expression.append([mirid] + compexpr(c1, c2, varcoeff))
+	if(any(c1) and any(c2)):
+		if(max(c1)>args.minexpr or max(c2)>args.minexpr):
+			expression.append([mirid] + compexpr(c1, c2, varcoeff))
 
 
 #Output the results
@@ -85,6 +86,13 @@ sys.stdout.write("\t".join(header) + "\n")
 expression.sort(key = lambda x: x[-1], reverse=True)
 for l in expression:
 	sys.stdout.write("\t".join([str(x) for x in l]) + "\n")
+	
+	
+	
+	
+
+	
+	
 	
 
 

@@ -18,7 +18,7 @@ args = parser.parse_args();
 
 for c, interval in enumerate(BedTool(args.path)):
 	for mirid in interval.name.split(','):
-		i1 = construct_gff_interval(mirid, 0, 16, 'ds', score=interval.score, strand='+', source='un', frame='.', attrs=[('ID', "cid%d|0" % (c+1)), ('n_uniq', 1)])
+		i1 = construct_gff_interval(mirid, 0, 30, 'ds', score=interval.score, strand='+', source='un', frame='.', attrs=[('ID', "cid%d|0" % (c+1)), ('n_uniq', 1)])
 		i2 = construct_gff_interval(interval.chrom, interval.start, interval.stop, 'ds', score=interval.score, strand=interval.strand, source='un', frame='.', attrs=[('ID', "cid%d|1" % (c+1)), ('n_uniq', 1)])
 		sys.stdout.write(str(i1));
 		sys.stdout.write(str(i2));

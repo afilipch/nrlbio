@@ -18,7 +18,7 @@ parser.add_argument('--title', nargs = '?', type = str, help = "Title for a plot
 args = parser.parse_args();
 
 
-ORDER = ['protein_coding', 'miRNA', 'scaRNA', 'snoRNA', 'rRNA', 'Mt_tRNA', 'Mt_rRNA', 'snRNA', 'lincRNA', 'transcribed_processed_pseudogene', 'transcribed_unprocessed_pseudogene',  'processed_pseudogene', 'unprocessed_pseudogene', 'unitary_pseudogene', 'polymorphic_pseudogene', 'processed_transcript', '3prime_overlapping_ncrna', 'misc_RNA', 'non_coding', 'nonsense_mediated_decay', 'non_stop_decay', 'retained_intron', 'sense_overlapping',  'antisense',  'sense_intronic', 'TEC',  'intergenic'] 
+ORDER = ['intron', 'protein_coding', 'miRNA', 'scaRNA', 'snoRNA', 'rRNA', 'Mt_tRNA', 'Mt_rRNA', 'snRNA', 'lincRNA', 'transcribed_processed_pseudogene', 'transcribed_unprocessed_pseudogene',  'processed_pseudogene', 'unprocessed_pseudogene', 'unitary_pseudogene', 'polymorphic_pseudogene', 'processed_transcript', '3prime_overlapping_ncrna', 'misc_RNA', 'non_coding', 'nonsense_mediated_decay', 'non_stop_decay', 'retained_intron', 'sense_overlapping',  'antisense',  'sense_intronic', 'TEC',  'intergenic'] 
 
 
 def collapse_hierarchical(regulation, score):
@@ -55,6 +55,24 @@ else:
 types = defaultdict(float);
 for interval in BedTool(args.path):
 	regulation = [x.split(',') for x in interval.attrs['regulation'].split(':') if x];
+	#variants = set()
+	#for reg in regulation:
+		#variants.update(reg)
+	
+	transcription= [x.split(',') for x in interval.attrs['transcription'].split(':') if x];
+	ttypes = set();
+	for t in transcription:
+		ttypes.update(t);
+	
+	if(len(ttypes)==1 and list(ttypes)[0] == 'intron'):
+		regulation.append(['intron'])
+	
+	
+	#print regulation 
+	#print 
+	#print biotypes
+	#print 
+	#print "-"*140
 	
 	if(args.reads):
 		score = float(interval.attrs['n_uniq'])
@@ -65,8 +83,8 @@ for interval in BedTool(args.path):
 		types[k] += v;
 		
 			
-for kv in types.items():
-	print "%s\t%d" % kv
+for k in ORDER:
+	print "%s\t%d" % (k, types[k])
 	
 	
 pie(types, top=10, min_fraction=0.03, title=args.title, labelsize='medium', labelva='top', output=args.output, explode=None, labels=None, colors=('yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'azure', 'seashell', 'darkorchid', 'chartreuse'), pctdistance=0.8, shadow=False, labeldistance=1.15, startangle=0, radius=None, counterclock=True, wedgeprops=None, textprops={'fontsize': 'medium'}, frame=(0.12, 0.12, 0.76, 0.76));	

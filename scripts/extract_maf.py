@@ -7,6 +7,7 @@ from byo.io import fasta_chunks
 import numpy as np
 import logging
 
+
 class GenomeProvider(object):
     def __init__(self,path):
         self.cached = {}

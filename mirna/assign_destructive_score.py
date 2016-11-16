@@ -27,6 +27,7 @@ parser.add_argument('--system', nargs = '?', required = True, choices = system_c
 
 parser.add_argument('--threads', nargs = '?', default = 2, type = int, help = "Number of threads to use")
 parser.add_argument('--minscore', nargs = '?', default = 20.0, type = float, help = "Only the regions with destructive score greater or equal to [--minscore] will be selected")
+parser.add_argument('--escore', nargs = '?', default = False, const=True, type = bool, help = "If set, destructive score is equal to MFE of hybridization")
 args = parser.parse_args();
 
 rhsys = sys2rhsys[args.system]
@@ -63,14 +64,21 @@ def getscore(a):
 	energy, pattern, basepairing, pval, pos = get_rnahybrid(tseq, mseq, system = rhsys, extended=True);
 	return cid, destructive_score(basepairing) + math.log(n_uniq, 2)
 
+def get_energy_score(a):
+	cid, tseq, mseq, n_uniq = a
+	energy, pattern, basepairing, pval, pos = get_rnahybrid(tseq, mseq, system = rhsys, extended=True);
+	return cid, -1*energy + math.log(n_uniq, 2)
 
-#for entry in cgenerator:
-	#print getscore(entry)
+
+if(args.escore):
+	fscore = get_energy_score
+else:
+	fscore = getscore
 
 
 pool = Pool(args.threads);
 res = []
-for ri, dscore in pool.imap(getscore, cgenerator):
+for ri, dscore in pool.imap(fscore, cgenerator):
 	if(dscore>=args.minscore):
 		ri.attrs['dscore'] = "%1.2f"  % dscore;
 		sys.stdout.write(str(ri))

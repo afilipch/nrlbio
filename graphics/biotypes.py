@@ -37,7 +37,7 @@ def collapse_hierarchical(btypes, ttypes, score):
 	if(norm):
 		return dict([(x[0], (x[1]*score)/norm) for x in ans.items()])
 	else:
-		return {'intron': score}
+		return {'cds': 0.0}
 
 
 
