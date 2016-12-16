@@ -11,7 +11,7 @@ from nrlbio.pybedtools_extension import interval2seq
 
 parser = argparse.ArgumentParser(description='assigns sequence to each gff entry');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to gff file to be annotated");
-parser.add_argument('-f', '--fasta', nargs = '+', required = True, type = str, help = "path to reference(genome, mirBase, transcriptome) fasta files");
+parser.add_argument('-f', '--fasta', nargs = '+', required = True, type = str, help = "Path to reference(genome, mirBase, transcriptome) fasta files");
 args = parser.parse_args();
 
 
