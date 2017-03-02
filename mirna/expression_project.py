@@ -27,6 +27,7 @@ parser.add_argument('--name', nargs = '?', type = str, required = True, help = "
 
 parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "If set, a new makefile is created, but not folders");
 parser.add_argument('--nonunique', nargs = '?', default = False, const=True, type = bool, help = "If set, nonunique mappings with high alignment score are kept")
+parser.add_argument('--collapsed', nargs = '?', default = False, const = True, type = str, help = "If set, reads are considered to be sequence-collapsed");
 #bowtie2 options
 parser.add_argument('--bowtie', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
 
@@ -86,7 +87,10 @@ def makefile_main():
 	
 	input_files = output_files;
 	output_files = os.path.join('expression', '%s.raw.gff' % args.name)
-	script = get_script('sam2expression.py', arguments={'--mirbase_precursors': args.mirbase_precursors}, inp = input_files, out = output_files, package=mirna_package)
+	if(args.collapsed):
+		script = get_script('sam2expression.py', arguments={'--mirbase_precursors': args.mirbase_precursors, '--collapsed': True}, inp = input_files, out = output_files, package=mirna_package)
+	else:
+		script = get_script('sam2expression.py', arguments={'--mirbase_precursors': args.mirbase_precursors}, inp = input_files, out = output_files, package=mirna_package)
 	mlist.append(dependence(input_files, output_files, script));	
 	
 	#Fix expression values for identical nonunique mappings  
@@ -153,6 +157,8 @@ arguments_report = (
 ('mirbase_precursors', ('Path to miRNAs precursors used for expression analysis', os.path.abspath)), 
 
 ('nonunique', ('Nonunique mappings with high alignment score are kept', str)),
+
+('collapsed', ('Reads were supposed to be collapsed', str)),
 )
 
 with open(os.path.join(project_path, 'log/project.txt'), 'w') as rf:

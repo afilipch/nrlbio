@@ -35,7 +35,7 @@ if __name__ == "__main__":
 	genes = get_genes(args.path)
 	size = len(genes[0]);
 	for c, ((n1, g1), (n2, g2)) in enumerate(combinations(enumerate(genes), 2)):
-		print n1, n2, get_distance(g1, g2, size);
+		print "%d\t%d\t%1.3f" n1, n2, get_distance(g1, g2, size);
 		if(c and c % 10000 == 0):
 			sys.stderr.write("%d processed\n" % c) 
 	

@@ -260,7 +260,7 @@ def generate_transcripts_from_refseq(refseq):
 		
 	
 class Gene(object):
-	def __init__(self, name, gene, gene_symbol=None, transcripts=[]):
+	def __init__(self, name, gene, gene_symbol='', transcripts=[]):
 		self.name=name
 		self.gene_symbol = gene_symbol;
 		self.gene = gene
@@ -336,7 +336,7 @@ def gff3_to_genes(gff3):
 			if(transcript_interval):
 				transcripts.append(_gff3_to_transcript(transcript_interval, transcription_blocks));
 			if(gene_interval):
-				gene = Gene(gene_interval.name.split(":")[1], gene_interval, gene_interval.attrs.get('Name'), transcripts);
+				gene = Gene(gene_interval.name.split(":")[1], gene_interval, gene_interval.attrs.get('Name', ''), transcripts);
 				genes.append(gene);
 			gene_interval = interval
 			transcript_interval = None;
@@ -354,7 +354,7 @@ def gff3_to_genes(gff3):
 		if(transcript_interval):
 			transcripts.append(_gff3_to_transcript(transcript_interval, transcription_blocks));
 		if(gene_interval):
-			gene = Gene(gene_interval.name.split(":")[1], gene_interval, gene_interval.attrs.get('Name'), transcripts);
+			gene = Gene(gene_interval.name.split(":")[1], gene_interval, gene_interval.attrs.get('Name', ''), transcripts);
 			genes.append(gene);
 		
 	return genes

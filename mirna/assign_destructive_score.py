@@ -16,8 +16,8 @@ from nrlbio.mirna import slicing_score, destructive_score
 from nrlbio.rnahybrid import get_rnahybrid
 
 
-system_choices = ['hg19', 'hg38', 'mm9', 'mm10', 'ce6', 'circ']
-sys2rhsys = {'hg19': '3utr_human', 'hg38': '3utr_human', 'mm9': '3utr_human', 'mm10': '3utr_human', 'ce6': '3utr_worm', 'ce10': '3utr_worm', 'circ': '3utr_human'}
+system_choices = ['hg19', 'hg38', 'mm9', 'mm10', 'ce6', 'ce10', 'ce11', 'circ']
+sys2rhsys = {'hg19': '3utr_human', 'hg38': '3utr_human', 'mm9': '3utr_human', 'mm10': '3utr_human', 'ce6': '3utr_worm', 'ce10': '3utr_worm', 'ce11': '3utr_worm', 'circ': '3utr_human'}
 
 parser = argparse.ArgumentParser(description='Assignes to each miRNA:target interaction destructive score. Does not produce html report');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the miRNA:target interactions, gff/bed file");

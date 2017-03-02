@@ -19,9 +19,10 @@ args = parser.parse_args();
 
 stat = defaultdict(lambda: defaultdict(int));
 
-def get_mode(modes):
+def get_mode(mirna, targetseq):
+	temp = mirna.find_fixed_types(targetseq)
 	for mode in MODES_ORDER:
-		if(modes[mode]):
+		if(temp[mode]):
 			return mode
 	else:
 		return 'none'
@@ -30,15 +31,17 @@ def get_mode(modes):
 mirdict = fasta2mirnas(args.mir);
 
 for i1, i2 in generator_doublebed(args.path):
-	mode = get_mode(mirdict[i1.chrom].find_fixed_types(i2.attrs['seq']))
+	mirna = mirdict[i1.chrom]
+	targetseq = i2.attrs['seq']
+	mode = get_mode(mirna, targetseq)
 	i1.attrs['mode'] = mode;
 	i2.attrs['mode'] = mode;
 	stat[mode]['signal']+=1
 	
 	if(args.set_control):
-		mode_shuffled = get_mode(mirdict[i1.chrom].find_fixed_types(shuffle_string(i2.attrs['seq'])))
-		i1.attrs['mode_shuffled'] = mode_shuffled;
-		i2.attrs['mode_shuffled'] = mode_shuffled;
+		mode_shuffled = get_mode(mirna, shuffle_string(targetseq))
+		#i1.attrs['mode_shuffled'] = mode_shuffled;
+		#i2.attrs['mode_shuffled'] = mode_shuffled;
 		stat[mode_shuffled]['control']+=1
 		
 	sys.stdout.write(str(i1))
@@ -46,6 +49,7 @@ for i1, i2 in generator_doublebed(args.path):
 	
 total = float(sum([x['signal'] for x in stat.values()]))
 sys.stderr.write("mode\tsignal\tsignal_fraction\tcontrol\tcontrol_fraction\n")
-for mode, td in stat.items():
-	sys.stderr.write("%s\t%d\t%1.2f\t%d\t%1.2f\n" % (mode, td['signal'], td['signal']/total, td['control'], td['control']/total))
+om = ['none'] + list(MODES_ORDER) 
+for mode in om:
+	sys.stderr.write("%s\t%d\t%1.2f\t%d\t%1.2f\n" % (mode, stat[mode]['signal'], stat[mode]['signal']/total, stat[mode]['control'], stat[mode]['control']/total))
 	
