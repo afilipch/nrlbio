@@ -19,42 +19,34 @@ args = parser.parse_args();
 
 
 def collapse_hierarchical(btypes, ttypes, score):
-	ans = defaultdict(float)
-	norm = len(btypes)
+	types  = set()
+	for blist,tlist in zip(btypes, ttypes):
+		if('exon' in tlist):
+			types.update(blist);
 	
-	for b,t in zip(btypes, ttypes):
-		temp = defaultdict(float)
-		for bb, tt in zip(b, t):
-			if(tt=='exon'):
-				temp[bb] += 1.0;
-				
-		tnorm = sum(temp.values())
-		for k,v in temp.items():
-			ans[k] += v/tnorm
+	for region in ['utr3', 'utr5', 'cds']:
+		if(region in types):
+			return {region:score}
 			
-	norm = sum(ans.values())
-	
-	if(norm):
-		return dict([(x[0], (x[1]*score)/norm) for x in ans.items()])
-	else:
-		return {'cds': 0.0}
-
-
+	return {'intron': 0}
+			
 
 
 def collapse_uniform(btypes, ttypes, score):
+	blists  = []
+	for blist,tlist in zip(btypes, ttypes):
+		if('exon' in tlist):
+			blists.append(blist);
+	
 	ans = defaultdict(float)
-	norm = len(btypes)
-	
-	for b,t in zip(btypes, ttypes):
-		if('exon' in t):
-			tnorm = norm*len(b)
-			for el in b:
-				ans[el] += score/tnorm;
-		else:
-			ans['intron'] += score/norm;
-	
-	return ans
+	gnorm = float(len(blists));
+	for blist in blists:
+		lnorm = gnorm*len(blist);
+		for b in blist:
+			ans[b] += score/lnorm;
+			
+	return ans;
+			
 
 
 if(args.hierarchical):
@@ -69,22 +61,26 @@ for interval in BedTool(args.path):
 	for p, c in enumerate(interval.attrs['regulation'].split(':')):
 		if('protein_coding' in c.split(',')):
 			coding.append(p);
+
 			
 	btypes = interval.attrs['biotypes'].split(':')
 	btypes = [btypes[x].split(',') for x in coding if btypes[x]]
 	ttypes = interval.attrs['transcription'].split(':')
 	ttypes = [ttypes[x].split(',') for x in coding if ttypes[x]]
-	
+
+
 	if(args.reads):
 		score = float(interval.attrs['n_uniq'])
 	else:
 		score = 1.0
-	
+		
 	if(btypes):
 		for k, v in collapse(btypes, ttypes, score).items():
-			biotypes[k] += v;
+			if(v):
+				biotypes[k] += v;
 		
-		
+
+#print sum(biotypes.values())
 		
 for k,v in biotypes.items():
 	print "%s\t%d" % (k,v)

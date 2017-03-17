@@ -18,20 +18,32 @@ parser.add_argument('--title', nargs = '?', type = str, help = "Title for a plot
 args = parser.parse_args();
 
 
-ORDER = ['intron', 'protein_coding', 'miRNA', 'scaRNA', 'snoRNA', 'rRNA', 'Mt_tRNA', 'Mt_rRNA', 'snRNA', 'lincRNA', 'transcribed_processed_pseudogene', 'transcribed_unprocessed_pseudogene',  'processed_pseudogene', 'unprocessed_pseudogene', 'unitary_pseudogene', 'polymorphic_pseudogene', 'processed_transcript', '3prime_overlapping_ncrna', 'misc_RNA', 'non_coding', 'nonsense_mediated_decay', 'non_stop_decay', 'retained_intron', 'sense_overlapping',  'antisense',  'sense_intronic', 'TEC',  'intergenic'] 
+ORDER = ['protein_coding', 'miRNA', 'scaRNA', 'snoRNA', 'rRNA', 'Mt_tRNA', 'Mt_rRNA', 'snRNA', 'lincRNA', 'intron', 'transcribed_processed_pseudogene', 'transcribed_unprocessed_pseudogene',  'processed_pseudogene', 'unprocessed_pseudogene', 'unitary_pseudogene', 'polymorphic_pseudogene', 'processed_transcript', '3prime_overlapping_ncrna', 'misc_RNA', 'non_coding', 'nonsense_mediated_decay', 'non_stop_decay', 'retained_intron', 'sense_overlapping',  'antisense',  'sense_intronic', 'TEC',  'intergenic'] 
 
+#NONEXONIC = ['nonsense_mediated_decay', 'non_stop_decay', 'retained_intron', 'sense_overlapping',  'antisense',  'sense_intronic', 'TEC',  'intergenic'];
 
-def collapse_hierarchical(regulation, score):
+def collapse_hierarchical(regulation, transcription, score):
 	variants = set()
 	
-	for reg in regulation:
-		variants.update(reg)
-		
+	for reg, tr in zip(regulation, transcription):
+		if('exon' in tr):
+			variants.update(reg)
+		elif('intron' in tr):
+			variants.add('intron')
+	
+	if(not variants):
+		for reg in regulation:
+			variants.update(r);
+					
+	if(not variants):
+		return {'unknown':score}
+	
+	
 	for o in ORDER:
 		if(o in variants):
 			return {o:score}
-	else:
-		return {'unknown':score}
+
+
 
 
 def collapse_uniform(regulation, score):
@@ -60,12 +72,12 @@ for interval in BedTool(args.path):
 		#variants.update(reg)
 	
 	transcription= [x.split(',') for x in interval.attrs['transcription'].split(':') if x];
-	ttypes = set();
-	for t in transcription:
-		ttypes.update(t);
+	#ttypes = set();
+	#for t in transcription:
+		#ttypes.update(t);
 	
-	if(len(ttypes)==1 and list(ttypes)[0] == 'intron'):
-		regulation.append(['intron'])
+	#if(len(ttypes)==1 and list(ttypes)[0] == 'intron'):
+		#regulation.append(['intron'])
 	
 	
 	#print regulation 
@@ -79,7 +91,7 @@ for interval in BedTool(args.path):
 	else:
 		score = 1.0
 		
-	for k,v in collapse(regulation, score).items():
+	for k,v in collapse(regulation, transcription, score).items():
 		types[k] += v;
 		
 			

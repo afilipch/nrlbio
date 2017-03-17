@@ -16,13 +16,14 @@ from nrlbio.mirna import MODES_ORDER, fasta2mirnas
 
 
 parser = argparse.ArgumentParser(description='Redefines genomic regions of miRNA targets, based on seed-anchored hybridization');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to doublebed/gff file");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to single or doublebed/gff file");
 parser.add_argument('-g', '--genome', nargs = '?', required = True, type = str, help = "Path to the target reference (genome), fasta file");
 parser.add_argument('-m', '--mir', nargs = '?', required = True, type = str, help = "Path to the miRNA reference (mirBase), fasta file");
 parser.add_argument('--pval_cutoff', nargs = '?', default = 0.1, type = float, help = "Max p value required for additional(split) interactions to be output");
 parser.add_argument('--upstream', nargs = '?', default = 10, type = int, help = "Maximum upstream extension of the target site allowed");
 parser.add_argument('--downstream', nargs = '?', default = 10, type = int, help = "Maximum downstream extension of the target site allowed");
 parser.add_argument('--addlength', nargs = '?', default = 25, type = int, help = "Length of the target site");
+parser.add_argument('--iformat', nargs = '?', default = 'double', choices = ('double', 'single'), type = str, help = "Format of the input gff file");
 args = parser.parse_args();
 
 
@@ -31,7 +32,7 @@ mirnas = fasta2mirnas(args.mir, seed_start=1, seed_stop=7)
 genome = SeqIO.to_dict(SeqIO.parse(args.genome, "fasta"))
 
 
-def seqgenerator(path):
+def seqgenerator_double(path):
 	for i1, i2 in generator_doublebed(path):
 		if(i2.strand == '+'):
 			i2.start = i2.start - args.upstream
@@ -44,6 +45,31 @@ def seqgenerator(path):
 		i2.attrs['seq'] = tseq
 
 		yield i1, i2
+		
+		
+def seqgenerator_single(path):
+	from nrlbio.pybedtools_extension import construct_gff_interval
+	from pybedtools import BedTool
+	
+	for i2 in BedTool(path):
+		if(i2.strand == '+'):
+			i2.start = i2.start - args.upstream
+			i2.end = i2.end + args.downstream
+		else:
+			i2.start = i2.start - args.downstream
+			i2.end = i2.end + args.upstream	
+		
+		tseq = interval2seq(i2, genome);	
+		i2.attrs['seq'] = tseq
+
+		i1 = construct_gff_interval(i2.attrs['mirid'], 0, 30, 'mir', score='0', strand='.', source='un', attrs=[('n_uniq', i2.attrs['n_uniq'])] )
+
+		yield i1, i2	
+		
+if(args.iformat == 'double'):
+	seqgenerator = seqgenerator_double
+else:
+	seqgenerator = seqgenerator_single
 		
 #def get_mode(targetseq, mirna):
 	#temp = mirna.find_fixed_types(targetseq)
@@ -120,7 +146,7 @@ for i1, i2 in seqgenerator(args.path):
 		tsite = tsites[0]
 		modes[tsite[3]]+=1
 		#modes[get_mode(tsite[0], mirna)] +=1
-		i2.attrs['seq'] = tsite[0]		
+		i2.attrs['seq'] = tsite[0]
 		adjust_coordinates(i2, tsite[1]);
 		sys.stdout.write("%s%s" % (i1, i2));
 	else:

@@ -42,7 +42,7 @@ for path, name in zip(args.path, args.names):
 ##############################################################################
 #Plotting
 
-def hist(data1, data2, output, labels, xticklabels, title, xlabel):
+def hist(data1, data2, output, labels, xticklabels, title, xlabel, ylabel = 'fraction of reads'):
 	#prepare an appropriate layout
 	plt.figure(1, figsize=(8,5))
 	ax = plt.subplot(111)
@@ -62,7 +62,7 @@ def hist(data1, data2, output, labels, xticklabels, title, xlabel):
 		plt.xlabel('mismatch rate [%]')
 	elif(xlabel == 'length'):
 		plt.xlabel('read length [nt]')
-	plt.ylabel('fraction of reads')
+	plt.ylabel(ylabel)
 	plt.title(title)
 		
 	#set xlabels	
@@ -107,7 +107,7 @@ for name, table in tables.items():
 	
 	fdr_chimera_real = 100 - table['specificity_chimera']
 	fdr_chimera_estimated = table['estimated_fdr_chimera']
-	hist(fdr_chimera_real, fdr_chimera_estimated, os.path.join(args.output, "fdr_chimera_%s.svg" % name), labels=('real', 'estimated'), xticklabels=mmrate, title="FDR of chimera recovery", xlabel=args.xlabel)
+	hist(fdr_chimera_real, fdr_chimera_estimated, os.path.join(args.output, "fdr_chimera_%s.svg" % name), labels=('real', 'estimated'), xticklabels=mmrate, title=name, xlabel=args.xlabel, ylabel='FDR [%]')
 	
 	
 	
